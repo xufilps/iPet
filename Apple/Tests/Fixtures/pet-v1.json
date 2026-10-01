@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "state": {
+    "name": "原生旧档",
+    "strength": 87,
+    "food": 43,
+    "drink": 38,
+    "feeling": 72,
+    "health": 62,
+    "affection": 19,
+    "experience": 180,
+    "storedStrength": 5,
+    "storedFood": 4,
+    "storedDrink": 3,
+    "resting": true
+  }
+}
