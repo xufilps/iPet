@@ -1,3 +1,5 @@
+// iPet: Swift native adaptation of VPet; see NOTICE and LICENSE.
+// SPDX-License-Identifier: Apache-2.0
 import SwiftUI
 import PetCore
 
@@ -36,7 +38,7 @@ struct ControlsView: View {
             Text("点击头部或身体进行抚摸，拖动角色可以提起。右键打开设置；菜单栏 🐾 可找回桌宠。食物与饮料免费提供。").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if !model.message.isEmpty { Text(model.message).font(.caption).foregroundStyle(.orange).textSelection(.enabled) }
             Divider()
-            Text("VPet Apple · v0.1\n角色与动画来自虚拟主播模拟器制作组；原作 LorisYounger/VPet。代码 Apache 2.0，动画和图片适用单独授权。").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            Text("iPet · v0.1\n角色与动画来自虚拟主播模拟器制作组；原作 LorisYounger/VPet。代码 Apache 2.0，动画和图片适用单独授权。").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack {
                 Link("原项目与授权", destination: URL(string: "https://github.com/LorisYounger/VPet#动画版权声明与授权")!)
                 Button("打开存档目录") { NSWorkspace.shared.open(model.store.directory) }

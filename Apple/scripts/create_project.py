@@ -15,28 +15,30 @@ obj('assets', 'isa = PBXFileReference; lastKnownFileType = folder; path = Resour
 obj('assets-build', f'isa = PBXBuildFile; fileRef = {ident("assets")};')
 obj('attribution', 'isa = PBXFileReference; lastKnownFileType = text; path = ATTRIBUTION.md; sourceTree = "<group>";')
 obj('attribution-build', f'isa = PBXBuildFile; fileRef = {ident("attribution")};')
+obj('notice', 'isa = PBXFileReference; lastKnownFileType = text; name = NOTICE; path = ../NOTICE; sourceTree = "<group>";')
+obj('notice-build', f'isa = PBXBuildFile; fileRef = {ident("notice")};')
 obj('code-license', 'isa = PBXFileReference; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>";')
 obj('code-license-build', f'isa = PBXBuildFile; fileRef = {ident("code-license")};')
 obj('animation-license', 'isa = PBXFileReference; lastKnownFileType = text; path = ANIMATION_LICENSE.md; sourceTree = "<group>";')
 obj('animation-license-build', f'isa = PBXBuildFile; fileRef = {ident("animation-license")};')
-obj('product', 'isa = PBXFileReference; explicitFileType = wrapper.application; path = VPetApple.app; sourceTree = BUILT_PRODUCTS_DIR;')
-obj('sources-group', f'isa = PBXGroup; children = {refs(files)}; path = Sources/VPetMac; sourceTree = "<group>";')
+obj('product', 'isa = PBXFileReference; explicitFileType = wrapper.application; path = iPet.app; sourceTree = BUILT_PRODUCTS_DIR;')
+obj('sources-group', f'isa = PBXGroup; children = {refs(files)}; path = Sources/iPetMac; sourceTree = "<group>";')
 obj('products-group', f'isa = PBXGroup; children = {refs(["product"])}; name = Products; sourceTree = "<group>";')
-obj('main-group', f'isa = PBXGroup; children = {refs(["sources-group", "assets", "attribution", "code-license", "animation-license", "products-group"])}; sourceTree = "<group>";')
+obj('main-group', f'isa = PBXGroup; children = {refs(["sources-group", "assets", "attribution", "code-license", "notice", "animation-license", "products-group"])}; sourceTree = "<group>";')
 obj('package', 'isa = XCLocalSwiftPackageReference; relativePath = .;')
 for product in ['PetCore', 'PetRendering']:
     obj('dep-' + product, f'isa = XCSwiftPackageProductDependency; productName = {product};')
     obj('link-' + product, f'isa = PBXBuildFile; productRef = {ident("dep-" + product)};')
 obj('sources', f'isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = {refs(["build-" + f for f in files])}; runOnlyForDeploymentPostprocessing = 0;')
 obj('frameworks', f'isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = {refs(["link-PetCore", "link-PetRendering"])}; runOnlyForDeploymentPostprocessing = 0;')
-obj('resources', f'isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = {refs(["assets-build", "attribution-build", "code-license-build", "animation-license-build"])}; runOnlyForDeploymentPostprocessing = 0;')
+obj('resources', f'isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = {refs(["assets-build", "attribution-build", "code-license-build", "notice-build", "animation-license-build"])}; runOnlyForDeploymentPostprocessing = 0;')
 obj('convert', 'isa = PBXShellScriptBuildPhase; alwaysOutOfDate = 1; buildActionMask = 2147483647; files = (); inputPaths = (); outputPaths = (); name = "Convert built-in assets"; runOnlyForDeploymentPostprocessing = 0; shellPath = /bin/sh; shellScript = "set -eu\\n/usr/bin/python3 \\\"$SRCROOT/scripts/convert_assets.py\\\"\\n";')
 for configuration in ['Debug', 'Release']:
     obj('project-' + configuration, f'isa = XCBuildConfiguration; name = {configuration}; buildSettings = {{ CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 6.0; MACOSX_DEPLOYMENT_TARGET = 14.0; SDKROOT = macosx; }};')
     obj('target-' + configuration, f'''isa = XCBuildConfiguration; name = {configuration}; buildSettings = {{
-        PRODUCT_NAME = VPetApple; PRODUCT_BUNDLE_IDENTIFIER = org.xufilps.VPetApple;
+        PRODUCT_NAME = iPet; PRODUCT_BUNDLE_IDENTIFIER = org.xufilps.iPet;
         GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_LSUIElement = YES;
-        INFOPLIST_KEY_CFBundleDisplayName = "VPet Apple";
+        INFOPLIST_KEY_CFBundleDisplayName = "iPet";
         MARKETING_VERSION = 0.1.0; CURRENT_PROJECT_VERSION = 1;
         SWIFT_VERSION = 6.0; MACOSX_DEPLOYMENT_TARGET = 14.0;
         CODE_SIGN_STYLE = Automatic; ENABLE_APP_SANDBOX = NO; ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -45,17 +47,17 @@ for configuration in ['Debug', 'Release']:
     }};''')
 obj('project-configs', f'isa = XCConfigurationList; buildConfigurations = {refs(["project-Debug", "project-Release"])}; defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;')
 obj('target-configs', f'isa = XCConfigurationList; buildConfigurations = {refs(["target-Debug", "target-Release"])}; defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;')
-obj('target', f'isa = PBXNativeTarget; buildConfigurationList = {ident("target-configs")}; buildPhases = {refs(["convert", "sources", "frameworks", "resources"])}; buildRules = (); dependencies = (); name = VPetApple; packageProductDependencies = {refs(["dep-PetCore", "dep-PetRendering"])}; productName = VPetApple; productReference = {ident("product")}; productType = "com.apple.product-type.application";')
+obj('target', f'isa = PBXNativeTarget; buildConfigurationList = {ident("target-configs")}; buildPhases = {refs(["convert", "sources", "frameworks", "resources"])}; buildRules = (); dependencies = (); name = iPet; packageProductDependencies = {refs(["dep-PetCore", "dep-PetRendering"])}; productName = iPet; productReference = {ident("product")}; productType = "com.apple.product-type.application";')
 obj('project', f'isa = PBXProject; attributes = {{ LastUpgradeCheck = 1600; }}; buildConfigurationList = {ident("project-configs")}; compatibilityVersion = "Xcode 14.0"; developmentRegion = "zh-Hans"; hasScannedForEncodings = 0; knownRegions = ("zh-Hans", en, Base,); mainGroup = {ident("main-group")}; packageReferences = {refs(["package"])}; productRefGroup = {ident("products-group")}; projectDirPath = ""; projectRoot = ""; targets = {refs(["target"])};')
 text = '// !$*UTF8*$!\n{ archiveVersion = 1; classes = {}; objectVersion = 56; objects = {\n'
 text += '\n'.join(f'{key} = {{ {value} }};' for key, value in objects.items())
 text += '\n}; rootObject = ' + ident('project') + '; }\n'
-(root / 'VPetApple.xcodeproj/project.pbxproj').write_text(text)
-(root / 'VPetApple.xcodeproj/xcshareddata/xcschemes/VPetApple.xcscheme').write_text(f'''<?xml version="1.0" encoding="UTF-8"?>
+(root / 'iPet.xcodeproj/project.pbxproj').write_text(text)
+(root / 'iPet.xcodeproj/xcshareddata/xcschemes/iPet.xcscheme').write_text(f'''<?xml version="1.0" encoding="UTF-8"?>
 <Scheme LastUpgradeVersion="1600" version="1.3">
-<BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES"><BuildActionEntries><BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{ident('target')}" BuildableName="VPetApple.app" BlueprintName="VPetApple" ReferencedContainer="container:VPetApple.xcodeproj"/></BuildActionEntry></BuildActionEntries></BuildAction>
-<LaunchAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" launchStyle="0" useCustomWorkingDirectory="NO" ignoresPersistentStateOnLaunch="NO" debugDocumentVersioning="YES"><BuildableProductRunnable runnableDebuggingMode="0"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{ident('target')}" BuildableName="VPetApple.app" BlueprintName="VPetApple" ReferencedContainer="container:VPetApple.xcodeproj"/></BuildableProductRunnable></LaunchAction>
-<ProfileAction buildConfiguration="Release" shouldUseLaunchSchemeArgsEnv="YES" savedToolIdentifier="" useCustomWorkingDirectory="NO" debugDocumentVersioning="YES"><BuildableProductRunnable runnableDebuggingMode="0"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{ident('target')}" BuildableName="VPetApple.app" BlueprintName="VPetApple" ReferencedContainer="container:VPetApple.xcodeproj"/></BuildableProductRunnable></ProfileAction>
+<BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES"><BuildActionEntries><BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{ident('target')}" BuildableName="iPet.app" BlueprintName="iPet" ReferencedContainer="container:iPet.xcodeproj"/></BuildActionEntry></BuildActionEntries></BuildAction>
+<LaunchAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" launchStyle="0" useCustomWorkingDirectory="NO" ignoresPersistentStateOnLaunch="NO" debugDocumentVersioning="YES"><BuildableProductRunnable runnableDebuggingMode="0"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{ident('target')}" BuildableName="iPet.app" BlueprintName="iPet" ReferencedContainer="container:iPet.xcodeproj"/></BuildableProductRunnable></LaunchAction>
+<ProfileAction buildConfiguration="Release" shouldUseLaunchSchemeArgsEnv="YES" savedToolIdentifier="" useCustomWorkingDirectory="NO" debugDocumentVersioning="YES"><BuildableProductRunnable runnableDebuggingMode="0"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{ident('target')}" BuildableName="iPet.app" BlueprintName="iPet" ReferencedContainer="container:iPet.xcodeproj"/></BuildableProductRunnable></ProfileAction>
 <AnalyzeAction buildConfiguration="Debug"/><ArchiveAction buildConfiguration="Release" revealArchiveInOrganizer="YES"/>
 </Scheme>
 ''')

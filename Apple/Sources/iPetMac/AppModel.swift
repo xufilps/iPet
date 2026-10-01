@@ -1,3 +1,5 @@
+// iPet: Swift native adaptation of VPet; see NOTICE and LICENSE.
+// SPDX-License-Identifier: Apache-2.0
 import AppKit
 import SwiftUI
 import Combine
@@ -28,11 +30,21 @@ import PetRendering
     private var suspended = false
     private var observers: [NSObjectProtocol] = []
     private var menuVisibility: NSMenuItem!
-    private var smokeMode: Bool { ProcessInfo.processInfo.environment["VPET_SMOKE_TEST"] == "1" }
+    private var smokeMode: Bool { ProcessInfo.processInfo.environment["IPET_SMOKE_TEST"] == "1" }
+    init() {
+        // Preserve preferences when moving from the prototype bundle identifier.
+        let defaults = UserDefaults.standard
+        let legacy = defaults.persistentDomain(forName: "org.xufilps.VPetApple") ?? [:]
+        for key in ["petSize", "autoMove", "petX", "petY"] where defaults.object(forKey: key) == nil {
+            if !smokeMode, let value = legacy[key] { defaults.set(value, forKey: key) }
+        }
+        size = defaults.object(forKey: "petSize") as? Double ?? 280
+        autoMove = defaults.object(forKey: "autoMove") as? Bool ?? true
+    }
     func start() throws {
         size = size.isFinite ? min(500, max(150, size)) : 280
         let base: URL
-        if smokeMode { base = FileManager.default.temporaryDirectory.appendingPathComponent("VPet-smoke-\(ProcessInfo.processInfo.processIdentifier)") }
+        if smokeMode { base = FileManager.default.temporaryDirectory.appendingPathComponent("iPet-smoke-\(ProcessInfo.processInfo.processIdentifier)") }
         else { base = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent("VPetApple") }
         store = PetSaveStore(directory: base)
         do { state = try store.load() ?? PetState(); message = store.recoveryMessage ?? "" }
@@ -47,7 +59,7 @@ import PetRendering
             if self.state.resting { self.petScene.play(.sleep, mood: self.state.mood) }
         }
         petPanel = PetPanel(contentRect: NSRect(x: 0, y: 0, width: size, height: size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
-        petPanel.title = "VPet · 桌宠"
+        petPanel.title = "iPet · 桌宠"
         petPanel.isOpaque = false; petPanel.backgroundColor = .clear; petPanel.hasShadow = false
         petPanel.level = .floating; petPanel.hidesOnDeactivate = false; petPanel.isReleasedWhenClosed = false
         petPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -88,7 +100,7 @@ import PetRendering
     private func buildMenu() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.title = "🐾"
-        statusItem.button?.toolTip = "VPet 原生桌宠"
+        statusItem.button?.toolTip = "iPet 原生桌宠"
         let menu = NSMenu()
         func item(_ title: String, _ selector: Selector) -> NSMenuItem { let item = NSMenuItem(title: title, action: selector, keyEquivalent: ""); item.target = self; return item }
         menu.addItem(item("状态与设置…", #selector(showControls)))
@@ -96,10 +108,10 @@ import PetRendering
         menu.addItem(item("休息 / 起床", #selector(rest)))
         menuVisibility = item("隐藏桌宠", #selector(toggleVisibility)); menu.addItem(menuVisibility)
         menu.addItem(item("重置位置", #selector(resetPosition))); menu.addItem(.separator())
-        menu.addItem(item("退出 VPet", #selector(quit))); statusItem.menu = menu
+        menu.addItem(item("退出 iPet", #selector(quit))); statusItem.menu = menu
         let main = NSMenu(), appMenu = NSMenu()
         let preferences = item("状态与设置…", #selector(showControls)); preferences.keyEquivalent = ","
-        let exit = item("退出 VPet", #selector(quit)); exit.keyEquivalent = "q"
+        let exit = item("退出 iPet", #selector(quit)); exit.keyEquivalent = "q"
         appMenu.addItem(preferences); appMenu.addItem(.separator()); appMenu.addItem(exit)
         let root = NSMenuItem(); root.submenu = appMenu; main.addItem(root); NSApp.mainMenu = main
     }
@@ -182,7 +194,7 @@ import PetRendering
     @objc func showControls() {
         if controls == nil {
             let hosting = NSHostingController(rootView: ControlsView(model: self))
-            let window = NSWindow(contentViewController: hosting); window.title = "VPet · 状态与设置"
+            let window = NSWindow(contentViewController: hosting); window.title = "iPet · 状态与设置"
             window.styleMask = [.titled, .closable]; window.isReleasedWhenClosed = false; window.center(); controls = window
         }
         NSApp.activate(ignoringOtherApps: true); controls?.makeKeyAndOrderFront(nil)
@@ -197,19 +209,19 @@ import PetRendering
             command(.feed); command(.water); command(.toggleRest)
             toggleVisibility(); toggleVisibility(); suspend(); resume()
             save(); showControls()
-            NSLog("VPET_SMOKE_OK cacheBytes=%d state=%@", petScene.cacheBytes, state.mood.rawValue)
-            if let raw = ProcessInfo.processInfo.environment["VPET_SOAK_SECONDS"], let seconds = Int(raw), seconds > 0 {
+            NSLog("IPET_SMOKE_OK cacheBytes=%d state=%@", petScene.cacheBytes, state.mood.rawValue)
+            if let raw = ProcessInfo.processInfo.environment["IPET_SOAK_SECONDS"], let seconds = Int(raw), seconds > 0 {
                 let began = ProcessInfo.processInfo.systemUptime
                 var index = 0
                 while ProcessInfo.processInfo.systemUptime - began < Double(seconds) {
                     petScene.play(PetAction.allCases[index % PetAction.allCases.count], mood: PetMood.allCases[(index / PetAction.allCases.count) % PetMood.allCases.count])
                     if index % 10 == 0 { toggleVisibility(); toggleVisibility() }
                     if index % 20 == 0 { suspend(); resume() }
-                    if index % 15 == 0 { NSLog("VPET_SOAK_SAMPLE cacheBytes=%d", petScene.cacheBytes) }
+                    if index % 15 == 0 { NSLog("IPET_SOAK_SAMPLE cacheBytes=%d", petScene.cacheBytes) }
                     index += 1
                     try? await Task.sleep(for: .seconds(3))
                 }
-                NSLog("VPET_SOAK_DONE elapsed=%.1f cacheBytes=%d", ProcessInfo.processInfo.systemUptime - began, petScene.cacheBytes)
+                NSLog("IPET_SOAK_DONE elapsed=%.1f cacheBytes=%d", ProcessInfo.processInfo.systemUptime - began, petScene.cacheBytes)
                 NSApp.terminate(nil)
             }
         }

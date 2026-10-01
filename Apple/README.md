@@ -1,4 +1,4 @@
-# VPet Apple · v0.1.0
+# iPet · v0.1.0
 
 VPet 的 Swift 原生适配：macOS 14+ 桌宠，纯 Swift 养成核心及共享 SpriteKit 动画模块支持 iOS 17+。本版交付 macOS 应用，尚未包含 iOS 应用界面。
 
@@ -9,10 +9,10 @@ VPet 的 Swift 原生适配：macOS 14+ 桌宠，纯 Swift 养成核心及共享
 ```sh
 cd Apple
 ./scripts/build.sh
-open build/Build/Products/Release/VPetApple.app
+open build/Build/Products/Release/iPet.app
 ```
 
-也可先运行 `python3 scripts/convert_assets.py`，再用 Xcode 打开 `VPetApple.xcodeproj`、选择 `VPetApple` scheme 运行。Xcode 每次构建会重新转换内置素材；无需配置 Steam 或运行 Windows mklink。命令行脚本创建自用 ad-hoc 签名，并不构成 Developer ID 签名、公证或公开发行包。
+也可先运行 `python3 scripts/convert_assets.py`，再用 Xcode 打开 `iPet.xcodeproj`、选择 `iPet` scheme 运行。Xcode 每次构建会重新转换内置素材；无需配置 Steam 或运行 Windows mklink。命令行脚本创建自用 ad-hoc 签名，并不构成 Developer ID 签名、公证或公开发行包。
 
 ## 使用
 
@@ -24,7 +24,7 @@ open build/Build/Products/Release/VPetApple.app
 
 - `Sources/PetCore`：养成公式、输入命令、时钟/随机源、状态快照和版本化 JSON 保存。
 - `Sources/PetRendering`：资源清单、逻辑坐标、逐帧时长、动作阶段、图层和缓存。
-- `Sources/VPetMac`：AppKit 桌宠、SwiftUI 状态面板及菜单/生命周期。
+- `Sources/iPetMac`：AppKit 桌宠、SwiftUI 状态面板及菜单/生命周期。
 - `Resources/PetAssets`：构建生成并忽略的素材，仅包含选用动作；源码仍在原版目录中。
 
 正式存档位于 `~/Library/Application Support/VPetApple/`，主文件为 `pet.json`，上一份有效存档为 `pet.previous.json`。每 60 秒、关键互动、睡眠和正常退出保存。损坏主文件会保留为 `pet.corrupt-UUID.json` 并尝试加载备份；损坏备份在写入前另行保留。未来版本主文件或备份阻止保存；加载失败的会话明确提示并停止写入。需要手动恢复时先退出应用并复制整个目录，再用确认有效的备份替换主文件；不要删除未来版本或损坏证据来尝试“修复”。大小、位置和自主移动偏好存于应用 UserDefaults。

@@ -1,3 +1,169 @@
+# iPet
+
+**iPet 是基于 [VPet / VPet-Simulator](https://github.com/LorisYounger/VPet) 的 Swift 原生桌宠适配项目。** 当前版本 v0.1.0 提供 macOS 基础桌宠；共享养成核心与动画模块已支持 iOS 构建，iOS 应用界面将在后续阶段实现。
+
+本项目复用原作萝莉斯角色与选定动画，保留部分原版养成规则，使用 AppKit、SpriteKit 和 SwiftUI 重新实现 Apple 平台的窗口、渲染及界面。它是派生项目，当前功能范围与 Windows 原版不同，也不是原作者发布的官方 Apple 平台版本。
+
+- 项目仓库：[xufilps/iPet](https://github.com/xufilps/iPet)
+- 原项目及作者：[LorisYounger/VPet](https://github.com/LorisYounger/VPet)
+- 代码许可证：[Apache License 2.0](LICENSE)，保留原许可证全文。
+- 素材授权：[动画与图片授权原文](Apple/ANIMATION_LICENSE.md)、[来源说明](Apple/ATTRIBUTION.md)；素材不应仅按代码许可证处理。
+- 原项目简体中文 README **原文完整保留在本文后半部分**；原多语言 README 和 Windows 工程也继续保留。
+
+## 当前状态
+
+| 项目 | 当前情况 |
+| --- | --- |
+| macOS | 原生基础版，最低部署目标 macOS 14 |
+| iOS | 共享模块以 iOS 17 为最低目标，Simulator 交叉编译通过；尚无可安装 iOS 应用 |
+| 语言与框架 | Swift 6、AppKit、SpriteKit、SwiftUI；Swift 模块无第三方包依赖 |
+| 分发 | 源码可自行构建；构建脚本生成自用 ad-hoc 签名应用，尚无公证发行包 |
+| 完整度 | 已实现基础陪伴与养成，尚未达到 Windows 原版功能完整度 |
+
+## 已实现的功能
+
+- 透明无边框桌宠窗口，不获取键盘主窗口焦点；通过菜单栏 🐾 管理应用。
+- 点击头部或身体进行抚摸，拖动角色时播放提起动画；基础左右移动与位置重置。
+- 待机、摸头、身体互动、提起、行走、休息、进食和饮水动画，保留逐帧时长及动作阶段。
+- 体力、饱腹、饮水、心情、健康状态，以及基础经验、好感和状态判断规则。
+- 免费面包和饮料、休息/起床、中文状态面板、大小调整与自主移动开关。
+- 本地 JSON 存档、自动保存、上一份有效备份、损坏文件保留及未来版本写入保护。
+- 睡眠/唤醒与显示器变化的生命周期处理；隐藏时暂停渲染并释放纹理。
+
+所选动画包含 **27 个动作/状态组合、559 个唯一 PNG 帧，约 63.1 MiB**。它们只是原角色动画的一部分；构建工具从仓库中的原素材生成所需资源，不要求在运行时加载完整角色目录。
+
+## 与原版的区别与未实现部分
+
+| 内容 | Windows 原版 | iPet v0.1.0 |
+| --- | --- | --- |
+| 桌面技术 | C# / .NET / WPF | Swift / AppKit / SpriteKit / SwiftUI |
+| 活动 | 丰富随机互动、移动、爬墙、边缘隐藏等 | 基础互动与左右移动，未实现爬墙、边缘隐藏和跨屏自主漫游 |
+| 养成与经济 | 工作、学习、娱乐、购物等完整系统 | 基础状态变化、休息及免费投喂；尚无工作、购物、疾病治疗系统 |
+| 内容扩展 | 创意工坊、数据 MOD、C# 插件 | 暂不支持第三方 MOD、原版插件或 Steam |
+| 存档 | 原版 LPS 存档及保存体系 | 独立 JSON 格式，不导入或改写 Windows 存档 |
+| 云端与对话 | 原项目/插件生态提供相关能力 | 本版不含云同步、AI 对话或网络服务 |
+| 手机体验 | 本仓库保留的原版基于 Windows | iOS 界面尚未开发，后续按应用内养宠设计 |
+
+保留的规则包括原版状态阈值、抚摸消耗、食物分次生效、基础日常与休息公式。免费食物参数、食物图像使用面包/牛奶 emoji、动作回退和平台生命周期处理属于 iPet 适配，不能视为完整玩法等价。具体见 [行为对照](Apple/docs/BEHAVIOR.md)。
+
+## 环境要求
+
+- macOS，安装 Xcode 16 或更高版本并启用 Swift 6 工具链。
+- Python 3，用于构建前转换内置素材；Git，用于获取源码。
+- 原始角色文件位于 `VPet-Simulator.Windows/mod/0000_core/pet/vup`，请保留此目录。
+- 本地测试使用 arm64 Mac；最低版本 macOS 14 及 Intel Mac 尚未实机验收。
+
+若终端尚未选择完整 Xcode，可运行 `sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer`。请先完成 Xcode 正常的首次启动配置。
+
+## 获取、构建与启动
+
+```sh
+git clone https://github.com/xufilps/iPet.git
+cd iPet/Apple
+./scripts/build.sh
+open build/Build/Products/Release/iPet.app
+```
+
+构建脚本会转换内置素材、编译 Release 应用并创建自用 ad-hoc 签名。应用位于 `Apple/build/Build/Products/Release/iPet.app`。此签名不等同 Developer ID 签名或 Apple 公证；正式发行需要另外完成这些流程。
+
+也可使用 Xcode：
+
+```sh
+cd iPet/Apple  # 如果你还位于仓库外
+python3 scripts/convert_assets.py
+open iPet.xcodeproj
+```
+
+在 Xcode 中选择 **iPet** scheme 和 **My Mac**，然后运行。工程每次构建都会执行素材转换，无需 Steam、Windows `mklink.bat` 或第三方项目生成器。`scripts/create_project.py` 是确定性工程生成工具，只在维护工程结构时使用；通常直接使用已提交的 Xcode 工程。
+
+## 使用方式
+
+应用启动后，桌宠出现在屏幕可见区域，菜单栏显示 🐾。点击菜单可打开状态与设置、投喂、补充饮料、休息/起床、显示/隐藏、重置位置及退出。
+
+点击角色头部或身体进行抚摸；移动超过拖动阈值后进入提起动作，拖动期间暂停自主移动。右键角色打开设置。桌宠大小支持 150–500 点，默认 280 点；设置窗口支持 ⌘,，退出支持 ⌘Q。
+
+透明区域按当前帧 alpha 采样处理鼠标穿透，轮询频率为 30 Hz；快速移入后立即点击仍需进一步实机验证。桌宠本身不获取键盘焦点，主动打开设置时应用正常激活。
+
+休息与投喂可以恢复状态。退出应用和系统睡眠期间不补算状态消耗；隐藏桌宠会暂停动画，但应用运行期间养成继续。隐藏后可从菜单栏重新显示；位置异常时使用“重置位置”。
+
+## 存档、偏好与恢复
+
+为兼容更名前的原生测试版，正式存档目录继续使用历史路径：
+
+```text
+~/Library/Application Support/VPetApple/
+├── pet.json                  # 主存档
+├── pet.previous.json         # 上一份有效存档
+└── pet.corrupt-UUID.json      # 检测到损坏时保留的原文件
+```
+
+每 60 秒、关键互动、系统睡眠及正常退出时保存。存档采用带版本号的 Codable JSON 和原子写入；损坏主文件被保留后尝试恢复备份。遇到不支持的未来版本主文件或备份，程序拒绝覆盖；加载失败的会话会明确提示并停止写入。
+
+恢复前先退出应用，复制整个存档目录，再用确认有效的备份替换主文件。保留未来版本或损坏证据，不要直接删除所有文件来尝试修复。设置面板提供“打开存档目录”入口。该目录与 Windows 原版存档相互独立。
+
+大小、位置和自主移动开关存于 UserDefaults。iPet bundle ID 为 `org.xufilps.iPet`；更名前 `org.xufilps.VPetApple` 中已有的偏好，只在新标识缺少对应值时导入，原偏好不删除。
+
+## 源码结构
+
+```text
+Apple/
+├── Package.swift                  # PetCore / PetRendering 共享库
+├── iPet.xcodeproj/                 # macOS 应用工程与 iPet scheme
+├── Sources/
+│   ├── PetCore/                    # 平台无关养成、命令、时钟、随机源、存档
+│   ├── PetRendering/               # 资源清单、SpriteKit、动作阶段、alpha 命中
+│   └── iPetMac/                    # AppKit 窗口、SwiftUI 面板、菜单、生命周期
+├── Tests/                         # 核心规则、保存保护与渲染测试
+├── scripts/                       # 转换、构建、验证与真实运行观察工具
+├── Resources/PetAssets/            # 构建生成，Git 忽略
+└── docs/                          # 计划、行为对照、验证证据与交接
+```
+
+原 `VPet-Simulator.*`、`VPet.Solution`、`VPet.sln` 和素材目录保持原有结构。共享核心不依赖 AppKit/UIKit/SpriteKit，动画层不直接修改养成数据；平台窗口和应用生命周期由 macOS 应用处理。后续 iOS 将复用共享模块，单独实现触摸界面和前后台策略。
+
+## 测试与验证边界
+
+```sh
+cd Apple
+./scripts/verify.sh
+```
+
+脚本运行素材转换、核心/渲染测试、macOS Release 构建、签名校验，以及共享模块的 iOS Simulator 交叉编译。完整日志保存在 `Apple/build/verification/`，生成内容不提交到 Git。
+
+当前自动测试包含 11 项核心测试和 5 项渲染测试，覆盖原版公式边界、确定性模拟、分次投喂、损坏恢复、未来版本保护、经验下降后的历史好感、帧顺序与时长、动作阶段、缺文件、逻辑坐标、alpha 命中和缓存释放。
+
+真实两小时观察可运行：
+
+```sh
+python3 Apple/scripts/soak.py --seconds 7200 --output Apple/build/soak-2h.json
+```
+
+该工具使用隔离临时存档，按墙钟时间切换动作与状态、隐藏恢复，并采样 CPU 与 RSS；结束后关闭测试实例。应用内模拟暂停/恢复不等同让整台 Mac 真正睡眠。已有两分钟真实动作压力测试通过；测试中的“两小时养成模拟”使用注入时钟，**不能代替真实两小时运行观察**。
+
+仍待完整验收：真实两小时长期稳定性、实际拖动焦点、快速点击穿透、多屏热插拔、不同屏幕倍率和系统睡眠唤醒。没有与 Windows 原版做同条件性能比较，因此不声称 iPet 更省资源或更稳定。完整证据见 [交接文档](Apple/docs/HANDOFF.md)。
+
+## 许可证、素材与派生说明
+
+**代码**继续遵守 [Apache License 2.0](LICENSE)，原 `LICENSE` 全文保持不变；原作者署名、版权说明和历史保留。新增 Swift 实现与更名修改在 [NOTICE](NOTICE)、源码注释和 Git 历史中标识。发布代码时应保留许可证和适用的署名/告知文件。
+
+**原作内置动画与图片**具有单独授权，版权归虚拟主播模拟器制作组。非商用使用需向用户告知来源并提供原项目链接；分发动画时必须告知授权信息、提供原项目链接，且禁止收费分发动画。商业使用须遵循原声明的醒目来源告知、页面链接、联系作者及其他要求，不能仅凭 Apache 2.0 推定素材可任意商用。Zip 照片图库禁止商用，iPet 本版不包含该图库。
+
+[原动画与图片授权全文](Apple/ANIMATION_LICENSE.md)按当前仓库原 README 的声明保留，来源链接为 [LorisYounger/VPet](https://github.com/LorisYounger/VPet)。构建出的应用附带 `LICENSE`、`NOTICE`、`ATTRIBUTION.md` 和 `ANIMATION_LICENSE.md`，设置面板也提供原项目与授权链接。原版 `CONTRIBUTING.md` 与 README 的部分商用授权措辞存在差异；需要商用时应联系原权利方确认，不将旧措辞视为扩大授权。
+
+感谢 LorisYounger、VPet 原项目贡献者，以及虚拟主播模拟器制作组提供的原始代码、角色和动画。本仓库使用原 Git 历史保留来源，iPet 改动集中在 Apple 原生实现、构建工具及文档。
+
+## 后续方向与贡献
+
+优先完成 macOS 的输入、睡眠、多屏与长期性能验收，再完善原生交互和 Developer ID 签名/公证。随后实现 iOS 应用内养宠；云同步、小组件、通知、旧存档导入、MOD 与更多养成玩法均需单独设计，目前没有完成时间承诺。
+
+问题反馈和贡献请使用 [iPet Issues](https://github.com/xufilps/iPet/issues) 与 Pull Requests。涉及 Swift 版的改动应执行 `Apple/scripts/verify.sh`，说明行为变化和验证边界；新增或替换素材需明确来源与授权。对原项目贡献，请遵循下方原 README 和原 `CONTRIBUTING.md` 的流程。
+
+---
+
+## 原项目 README.md（原文保留）
+
+以下完整保留原 VPet 简体中文 README 原文，对照上游基线 `1a06c5981330564bab05a098d2d7969a4b119dd3`。后续内容描述原 Windows 项目、原发布渠道和原授权；iPet 的当前状态以上文为准。
+
 # VPet-Simulator
 
 简体中文 | [繁體中文](./README_zht.md) | [English](./README_en.md) | [日本語](./README_ja.md)

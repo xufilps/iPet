@@ -1,3 +1,5 @@
+// iPet: Swift native adaptation of VPet; see NOTICE and LICENSE.
+// SPDX-License-Identifier: Apache-2.0
 import AppKit
 
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -5,7 +7,7 @@ import AppKit
     func applicationDidFinishLaunching(_ notification: Notification) {
         do { try model.start() }
         catch {
-            let alert = NSAlert(); alert.messageText = "无法启动 VPet"; alert.informativeText = error.localizedDescription
+            let alert = NSAlert(); alert.messageText = "无法启动 iPet"; alert.informativeText = error.localizedDescription
             alert.runModal(); NSApp.terminate(nil)
         }
     }

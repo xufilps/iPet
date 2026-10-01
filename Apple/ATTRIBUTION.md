@@ -1,4 +1,4 @@
-# VPet Apple — 素材来源与授权
+# iPet — 素材来源与授权
 
 本应用是 VPet 的 Swift 原生适配版本，原项目作者 LorisYounger。
 原项目与完整授权页面：https://github.com/LorisYounger/VPet

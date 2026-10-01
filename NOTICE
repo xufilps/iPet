@@ -1,0 +1,26 @@
+iPet
+https://github.com/xufilps/iPet
+
+This project is derived from VPet / VPet-Simulator by LorisYounger and
+its contributors: https://github.com/LorisYounger/VPet
+Original source baseline: 1a06c5981330564bab05a098d2d7969a4b119dd3.
+Original authorship, copyright notices, source files and Git history are retained.
+
+Modifications by the iPet project (2026-10-01): added a native Swift
+implementation for macOS, reusable pet simulation and SpriteKit rendering
+modules, asset-conversion/build/test tooling, and iPet documentation/branding.
+The original C# implementation is retained. The original Simplified Chinese
+README is reproduced verbatim after the iPet documentation in README.md.
+Code continues to be distributed under the Apache License, Version 2.0;
+the original LICENSE is included unchanged.
+
+iPet is a derivative adaptation and is not presented as the original author's
+release or as an official Apple-platform release of VPet.
+
+IMPORTANT: The Apache code license does not replace the separate authorization
+for bundled pet animations and images. The original pet animation/image rights
+belong to the VUP-Simulator production team (虚拟主播模拟器制作组).
+See Apple/ANIMATION_LICENSE.md and Apple/ATTRIBUTION.md for their original terms,
+source attribution and distribution requirements. Those notices accompany the
+application together with this NOTICE and LICENSE. No fee is charged for the
+redistribution of animation files in this source repository.

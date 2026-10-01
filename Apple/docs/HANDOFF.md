@@ -1,10 +1,10 @@
-# VPet Apple 交接 — 2026-10-01 / v0.1.0
+# iPet 交接 — 2026-10-01 / v0.1.0
 
 ## 交付与版本
 
-分支 `codex/swift-macos`，原版基线 `1a06c598`。计划/骨架提交 `97bb11ac`，核心与存档提交 `b6252df4`，原生应用与渲染提交 `ece45708`；后续修订包含按显示尺寸解码纹理与交付文档。本地提交，未推送或公开发布。
+分支 `codex/swift-macos`，原版基线 `1a06c598`。计划/骨架提交 `97bb11ac`，核心与存档提交 `b6252df4`，原生应用与渲染提交 `ece45708`；后续修订包含按显示尺寸解码纹理与交付文档。原生版验证时为本地提交；更名后将源码发布到 https://github.com/xufilps/iPet，未创建正式发行包。
 
-可运行产物：`Apple/build/Build/Products/Release/VPetApple.app`（约66 MiB，自用 ad-hoc 签名）。使用 `Apple/scripts/build.sh` 重建，或按 Apple/README.md 打开 Xcode 工程。产物与转换资源为可再生文件，未重复提交到 Git。应用、构建工具、资源授权及恢复说明均已交付；iOS 本阶段仅共享模块，无可安装 iOS 应用。
+可运行产物：`Apple/build/Build/Products/Release/iPet.app`（约66 MiB，自用 ad-hoc 签名）。使用 `Apple/scripts/build.sh` 重建，或按 Apple/README.md 打开 Xcode 工程。产物与转换资源为可再生文件，未重复提交到 Git。应用、构建工具、资源授权及恢复说明均已交付；iOS 本阶段仅共享模块，无可安装 iOS 应用。
 
 ## 验证证据与边界
 
@@ -33,3 +33,9 @@
 正式存档位于 Application Support/VPetApple；恢复前退出应用并复制整个目录，保留未来版本和损坏文件。构建失败可回退 Apple 相关提交，原C#与素材文件未修改。工作区出现的其他未跟踪 `.DS_Store` 未纳入交付提交，也未清理。
 
 下一步先完成真实两小时和输入/多屏/睡眠验收，再准备 Developer ID 签名、公证与公开发行；iOS阶段在复用核心和渲染的基础上实现应用内养宠，云同步、小组件、通知及旧存档导入另行设计。
+
+## iPet 更名与源码发布
+
+应用、Swift Package、Xcode工程/scheme、菜单与脚本统一更名为iPet，bundle ID为org.xufilps.iPet。历史存档目录VPetApple保留，新bundle缺少的偏好从旧bundle导入（smoke模式不迁移正式偏好）。README新增完整原生版说明，并在末尾完整保留原README的7775字节；LICENSE与上游字节一致，NOTICE、原作者署名与动画图片授权随源码及应用保留。
+
+目标GitHub仓库：https://github.com/xufilps/iPet，默认分支main。仅以正常快进推送发布源码，不创建Release或公证安装包；本次更名不改变已有两小时/多屏/睡眠等待验边界。构建验证日志位于build/verification；更名启动测试使用隔离存档并自动退出。

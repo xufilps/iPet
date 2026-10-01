@@ -14,13 +14,13 @@ args = parser.parse_args()
 if args.seconds <= 0:
     parser.error('--seconds must be positive')
 root = Path(__file__).resolve().parents[1]
-binary = root / 'build/Build/Products/Release/VPetApple.app/Contents/MacOS/VPetApple'
+binary = root / 'build/Build/Products/Release/iPet.app/Contents/MacOS/iPet'
 args.output.parent.mkdir(parents=True, exist_ok=True)
 log = args.output.with_suffix('.log')
 samples = []
 started = time.monotonic()
 with log.open('w') as stream:
-    child = subprocess.Popen([str(binary)], env=dict(os.environ, VPET_SMOKE_TEST='1', VPET_SOAK_SECONDS=str(args.seconds)), stdout=stream, stderr=stream)
+    child = subprocess.Popen([str(binary)], env=dict(os.environ, IPET_SMOKE_TEST='1', IPET_SOAK_SECONDS=str(args.seconds)), stdout=stream, stderr=stream)
     try:
         while child.poll() is None:
             output = subprocess.run(['ps', '-p', str(child.pid), '-o', '%cpu=,rss='], capture_output=True, text=True).stdout.split()
@@ -34,7 +34,7 @@ with log.open('w') as stream:
             child.terminate()
             child.wait(timeout=15)
 text = log.read_text()
-report = {'requestedSeconds': args.seconds, 'elapsedSeconds': round(time.monotonic() - started, 2), 'exitCode': child.returncode, 'completed': child.returncode == 0 and 'VPET_SOAK_DONE' in text, 'samples': samples}
+report = {'requestedSeconds': args.seconds, 'elapsedSeconds': round(time.monotonic() - started, 2), 'exitCode': child.returncode, 'completed': child.returncode == 0 and 'IPET_SOAK_DONE' in text, 'samples': samples}
 args.output.write_text(json.dumps(report, indent=2) + '\n')
 print(json.dumps({k: v for k, v in report.items() if k != 'samples'}))
 raise SystemExit(0 if report['completed'] else 1)
