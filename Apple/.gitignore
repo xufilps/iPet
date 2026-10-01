@@ -1,0 +1,6 @@
+.build/
+build/
+Resources/PetAssets/
+.DS_Store
+*.xcuserstate
+xcuserdata/
