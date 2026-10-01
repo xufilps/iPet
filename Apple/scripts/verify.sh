@@ -5,6 +5,7 @@ mkdir -p "$apple_root/build/verification"
 /usr/bin/python3 -m unittest discover -s "$apple_root/scripts/tests" -v > "$apple_root/build/verification/conversion-tests.log" 2>&1
 /usr/bin/python3 "$apple_root/scripts/export_icon.py" --check
 /usr/bin/python3 "$apple_root/scripts/convert_assets.py"
+/usr/bin/python3 "$apple_root/scripts/convert_gameplay.py"
 swift test --package-path "$apple_root" > "$apple_root/build/verification/tests.log" 2>&1
 # SwiftPM may print per-target XCTest failures at the end; retain and inspect the full log.
 /usr/bin/python3 - "$apple_root/build/verification/tests.log" <<'PY_CHECK'

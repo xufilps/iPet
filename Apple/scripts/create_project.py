@@ -34,7 +34,7 @@ for product in ['PetCore', 'PetRendering']:
 obj('sources', f'isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = {refs(["build-" + f for f in files])}; runOnlyForDeploymentPostprocessing = 0;')
 obj('frameworks', f'isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = {refs(["link-PetCore", "link-PetRendering"])}; runOnlyForDeploymentPostprocessing = 0;')
 obj('resources', f'isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = {refs(["assets-build", "icon-catalog-build", "attribution-build", "code-license-build", "notice-build", "animation-license-build"])}; runOnlyForDeploymentPostprocessing = 0;')
-obj('convert', 'isa = PBXShellScriptBuildPhase; alwaysOutOfDate = 1; buildActionMask = 2147483647; files = (); inputPaths = (); outputPaths = (); name = "Convert built-in assets"; runOnlyForDeploymentPostprocessing = 0; shellPath = /bin/sh; shellScript = "set -eu\\n/usr/bin/python3 \\\"$SRCROOT/scripts/convert_assets.py\\\"\\n";')
+obj('convert', 'isa = PBXShellScriptBuildPhase; alwaysOutOfDate = 1; buildActionMask = 2147483647; files = (); inputPaths = (); outputPaths = (); name = "Convert built-in assets"; runOnlyForDeploymentPostprocessing = 0; shellPath = /bin/sh; shellScript = "set -eu\\n/usr/bin/python3 \\\"$SRCROOT/scripts/convert_assets.py\\\"\\n/usr/bin/python3 \\\"$SRCROOT/scripts/convert_gameplay.py\\\"\\n";')
 for configuration in ['Debug', 'Release']:
     obj('project-' + configuration, f'isa = XCBuildConfiguration; name = {configuration}; buildSettings = {{ CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 6.0; MACOSX_DEPLOYMENT_TARGET = 14.0; SDKROOT = macosx; }};')
     obj('target-' + configuration, f'''isa = XCBuildConfiguration; name = {configuration}; buildSettings = {{
