@@ -79,8 +79,34 @@ public final class PetEngine {
             guard state.mood != .ill, state.level >= work.levelLimit else { return result(false,"当前状态或等级不能继续活动。") }
             state.activity?.isPaused=false; resetClock(); lastInteraction=activeSeconds
             return result(true,"活动已继续。")
-        default: return result(false,"该操作尚未接入。")
+        case .buyItem(let id,let mode):
+            return transactItem(id:id,purchase:true,mode:mode)
+        case .useItem(let id): return transactItem(id:id,purchase:false,mode:.useImmediately)
         }
+    }
+    private func transactItem(id: String, purchase: Bool, mode: PurchaseMode) -> PetCommandResult {
+        guard let item=catalog.item(id) else { return result(false,"未知物品，操作已拒绝。") }
+        var next=state
+        if purchase {
+            if (item.price >= 1000 || item.experience >= 1000) && item.price >= next.money { return result(false,"此物品需要余额高于售价；低价物品可赊账。") }
+            next.money -= item.price
+            if mode == .inventory {
+                guard (next.inventory[id] ?? 0) < 1000000 else { return result(false,"背包数量达到上限。") }
+                next.inventory[id,default:0] += 1
+            }
+        } else {
+            guard let count=next.inventory[id], count > 0 else { return result(false,"背包没有该物品。") }
+            if count == 1 { next.inventory.removeValue(forKey:id) } else { next.inventory[id]=count-1 }
+        }
+        if mode == .useImmediately { PetItemRules.apply(item,to:&next,now:wallClock.now) }
+        do { try next.validate() } catch { return result(false,"操作将产生不合法数据，已拒绝且未扣款。") }
+        state=next
+        if mode == .useImmediately {
+            lastInteraction=activeSeconds
+            if state.mood == .ill { stopActivity(.stateFailed) }
+            events.append(.itemUsed(id:id))
+        }
+        return result(true,mode == .inventory ? "已买入背包：\(item.name)。" : "已使用：\(item.name)。")
     }
     private func result(_ accepted: Bool,_ message: String) -> PetCommandResult { PetCommandResult(accepted:accepted,message:message) }
     private func stopActivity(_ reason: ActivityStopReason) {
