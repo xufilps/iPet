@@ -5,7 +5,6 @@ import hashlib
 import json
 from pathlib import Path
 import re
-import shutil
 import struct
 
 MODES = ["Happy", "Nomal", "PoorCondition", "Ill"]
@@ -23,6 +22,17 @@ def png_size(path):
         raise ValueError(f"Invalid PNG: {path}")
     return struct.unpack('>II', data[16:24])
 
+def write_if_changed(path, data):
+    """Validate actual output bytes; do not rely on timestamps or a cache marker."""
+    try:
+        if path.read_bytes() == data:
+            return
+    except FileNotFoundError:
+        pass
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+
+
 def convert(source, destination):
     pet = source / 'pet/vup'
     destination.mkdir(parents=True, exist_ok=True)
@@ -36,8 +46,8 @@ def convert(source, destination):
             relative = path.relative_to(pet).as_posix()
             target = destination / 'frames' / relative
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(path, target)
             width, height = png_size(path)
+            write_if_changed(target, path.read_bytes())
             records[relative] = {'sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'bytes': path.stat().st_size}
             frames.append({'path': 'frames/' + relative, 'duration': int(match[2]) / 1000, 'width': width, 'height': height})
         if not frames:
@@ -97,8 +107,8 @@ def convert(source, destination):
             f = fields(line)
             regions['head' if line.startswith('touchhead') else 'body'] = {'x': float(f['px']), 'y': float(f['py']), 'width': float(f['sw']), 'height': float(f['sh'])}
     manifest = {'version': 1, 'canvasWidth': 500, 'canvasHeight': 500, 'regions': regions, 'clips': clips}
-    (destination / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
-    (destination / 'sources.sha256.json').write_text(json.dumps(records, indent=2, sort_keys=True) + '\n')
+    write_if_changed(destination / 'manifest.json', (json.dumps(manifest, ensure_ascii=False, indent=2) + '\n').encode('utf-8'))
+    write_if_changed(destination / 'sources.sha256.json', (json.dumps(records, indent=2, sort_keys=True) + '\n').encode('utf-8'))
     if not any(c['action'] == 'idle' and c['mood'] == 'Nomal' for c in clips):
         raise ValueError('Missing normal idle animation')
     print(f"Converted {len(clips)} clips, {len(records)} frames, {sum(r['bytes'] for r in records.values()) / 1024**2:.1f} MiB")

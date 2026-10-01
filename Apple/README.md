@@ -39,7 +39,7 @@ open build/Build/Products/Release/iPet.app
 python3 scripts/soak.py --seconds 7200 --output build/soak-2h.json
 ```
 
-`verify.sh` 转换素材、运行核心/渲染测试、构建 macOS 应用并对共享模块做 iOS Simulator 交叉编译。测试中的两小时养成模拟使用注入时钟，不代表真实运行两小时。`soak.py` 按墙钟时间持续切换动作/状态、隐藏恢复、模拟生命周期暂停恢复，记录每 5 秒 CPU 和 RSS；它不能替代真实系统睡眠或多显示器热插拔。
+`verify.sh` 运行6项资源转换回归检查、转换素材、运行16项核心/渲染测试、构建 macOS 应用并对共享模块做 iOS Simulator 交叉编译。测试中的两小时养成模拟使用注入时钟，不代表真实运行两小时。`soak.py` 按墙钟时间持续切换动作/状态、隐藏恢复、模拟生命周期暂停恢复，记录每 5 秒 CPU 和 RSS；它不能替代真实系统睡眠或多显示器热插拔。
 
 当前验证证据和剩余实机检查见 [docs/HANDOFF.md](docs/HANDOFF.md)，行为区别见 [docs/BEHAVIOR.md](docs/BEHAVIOR.md)。回滚只需回退 Apple 相关提交；原 C# 项目未修改，用户存档不应随代码回滚删除。
 
@@ -48,3 +48,5 @@ python3 scripts/soak.py --seconds 7200 --output build/soak-2h.json
 像素风 AppIcon、母图及导出说明见 [Design/README.md](Design/README.md)；资源目录通过工程生成脚本同步接入。完整原版能力矩阵见 [UPSTREAM_COMPARISON.md](docs/UPSTREAM_COMPARISON.md)，先还原 macOS 玩法、后扩展 iOS 的阶段门槛见 [ROADMAP.md](docs/ROADMAP.md)。本轮仅修改图标配置与文档，不改变养成或存档。
 
 实机验收按用户决定暂缓，待验记录继续保留，不将自动构建视为两小时、输入、多屏或睡眠验收。原源码依据已改为上游固定版本链接；当前Windows命名目录仅用于保留构建素材，不包含原应用代码。
+
+资源转换每次仍解析配置和校验源文件，仅跳过字节相同的输出写入；缺失或损坏输出重新生成。此优化减少重复写入，不承诺整体构建时间或运行时性能提升。转换器使用已有PNG签名/尺寸头检查，不做完整PNG解码。脚本检查日志为build/verification/conversion-tests.log。
