@@ -9,11 +9,16 @@ import PetCore
     private var generation: UInt64 = 0
     private(set) var bytes = 0
     let limit = 48 * 1024 * 1024
+    var pixelWidth = 640
     func get(_ frame: AnimationFrame, root: URL) -> Entry? {
         generation &+= 1
         if var entry = entries[frame.path] { entry.used = generation; entries[frame.path] = entry; return entry }
         guard let source = CGImageSourceCreateWithURL(root.appendingPathComponent(frame.path) as CFURL, nil),
-              let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else { return nil }
+              let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceThumbnailMaxPixelSize: pixelWidth,
+                kCGImageSourceShouldCacheImmediately: true
+              ] as CFDictionary) else { return nil }
         var pixels = [UInt8](repeating: 0, count: 100 * 100 * 4)
         let valid = pixels.withUnsafeMutableBytes { pointer -> Bool in
             guard let context = CGContext(data: pointer.baseAddress, width: 100, height: 100, bitsPerComponent: 8, bytesPerRow: 400, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
@@ -65,6 +70,11 @@ import PetCore
         for node in sprites.values { node.removeFromParent() }
         sprites.removeAll(); masks.removeAll(); framePaths.removeAll(); item.isHidden = true
         render()
+    }
+    public func setTextureResolution(pixelWidth: Int) {
+        let target = min(1024, max(256, ((pixelWidth + 127) / 128) * 128))
+        guard cache.pixelWidth != target else { return }
+        releaseTextures(); cache.pixelWidth = target; render()
     }
     public func finishAction() { timeline?.requestFinish() }
     public func resetTiming() { previousTime = nil }

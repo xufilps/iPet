@@ -74,11 +74,12 @@ import PetRendering
             petPanel.setFrameOrigin(NSPoint(x: x, y: y)); clampPosition()
         } else { resetPosition() }
         petPanel.orderFrontRegardless()
+        updateTextureResolution()
         buildMenu()
         let workspace = NSWorkspace.shared.notificationCenter
         observers.append(workspace.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in MainActor.assumeIsolated { self?.suspend() } })
         observers.append(workspace.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in MainActor.assumeIsolated { self?.resume() } })
-        observers.append(NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in MainActor.assumeIsolated { self?.clampPosition() } })
+        observers.append(NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in MainActor.assumeIsolated { self?.clampPosition(); self?.updateTextureResolution() } })
         lastSave = ProcessInfo.processInfo.systemUptime; nextActivity = lastSave + 20
         timer = Timer.publish(every: 1.0 / 30, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.tick() }
         if !message.isEmpty { showControls() }
@@ -142,7 +143,10 @@ import PetRendering
     }
     func updateSize() {
         size = min(500, max(150, size)); if !smokeMode { UserDefaults.standard.set(size, forKey: "petSize") }
-        petPanel.setContentSize(NSSize(width: size, height: size)); clampPosition()
+        petPanel.setContentSize(NSSize(width: size, height: size)); clampPosition(); updateTextureResolution()
+    }
+    private func updateTextureResolution() {
+        petScene.setTextureResolution(pixelWidth: Int(size * (petPanel.screen?.backingScaleFactor ?? 2)))
     }
     func updateAutoMove() {
         if !smokeMode { UserDefaults.standard.set(autoMove, forKey: "autoMove") }
