@@ -10,7 +10,7 @@
 - 原项目及作者：[LorisYounger/VPet](https://github.com/LorisYounger/VPet)
 - 代码许可证：[Apache License 2.0](LICENSE)，保留原许可证全文。
 - 素材授权：[动画与图片授权原文](Apple/ANIMATION_LICENSE.md)、[来源说明](Apple/ATTRIBUTION.md)；素材不应仅按代码许可证处理。
-- 原项目简体中文 README **原文完整保留在本文后半部分**；原多语言 README 和 Windows 工程也继续保留。
+- 原项目简体中文 README **原文完整保留在本文后半部分**；原多语言 README 继续保留；原 C# 工程源码已从当前目录移除，可到原仓库查阅。
 
 ## 当前状态
 
@@ -121,7 +121,7 @@ Apple/
 └── docs/                          # 计划、行为对照、验证证据与交接
 ```
 
-原 `VPet-Simulator.*`、`VPet.Solution`、`VPet.sln` 和素材目录保持原有结构。共享核心不依赖 AppKit/UIKit/SpriteKit，动画层不直接修改养成数据；平台窗口和应用生命周期由 macOS 应用处理。后续 iOS 将复用共享模块，单独实现触摸界面和前后台策略。
+原 C# 工程与 `VPet.sln` 已从当前源码树移除，源码和完整 Windows 项目见 [原仓库](https://github.com/LorisYounger/VPet)，行为对照固定在上游基线 `1a06c598`。`VPet-Simulator.Windows/` 目前仅保留 `mod/0000_core` 原素材与配置，供构建前转换使用；它不再包含 Windows 应用源码。Git 历史仍可恢复原文件，未重写历史，因此此次清理不会消除历史对象或让整个克隆体积等比例缩小。共享核心不依赖 AppKit/UIKit/SpriteKit，动画层不直接修改养成数据；平台窗口和应用生命周期由 macOS 应用处理。后续 iOS 将复用共享模块，单独实现触摸界面和前后台策略。
 
 ## 测试与验证边界
 
@@ -142,7 +142,7 @@ python3 Apple/scripts/soak.py --seconds 7200 --output Apple/build/soak-2h.json
 
 该工具使用隔离临时存档，按墙钟时间切换动作与状态、隐藏恢复，并采样 CPU 与 RSS；结束后关闭测试实例。应用内模拟暂停/恢复不等同让整台 Mac 真正睡眠。已有两分钟真实动作压力测试通过；测试中的“两小时养成模拟”使用注入时钟，**不能代替真实两小时运行观察**。
 
-仍待完整验收：真实两小时长期稳定性、实际拖动焦点、快速点击穿透、多屏热插拔、不同屏幕倍率和系统睡眠唤醒。没有与 Windows 原版做同条件性能比较，因此不声称 iPet 更省资源或更稳定。完整证据见 [交接文档](Apple/docs/HANDOFF.md)。
+按当前用户决定，实机验收暂缓：真实两小时长期稳定性、实际拖动焦点、快速点击穿透、多屏热插拔、不同屏幕倍率和系统睡眠唤醒仍未完成；这不等于已经通过，也不阻止继续推进可自动验证的改进。没有与 Windows 原版做同条件性能比较，因此不声称 iPet 更省资源或更稳定。完整证据见 [交接文档](Apple/docs/HANDOFF.md)。
 
 ## 许可证、素材与派生说明
 
@@ -166,7 +166,7 @@ python3 Apple/scripts/soak.py --seconds 7200 --output Apple/build/soak-2h.json
 
 ## 原项目 README.md（原文保留）
 
-以下完整保留原 VPet 简体中文 README 原文，对照上游基线 `1a06c5981330564bab05a098d2d7969a4b119dd3`。后续内容描述原 Windows 项目、原发布渠道和原授权；iPet 的当前状态以上文为准。
+以下完整保留原 VPet 简体中文 README 原文，对照上游基线 `1a06c5981330564bab05a098d2d7969a4b119dd3`。后续内容描述原 Windows 项目、原发布渠道和原授权；iPet 的当前状态以上文为准。原文中的源码相对链接、Windows 工程和构建说明属于历史内容，现应到 [原仓库](https://github.com/LorisYounger/VPet) 阅读使用；下面的原文仍保持逐字节不变。
 
 # VPet-Simulator
 

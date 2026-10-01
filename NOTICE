@@ -26,3 +26,5 @@ application together with this NOTICE and LICENSE. No fee is charged for the
 redistribution of animation files in this source repository.
 
 The iPet pixel-style application icon was generated with OpenAI imagegen using the original vpeticon.png as a visual reference. This does not change the original character and animation licensing. See Apple/Design/README.md and Apple/ATTRIBUTION.md.
+
+The original C# project files were removed from the current iPet source tree; the upstream project remains at https://github.com/LorisYounger/VPet. Required original animation/configuration assets, attribution, licenses and Git history are retained.

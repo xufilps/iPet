@@ -41,22 +41,22 @@
 
 ## 可复核的源码入口
 
-以下链接指向仓库保留的原源码；复核历史时用 `git show 1a06c598:<路径>`。iPet源码依据为当前版本，新增功能应更新本矩阵而不是删除历史差异原因。
+原C#源码已从iPet当前树移除，以下链接指向原仓库固定基线；也可在保留的Git历史中用 `git show 1a06c598:<路径>` 复核。目录入口可在GitHub打开浏览，不依赖本地原工程。iPet源码依据为当前版本，新增功能应更新本矩阵而不是删除历史差异原因。
 
-- U1：[Windows项目](../../VPet-Simulator.Windows/VPet-Simulator.Windows.csproj)、[Win32](../../VPet-Simulator.Windows/Function/Win32.cs)、[控制器](../../VPet-Simulator.Windows/Function/MWController.cs)。
-- U2：[GameSave.cs](../../VPet-Simulator.Core/Handle/GameSave.cs)：EatFood、StoreTake、CalMode及属性setter。
-- U3：[MainLogic.cs](../../VPet-Simulator.Core/Display/MainLogic.cs)：FunctionSpend、EventTimer_Elapsed、MoveSideHideCheck、WorkList、StartWork。
-- U4：[MainDisplay.cs](../../VPet-Simulator.Core/Display/MainDisplay.cs)：头/身体互动及显示入口。
-- U5：[物品](../../VPet-Simulator.Windows.Interface/Mod/Item.cs)、[食物](../../VPet-Simulator.Windows.Interface/Mod/Food.cs)、[点击文本](../../VPet-Simulator.Windows.Interface/Mod/ClickText.cs)。
-- U6：[原版窗口目录](../../VPet-Simulator.Windows/WinDesign)：winInventory、winBetterBuy、winWorkMenu、winGallery、winSaveManager、winGameSetting、winMoveArea、winConsole。
-- U7：[MainWindow.cs](../../VPet-Simulator.Windows/MainWindow.cs)：保存/加载、购买使用、统计、Steam存档。
-- U8：[PetLoader](../../VPet-Simulator.Core/Handle/PetLoader.cs)、[Graph目录](../../VPet-Simulator.Core/Graph)、[内置角色配置](../../VPet-Simulator.Windows/mod/0000_core/pet/vup.lps)。
-- U9：[Theme](../../VPet-Simulator.Windows.Interface/Theme.cs)、[TalkBox](../../VPet-Simulator.Windows.Interface/TalkBox.xaml.cs)。
-- U10：[CoreMOD](../../VPet-Simulator.Windows/Function/CoreMOD.cs)：LoadPlug、LoadFile、角色/文本/本地化及DLL加载。
-- U11：[GameSave_v2](../../VPet-Simulator.Windows.Interface/GameSave_v2.cs)、[GameSave_VPet](../../VPet-Simulator.Windows.Interface/GameSave_VPet.cs)。
-- U12：[MainPlugin](../../VPet-Simulator.Windows.Interface/MainPlugin.cs)、[IMainWindow](../../VPet-Simulator.Windows.Interface/IMainWindow.cs)。
-- U13：[排程](../../VPet-Simulator.Windows.Interface/ScheduleTask.cs)、[统计](../../VPet-Simulator.Windows.Interface/Statistics.cs)、[活动日志](../../VPet-Simulator.Windows.Interface/ActivityLog.cs)。
-- U14：[工坊验证客户端](../../VPet-Simulator.Windows/Function/WorkshopVerificationClient.cs)、[联机接口](../../VPet-Simulator.Windows.Interface/MutiPlayer)。
+- U1：[Windows项目](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows/VPet-Simulator.Windows.csproj)、[Win32](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows/Function/Win32.cs)、[控制器](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows/Function/MWController.cs)。
+- U2：[GameSave.cs](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Core/Handle/GameSave.cs)：EatFood、StoreTake、CalMode及属性setter。
+- U3：[MainLogic.cs](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Core/Display/MainLogic.cs)：FunctionSpend、EventTimer_Elapsed、MoveSideHideCheck、WorkList、StartWork。
+- U4：[MainDisplay.cs](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Core/Display/MainDisplay.cs)：头/身体互动及显示入口。
+- U5：[物品](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/Mod/Item.cs)、[食物](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/Mod/Food.cs)、[点击文本](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/Mod/ClickText.cs)。
+- U6：[原版窗口目录](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows/WinDesign)：winInventory、winBetterBuy、winWorkMenu、winGallery、winSaveManager、winGameSetting、winMoveArea、winConsole。
+- U7：[MainWindow.cs](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows/MainWindow.cs)：保存/加载、购买使用、统计、Steam存档。
+- U8：[PetLoader](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Core/Handle/PetLoader.cs)、[Graph目录](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Core/Graph)、[内置角色配置](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows/mod/0000_core/pet/vup.lps)。
+- U9：[Theme](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/Theme.cs)、[TalkBox](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/TalkBox.xaml.cs)。
+- U10：[CoreMOD](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows/Function/CoreMOD.cs)：LoadPlug、LoadFile、角色/文本/本地化及DLL加载。
+- U11：[GameSave_v2](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/GameSave_v2.cs)、[GameSave_VPet](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/GameSave_VPet.cs)。
+- U12：[MainPlugin](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/MainPlugin.cs)、[IMainWindow](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/IMainWindow.cs)。
+- U13：[排程](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/ScheduleTask.cs)、[统计](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/Statistics.cs)、[活动日志](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/ActivityLog.cs)。
+- U14：[工坊验证客户端](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows/Function/WorkshopVerificationClient.cs)、[联机接口](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/MutiPlayer)。
 - A1：[AppModel](../Sources/iPetMac/AppModel.swift)、[PetWindow](../Sources/iPetMac/PetWindow.swift)、[ControlsView](../Sources/iPetMac/ControlsView.swift)。
 - A2：[PetEngine](../Sources/PetCore/PetEngine.swift)、[PetState](../Sources/PetCore/PetState.swift)、[PetSaveStore](../Sources/PetCore/PetSaveStore.swift)；具体保留公式见 [BEHAVIOR.md](BEHAVIOR.md)。
 - A3：[PetScene](../Sources/PetRendering/PetScene.swift)、[Manifest](../Sources/PetRendering/Manifest.swift)。
@@ -65,4 +65,4 @@
 - A6：[Package.swift](../Package.swift)、[验证脚本](../scripts/verify.sh)。
 - A7：[构建脚本](../scripts/build.sh)、[交接与验证边界](HANDOFF.md)。
 
-本表覆盖当前已识别的原版能力家族，目录内更细的选项、插件和第三方内容不声称穷尽。每阶段规格需扩展逐场景清单，新增发现必须分配状态、源码入口和阶段；未复核的能力保持待验证，不以编译成功代替行为等价。
+本表覆盖当前已识别的原版能力家族，上游目录内更细的选项、插件和第三方内容不声称穷尽。每阶段规格需扩展逐场景清单，新增发现必须分配状态、源码入口和阶段；未复核的能力保持待验证，不以编译成功代替行为等价。
