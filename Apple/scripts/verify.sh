@@ -2,6 +2,7 @@
 set -euo pipefail
 apple_root="$(cd "$(dirname "$0")/.." && pwd)"
 mkdir -p "$apple_root/build/verification"
+/usr/bin/python3 "$apple_root/scripts/export_icon.py" --check
 /usr/bin/python3 "$apple_root/scripts/convert_assets.py"
 swift test --package-path "$apple_root" > "$apple_root/build/verification/tests.log" 2>&1
 # SwiftPM may print per-target XCTest failures at the end; retain and inspect the full log.

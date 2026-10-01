@@ -13,6 +13,8 @@ for f in files:
     obj('build-' + f, f'isa = PBXBuildFile; fileRef = {ident(f)};')
 obj('assets', 'isa = PBXFileReference; lastKnownFileType = folder; path = Resources/PetAssets; sourceTree = "<group>";')
 obj('assets-build', f'isa = PBXBuildFile; fileRef = {ident("assets")};')
+obj('icon-catalog', 'isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>";')
+obj('icon-catalog-build', f'isa = PBXBuildFile; fileRef = {ident("icon-catalog")};')
 obj('attribution', 'isa = PBXFileReference; lastKnownFileType = text; path = ATTRIBUTION.md; sourceTree = "<group>";')
 obj('attribution-build', f'isa = PBXBuildFile; fileRef = {ident("attribution")};')
 obj('notice', 'isa = PBXFileReference; lastKnownFileType = text; name = NOTICE; path = ../NOTICE; sourceTree = "<group>";')
@@ -24,18 +26,19 @@ obj('animation-license-build', f'isa = PBXBuildFile; fileRef = {ident("animation
 obj('product', 'isa = PBXFileReference; explicitFileType = wrapper.application; path = iPet.app; sourceTree = BUILT_PRODUCTS_DIR;')
 obj('sources-group', f'isa = PBXGroup; children = {refs(files)}; path = Sources/iPetMac; sourceTree = "<group>";')
 obj('products-group', f'isa = PBXGroup; children = {refs(["product"])}; name = Products; sourceTree = "<group>";')
-obj('main-group', f'isa = PBXGroup; children = {refs(["sources-group", "assets", "attribution", "code-license", "notice", "animation-license", "products-group"])}; sourceTree = "<group>";')
+obj('main-group', f'isa = PBXGroup; children = {refs(["sources-group", "assets", "icon-catalog", "attribution", "code-license", "notice", "animation-license", "products-group"])}; sourceTree = "<group>";')
 obj('package', 'isa = XCLocalSwiftPackageReference; relativePath = .;')
 for product in ['PetCore', 'PetRendering']:
     obj('dep-' + product, f'isa = XCSwiftPackageProductDependency; productName = {product};')
     obj('link-' + product, f'isa = PBXBuildFile; productRef = {ident("dep-" + product)};')
 obj('sources', f'isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = {refs(["build-" + f for f in files])}; runOnlyForDeploymentPostprocessing = 0;')
 obj('frameworks', f'isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = {refs(["link-PetCore", "link-PetRendering"])}; runOnlyForDeploymentPostprocessing = 0;')
-obj('resources', f'isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = {refs(["assets-build", "attribution-build", "code-license-build", "notice-build", "animation-license-build"])}; runOnlyForDeploymentPostprocessing = 0;')
+obj('resources', f'isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = {refs(["assets-build", "icon-catalog-build", "attribution-build", "code-license-build", "notice-build", "animation-license-build"])}; runOnlyForDeploymentPostprocessing = 0;')
 obj('convert', 'isa = PBXShellScriptBuildPhase; alwaysOutOfDate = 1; buildActionMask = 2147483647; files = (); inputPaths = (); outputPaths = (); name = "Convert built-in assets"; runOnlyForDeploymentPostprocessing = 0; shellPath = /bin/sh; shellScript = "set -eu\\n/usr/bin/python3 \\\"$SRCROOT/scripts/convert_assets.py\\\"\\n";')
 for configuration in ['Debug', 'Release']:
     obj('project-' + configuration, f'isa = XCBuildConfiguration; name = {configuration}; buildSettings = {{ CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 6.0; MACOSX_DEPLOYMENT_TARGET = 14.0; SDKROOT = macosx; }};')
     obj('target-' + configuration, f'''isa = XCBuildConfiguration; name = {configuration}; buildSettings = {{
+        ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
         PRODUCT_NAME = iPet; PRODUCT_BUNDLE_IDENTIFIER = org.xufilps.iPet;
         GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_LSUIElement = YES;
         INFOPLIST_KEY_CFBundleDisplayName = "iPet";
