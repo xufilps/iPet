@@ -88,6 +88,20 @@ final class PetCoreTests: XCTestCase {
         XCTAssertThrowsError(try store.load()); XCTAssertThrowsError(try store.save(PetState()))
         XCTAssertEqual(try Data(contentsOf: store.primary), future)
     }
+    func testFutureBackupAndLevelDecreaseRemainSafe() throws {
+        let store = try tempStore(); try store.save(PetState())
+        let future = Data("{\"version\":99}".utf8); try future.write(to: store.backup)
+        XCTAssertThrowsError(try store.save(PetState()))
+        XCTAssertEqual(try Data(contentsOf: store.backup), future)
+        var state = PetState(); state.experience = 100; state.affection = 109; state.feeling = 20; state.drink = 0
+        let clock = FakeClock(); let engine = PetEngine(state: state, clock: clock, random: FixedRandom())
+        clock.now = 15; engine.tick()
+        XCTAssertEqual(engine.state.level, 1)
+        XCTAssertGreaterThan(engine.state.affection, engine.state.affectionMax)
+        try engine.state.validate()
+        let anotherStore = try tempStore(); try anotherStore.save(engine.state)
+        XCTAssertEqual(try anotherStore.load(), engine.state)
+    }
     func testWriteFailureAndInvalidValues() throws {
         let store = try tempStore(); try FileManager.default.createDirectory(at: store.directory, withIntermediateDirectories: true)
         let blocked = store.directory.appendingPathComponent("not-a-folder")

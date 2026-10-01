@@ -58,6 +58,15 @@ public final class PetSaveStore: PetPersistence {
     public func save(_ state: PetState) throws {
         try state.validate()
         try fm.createDirectory(at: directory, withIntermediateDirectories: true)
+        if fm.fileExists(atPath: backup.path) {
+            let previous = try Data(contentsOf: backup)
+            do { _ = try decode(previous) }
+            catch PetSaveError.unsupportedVersion(let version) { throw PetSaveError.unsupportedVersion(version) }
+            catch {
+                let preserved = directory.appendingPathComponent("pet.previous.corrupt-\(UUID().uuidString).json")
+                try fm.moveItem(at: backup, to: preserved)
+            }
+        }
         if fm.fileExists(atPath: primary.path) {
             let existing = try Data(contentsOf: primary)
             do { _ = try decode(existing); try existing.write(to: backup, options: .atomic) }

@@ -31,7 +31,7 @@ public struct PetState: Codable, Equatable, Sendable {
         let bounded = [strength, food, drink, feeling, health]
         guard !name.isEmpty, name.count <= 100,
               bounded.allSatisfy({ $0.isFinite && (0...100).contains($0) }),
-              affection.isFinite, (0...affectionMax).contains(affection),
+              affection.isFinite, (0...1_000_100).contains(affection),
               experience.isFinite, abs(experience) <= 1e12,
               [storedStrength, storedFood, storedDrink].allSatisfy({ $0.isFinite && (0...10000).contains($0) })
         else { throw PetSaveError.invalidState }

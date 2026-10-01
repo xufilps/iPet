@@ -23,6 +23,7 @@ public final class PetEngine {
     public init(state: PetState = PetState(), clock: any PetClock = SystemPetClock(), random: any PetRandom = SeededPetRandom(seed: UInt64.random(in: 0...UInt64.max))) {
         self.state = state; self.clock = clock; self.random = random; previous = clock.now
     }
+    public func recordInteraction() { lastInteraction = activeSeconds }
     public func resetClock() { previous = clock.now; remainder = 0 }
     public func tick() {
         let current = clock.now, delta = current - previous
