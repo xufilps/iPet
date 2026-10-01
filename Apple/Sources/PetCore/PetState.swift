@@ -19,6 +19,11 @@ public struct PetState: Codable, Equatable, Sendable {
     public var storedFood = 0.0
     public var storedDrink = 0.0
     public var resting = false
+    public var money = 1000.0
+    public var inventory: [String: Int] = [:]
+    public var itemCooldowns: [String: Date] = [:]
+    public var catalogVersion = 1
+    public var activity: ActivitySession?
     public init() {}
     public var level: Int { Int(sqrt(max(0, min(experience, 1e12))) / 10) + 1 }
     public var affectionMax: Double { Double(90 + level * 10) }
@@ -35,8 +40,14 @@ public struct PetState: Codable, Equatable, Sendable {
               bounded.allSatisfy({ $0.isFinite && (0...100).contains($0) }),
               affection.isFinite, (0...1_000_100).contains(affection),
               experience.isFinite, abs(experience) <= 1e12,
-              [storedStrength, storedFood, storedDrink].allSatisfy({ $0.isFinite && (0...10000).contains($0) })
+              [storedStrength, storedFood, storedDrink].allSatisfy({ $0.isFinite && abs($0) <= 10000 }),
+              money.isFinite, abs(money) <= 1e12, catalogVersion == 1,
+              inventory.allSatisfy({ !$0.key.isEmpty && $0.key.count <= 300 && (0...1000000).contains($0.value) }),
+              itemCooldowns.allSatisfy({ !$0.key.isEmpty && $0.key.count <= 300 && $0.value.timeIntervalSince1970.isFinite && abs($0.value.timeIntervalSince1970) <= 1e12 })
         else { throw PetSaveError.invalidState }
+        if let a=activity {
+            guard !a.activityID.isEmpty, a.activityID.count <= 300, a.elapsedSeconds.isFinite, (0...1e12).contains(a.elapsedSeconds), a.earned.isFinite, (0...1e12).contains(a.earned), !resting else { throw PetSaveError.invalidState }
+        }
     }
     mutating func changeStrength(_ delta: Double) { strength = Self.clamp(strength + delta) }
     mutating func changeHealth(_ delta: Double) { health = Self.clamp(health + delta) }
