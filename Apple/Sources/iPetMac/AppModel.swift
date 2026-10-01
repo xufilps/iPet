@@ -7,8 +7,14 @@ import SpriteKit
 import PetCore
 import PetRendering
 
+enum ControlPage: String, CaseIterable { case status="状态", activity="活动", shop="商店", inventory="背包", settings="设置" }
+
 @MainActor final class AppModel: ObservableObject {
     @Published var state = PetState()
+    @Published var selectedPage = ControlPage.status
+    private(set) var catalog = PetCatalog()
+    private(set) var assetRoot: URL!
+    private var lastUIRefresh = 0.0
     @Published var message = ""
     @Published var size = UserDefaults.standard.object(forKey: "petSize") as? Double ?? 280
     @Published var autoMove = UserDefaults.standard.object(forKey: "autoMove") as? Bool ?? true
@@ -49,14 +55,16 @@ import PetRendering
         store = PetSaveStore(directory: base)
         do { state = try store.load() ?? PetState(); message = store.recoveryMessage ?? "" }
         catch { writable = false; message = "\(error.localizedDescription) 本次仅运行，存档写入已暂停。" }
-        engine = PetEngine(state: state)
         guard let root = Bundle.main.resourceURL?.appendingPathComponent("PetAssets") else { throw PetSaveError.invalidDocument }
+        assetRoot = root
+        catalog = try PetCatalog.load(from: root.appendingPathComponent("gameplay.json"))
+        engine = PetEngine(state: state, catalog: catalog)
         petScene = PetScene(manifest: try PetManifest.load(from: root), assetRoot: root)
         petScene.play(state.resting ? .sleep : .idle, mood: state.mood)
         petScene.onDiagnostic = { text in NSLog("%@", text) }
         petScene.onActionFinished = { [weak self] _ in
             guard let self else { return }
-            if self.state.resting { self.petScene.play(.sleep, mood: self.state.mood) }
+            self.restoreBaseAnimation()
         }
         petPanel = PetPanel(contentRect: NSRect(x: 0, y: 0, width: size, height: size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         petPanel.title = "iPet · 桌宠"
@@ -104,7 +112,8 @@ import PetRendering
         let menu = NSMenu()
         func item(_ title: String, _ selector: Selector) -> NSMenuItem { let item = NSMenuItem(title: title, action: selector, keyEquivalent: ""); item.target = self; return item }
         menu.addItem(item("状态与设置…", #selector(showControls)))
-        menu.addItem(item("投喂面包", #selector(feed))); menu.addItem(item("补充饮料", #selector(water)))
+        menu.addItem(item("活动…", #selector(showActivities))); menu.addItem(item("商店…", #selector(showShop)))
+        menu.addItem(item("背包…", #selector(showInventory)))
         menu.addItem(item("休息 / 起床", #selector(rest)))
         menuVisibility = item("隐藏桌宠", #selector(toggleVisibility)); menu.addItem(menuVisibility)
         menu.addItem(item("重置位置", #selector(resetPosition))); menu.addItem(.separator())
@@ -118,8 +127,53 @@ import PetRendering
     func command(_ command: PetCommand) {
         walkingUntil = 0
         let action = engine.send(command); state = engine.state
-        petScene.play(action, mood: state.mood); save()
+        consumeEvents(); petScene.play(action, mood: state.mood); save()
     }
+    func perform(_ command: PetEconomyCommand) {
+        let result = engine.perform(command)
+        state = engine.state; message = result.message
+        if result.accepted {
+            walkingUntil = 0
+            let usedItem = consumeEvents()
+            if !usedItem { restoreBaseAnimation() }
+            save()
+        }
+    }
+    func itemMultiplier(id: String) -> Double {
+        guard let item=catalog.item(id) else { return 0 }
+        return PetItemRules.multiplier(category:item.category,expiry:state.itemCooldowns[id],now:Date())
+    }
+    @discardableResult private func consumeEvents() -> Bool {
+        var usedItem = false, stopped = false
+        for event in engine.drainEvents() {
+            switch event {
+            case let .activityStopped(id, reason, earned, bonus):
+                stopped = true
+                let title=catalog.activity(id)?.name ?? id
+                let unit=catalog.activity(id)?.kind == .work ? "金币" : "经验"
+                let reasonText=reason == .completed ? "完成" : reason == .manual ? "结束" : "因状态不佳停止"
+                message="\(title)\(reasonText)，已获\(earned.formatted(.number.precision(.fractionLength(2))))\(unit)，完成奖励\(bonus.formatted(.number.precision(.fractionLength(2))))。"
+            case let .itemUsed(id):
+                if let item=catalog.item(id) {
+                    usedItem = true
+                    petScene.setFoodImage(path:item.imagePath)
+                    let action: PetAction = item.graphID.lowercased() == "drink" ? .drink : item.graphID.lowercased() == "gift" ? .gift : .eat
+                    petScene.play(action,mood:engine.state.mood)
+                }
+            }
+        }
+        if stopped { state = engine.state; if !usedItem { restoreBaseAnimation() }; save() }
+        return usedItem
+    }
+    private func restoreBaseAnimation() {
+        guard petScene != nil, petView?.isInteracting != true else { return }
+        let base=PetPresentation(state:engine.state,catalog:catalog)
+        if let graph=base.graphID { petScene.playActivity(graphID:graph,mood:engine.state.mood) }
+        else { petScene.play(base.action,mood:engine.state.mood) }
+    }
+    @objc private func showActivities() { selectedPage = .activity; showControls() }
+    @objc private func showShop() { selectedPage = .shop; showControls() }
+    @objc private func showInventory() { selectedPage = .inventory; showControls() }
     @objc private func feed() { command(.feed) }
     @objc private func water() { command(.water) }
     @objc private func rest() { command(.toggleRest) }
@@ -128,16 +182,18 @@ import PetRendering
         guard !suspended else { return }
         let now = ProcessInfo.processInfo.systemUptime
         let delta = min(max(now - (lastTick ?? now), 0), 0.1); lastTick = now
-        engine.tick(); let oldMood = state.mood
-        if state != engine.state { state = engine.state }
-        if oldMood != state.mood && [.idle, .sleep].contains(petScene.requestedAction) { petScene.play(state.resting ? .sleep : .idle, mood: state.mood) }
+        let oldMood = engine.state.mood
+        engine.tick()
+        consumeEvents()
+        if now - lastUIRefresh >= 0.25 { state = engine.state; lastUIRefresh = now }
+        if oldMood != engine.state.mood && [.idle, .sleep, .activity].contains(petScene.requestedAction) { restoreBaseAnimation() }
         if visible {
             petPanel.ignoresMouseEvents = !petView.isInteracting && !petView.opaqueUnderMouse()
             if !petView.isInteracting && walkingUntil > now && autoMove {
                 var origin = petPanel.frame.origin; origin.x += walkingDirection * 18 * delta
                 petPanel.setFrameOrigin(origin); clampPosition()
             } else if walkingUntil > 0 { walkingUntil = 0; petScene.finishAction(); persistPosition() }
-            if now >= nextActivity && !petView.isInteracting && petScene.requestedAction == .idle && !state.resting {
+            if now >= nextActivity && !petView.isInteracting && petScene.requestedAction == .idle && !engine.state.resting && engine.state.activity == nil {
                 nextActivity = now + Double.random(in: 25...50)
                 if autoMove && state.mood != .ill {
                     walkingDirection = Bool.random() ? 1 : -1; walkingUntil = now + 5
@@ -150,7 +206,7 @@ import PetRendering
     @objc func toggleVisibility() {
         visible.toggle(); menuVisibility.title = visible ? "隐藏桌宠" : "显示桌宠"
         walkingUntil = 0
-        if visible { petScene.play(state.resting ? .sleep : .idle, mood: state.mood); petView.isPaused = false; petPanel.orderFrontRegardless() }
+        if visible { restoreBaseAnimation(); petView.isPaused = false; petPanel.orderFrontRegardless() }
         else { petPanel.orderOut(nil); petView.isPaused = true; petScene.releaseTextures() }
     }
     func updateSize() {
@@ -182,7 +238,7 @@ import PetRendering
     private func resume() {
         engine.resetClock(); lastTick = nil; lastSave = ProcessInfo.processInfo.systemUptime
         nextActivity = lastSave + 20; suspended = false
-        petScene.play(state.resting ? .sleep : .idle, mood: state.mood); petView.isPaused = !visible; clampPosition()
+        restoreBaseAnimation(); petView.isPaused = !visible; clampPosition()
     }
     func save() {
         guard writable else { return }
@@ -195,7 +251,7 @@ import PetRendering
         if controls == nil {
             let hosting = NSHostingController(rootView: ControlsView(model: self))
             let window = NSWindow(contentViewController: hosting); window.title = "iPet · 状态与设置"
-            window.styleMask = [.titled, .closable]; window.isReleasedWhenClosed = false; window.center(); controls = window
+            window.styleMask = [.titled, .closable, .resizable]; window.minSize = NSSize(width: 620, height: 580); window.isReleasedWhenClosed = false; window.center(); controls = window
         }
         NSApp.activate(ignoringOtherApps: true); controls?.makeKeyAndOrderFront(nil)
     }

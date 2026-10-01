@@ -7,7 +7,7 @@ def ident(name): return hashlib.sha1(name.encode()).hexdigest()[:24].upper()
 objects = {}
 def obj(name, value): objects[ident(name)] = value; return ident(name)
 def refs(names): return '(' + ', '.join(ident(n) for n in names) + ',)'
-files = ['main.swift', 'AppModel.swift', 'ControlsView.swift', 'PetWindow.swift']
+files = ['main.swift', 'AppModel.swift', 'ControlsView.swift', 'PetWindow.swift', 'ActivityView.swift', 'ShopView.swift', 'InventoryView.swift']
 for f in files:
     obj(f, f'isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = {f}; sourceTree = "<group>";')
     obj('build-' + f, f'isa = PBXBuildFile; fileRef = {ident(f)};')
@@ -42,7 +42,7 @@ for configuration in ['Debug', 'Release']:
         PRODUCT_NAME = iPet; PRODUCT_BUNDLE_IDENTIFIER = org.xufilps.iPet;
         GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_LSUIElement = YES;
         INFOPLIST_KEY_CFBundleDisplayName = "iPet";
-        MARKETING_VERSION = 0.1.0; CURRENT_PROJECT_VERSION = 1;
+        MARKETING_VERSION = 0.2.0; CURRENT_PROJECT_VERSION = 2;
         SWIFT_VERSION = 6.0; MACOSX_DEPLOYMENT_TARGET = 14.0;
         CODE_SIGN_STYLE = Automatic; ENABLE_APP_SANDBOX = NO; ENABLE_USER_SCRIPT_SANDBOXING = NO;
         SWIFT_OPTIMIZATION_LEVEL = {"-Onone" if configuration == "Debug" else "-O"};
