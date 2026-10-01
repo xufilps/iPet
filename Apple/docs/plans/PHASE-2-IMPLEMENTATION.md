@@ -5,7 +5,7 @@
 **Goal:** 交付接近原版的活动、金币、物品与库存闭环，并安全升级旧原生存档。
 **Architecture:** 构建前生成确定的玩法目录和资源；PetCore独占状态修改和经济结算，PetRendering消费动画请求，macOS页面只发送命令。规则、目录、持久化和界面分别实现，先通过数值/恢复检查再整合。
 **Tech Stack:** Swift6、Foundation、SpriteKit、AppKit、SwiftUI、Python3标准库、现有确定性Xcode工程生成器。
-**Spec:** [PHASE-2.md](../specs/PHASE-2.md)，已获用户确认；本计划待审阅及执行方式选择。
+**Spec:** [PHASE-2.md](../specs/PHASE-2.md)，已获用户确认；本计划已确认，采用Native顺序实施。
 
 ## Global Constraints
 
@@ -39,7 +39,7 @@
 
 ---
 
-## 任务1：原版目录与独立夹具
+### Task 1: 原版目录与独立夹具
 
 **Files:** 新增convert_gameplay.py、PetCatalog.swift、tests/test_convert_gameplay.py、PetCatalogTests.swift、Tests/Fixtures/phase2-original.json与SOURCE.md；修改build.sh、verify.sh、create_project.py转换阶段。
 **Interfaces:** `convert_gameplay(source: Path, destination: Path) -> None`生成PetAssets/gameplay.json、items图片及gameplay-sources.sha256.json；`PetCatalog.load(from: URL) throws -> PetCatalog`，提供version、activities、items及按ID查找。ActivityDefinition包含id/name/kind/graphID、durationSeconds、levelLimit、moneyBase、strengthFood、strengthDrink、feeling、finishBonus；ItemDefinition包含id/name/category/price/description/imagePath/graphID及七个效果数值。ID为`core.activity.<原名称>`、`core.item.<原名称>`。
@@ -50,7 +50,7 @@
 - [ ] Swift测试`PetCatalogTests`校验真实生成目录、唯一ID和恶意路径/NaN拒绝；图片映射按原Image/Name及资源配置查找，不凭猜测文件名冒充成功。Python测试通过后运行`swift test --package-path Apple --filter PetCatalogTests`。
 - [ ] 提交目录/夹具及其构建接入，后续步骤消费同一模型，不另写一份商品常量。
 
-## 任务2：活动、收益和停止规则
+### Task 2: 活动、收益和停止规则
 
 **Files:** 新增PetActivityRules.swift、PetActivityTests.swift；修改PetState.swift、PetEngine.swift；新增测试时钟/固定随机夹具。
 **Interfaces:** `ActivitySession`包含activityID、elapsedSeconds、earned、isPaused；`ActivityStopReason`为completed/manual/stateFailed；`PetEngine.perform(_ command: PetEconomyCommand) -> PetCommandResult`接收startActivity(id)、stopActivity、resumeActivity；引擎初始化新增可选catalog和wallClock，默认保持旧核心测试可构建。`drainEvents() -> [PetEvent]`返回一次性事件，activityStopped事件含实际已得收益与实际奖金。
@@ -61,7 +61,7 @@
 - [ ] 测试暂停/继续、睡眠基准重置、长断层不追补、切换活动、同活动停止、休息结束活动；娱乐Feeling符号及原自动平衡后的参数按任务1有效目录使用。
 - [ ] 运行PetActivityTests与现有PetCoreTests，核对事件drain只消费一次，提交活动核心。
 
-## 任务3：购买、背包、食用衰减与药品
+### Task 3: 购买、背包、食用衰减与药品
 
 **Files:** 新增PetItemRules.swift、PetItemTests.swift；修改PetState.swift、PetEngine.swift。
 **Interfaces:** `PurchaseMode`为useImmediately/inventory；PetEconomyCommand扩充buyItem(id:mode:)、useItem(id:)；`PetWallClock.now: Date`可注入；PetState新增money=1000、inventory:[String:Int]、itemCooldowns:[String:Date]、catalogVersion=1。PetCommandResult含accepted/message，物品使用通过`PetEvent.itemUsed(id:)`请求动画。目录/活动接口沿用任务1、2。
@@ -72,7 +72,7 @@
 - [ ] 运行PetItemTests确认失败，然后实现食用规则、目录查找及命令事务；正负储存可校验，未知ID拒绝且原状态不变，保存失败不重复应用命令；物品反馈不默默停止活动，Ill触发状态失败。
 - [ ] 对所有原物品目录执行固定合法状态使用/保存数据校验；运行PetItemTests及核心全套，提交经济/物品核心。
 
-## 任务4：JSON v2、旧档迁移及恢复保护
+### Task 4: JSON v2、旧档迁移及恢复保护
 
 **Files:** 新增PetSaveMigration.swift、PetSaveMigrationTests.swift和真实旧版v1JSON夹具；修改PetSaveStore.swift、PetState.swift、相关已有保存测试。
 **Interfaces:** PetSaveDocument.version=2；`PetSaveMigration.decodeLegacy(_ data: Data) throws -> PetState`只按v1旧字段/边界校验再补新字段；PetPersistence.load/save既有签名保持。PetSaveStore暴露原recoveryMessage及新migrationBackupURL，写v2前按UUID独立保留有效v1原件。
@@ -83,7 +83,7 @@
 - [ ] 运行PetSaveMigrationTests观察失败，实现header版本分流和精确旧模型、新字段验证、原子写及迁移备份。加载进行中会话在内存暂停并重建时钟，不改已入账值。
 - [ ] 核对v2金额±1e12、库存0–1000000、储存±10000与有限时长/收益边界；运行全部核心测试并提交，补旧程序回滚需移开v2主/备份后使用独立v1副本的恢复说明。
 
-## 任务5：活动Graph与原物品渲染
+### Task 5: 活动Graph与原物品渲染
 
 **Files:** 修改convert_assets.py、Manifest.swift、PetScene.swift、PetState.swift中PetAction；新增/扩充脚本资源检查及PetRenderingTests。
 **Interfaces:** PetAction新增activity；AnimationClip新增可选graphID，唯一键扩为(action,graphID,mood)；`PetManifest.resolveActivity(graphID:mood:) -> AnimationClip`；`PetScene.playActivity(graphID:mood:)`、`setFoodImage(path: String?)`消费已验证目录路径，不接收任意文件系统路径。manifest版本2兼容读取旧版本1，缺状态/阶段沿用明确回退。
@@ -93,7 +93,7 @@
 - [ ] 运行Python资源测试与PetRenderingTests确认失败，再实现活动转换/清单与图片注入。纹理仍懒加载，缓存48MiB估算上限保持，资源扩大后记录包体积和额外节点/GPU内存边界。
 - [ ] 运行脚本及渲染全套；确认现有27组合的兼容行为没有被新Graph覆盖，提交资源/渲染切片。
 
-## 任务6：原生页面、闭环与交接
+### Task 6: 原生页面、闭环与交接
 
 **Files:** 新增ActivityView.swift、ShopView.swift、InventoryView.swift；修改ControlsView.swift、AppModel.swift、工程生成器/工程、build/verify脚本、核心闭环测试、README及docs。
 **Interfaces:** AppModel公开catalog、perform(PetEconomyCommand)、当前selectedPage及itemMultiplier(id:)；页面使用这些入口，不直接写PetState。页面枚举status/activity/shop/inventory/settings；菜单进入对应页面。AppModel每次tick/命令刷新state并drainEvents，保存关键状态与显示错误，动画中断后恢复会话Graph。
