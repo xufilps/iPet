@@ -1,5 +1,7 @@
 # iPet
 
+<img src="Apple/Design/ipet-icon-pixel-v1-master.png" alt="iPet 像素风图标" width="128">
+
 **iPet 是基于 [VPet / VPet-Simulator](https://github.com/LorisYounger/VPet) 的 Swift 原生桌宠适配项目。** 当前版本 v0.1.0 提供 macOS 基础桌宠；共享养成核心与动画模块已支持 iOS 构建，iOS 应用界面将在后续阶段实现。
 
 本项目复用原作萝莉斯角色与选定动画，保留部分原版养成规则，使用 AppKit、SpriteKit 和 SwiftUI 重新实现 Apple 平台的窗口、渲染及界面。它是派生项目，当前功能范围与 Windows 原版不同，也不是原作者发布的官方 Apple 平台版本。
@@ -44,7 +46,7 @@
 | 云端与对话 | 原项目/插件生态提供相关能力 | 本版不含云同步、AI 对话或网络服务 |
 | 手机体验 | 本仓库保留的原版基于 Windows | iOS 界面尚未开发，后续按应用内养宠设计 |
 
-保留的规则包括原版状态阈值、抚摸消耗、食物分次生效、基础日常与休息公式。免费食物参数、食物图像使用面包/牛奶 emoji、动作回退和平台生命周期处理属于 iPet 适配，不能视为完整玩法等价。具体见 [行为对照](Apple/docs/BEHAVIOR.md)。
+保留的规则包括原版状态阈值、抚摸消耗、食物分次生效、基础日常与休息公式。免费食物参数、食物图像使用面包/牛奶 emoji、动作回退和平台生命周期处理属于 iPet 适配，不能视为完整玩法等价。完整能力矩阵、源码依据及迁移状态见 [原版差异说明](Apple/docs/UPSTREAM_COMPARISON.md)，公式细节见 [行为对照](Apple/docs/BEHAVIOR.md)。
 
 ## 环境要求
 
@@ -154,7 +156,9 @@ python3 Apple/scripts/soak.py --seconds 7200 --output Apple/build/soak-2h.json
 
 ## 后续方向与贡献
 
-优先完成 macOS 的输入、睡眠、多屏与长期性能验收，再完善原生交互和 Developer ID 签名/公证。随后实现 iOS 应用内养宠；云同步、小组件、通知、旧存档导入、MOD 与更多养成玩法均需单独设计，目前没有完成时间承诺。
+按 [分阶段还原路线](Apple/docs/ROADMAP.md) 先验证 macOS 稳定性，再依次推进养成经济、动作与原生界面、数据兼容、扩展集成，最后扩展 iOS 与发行。每阶段动工前形成具体规格，以可观察行为和验证记录验收，不设无依据日期。C# 插件、Steam/工坊和受授权限制素材独立研究，不预先承诺完全兼容。
+
+当前采用参考原版形象生成的像素风图标，母图、小尺寸导出、来源和重建方法见 [图标记录](Apple/Design/README.md)。保留原项目图标；新图标不改变原角色及动画授权。
 
 问题反馈和贡献请使用 [iPet Issues](https://github.com/xufilps/iPet/issues) 与 Pull Requests。涉及 Swift 版的改动应执行 `Apple/scripts/verify.sh`，说明行为变化和验证边界；新增或替换素材需明确来源与授权。对原项目贡献，请遵循下方原 README 和原 `CONTRIBUTING.md` 的流程。
 

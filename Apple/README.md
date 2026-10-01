@@ -42,3 +42,7 @@ python3 scripts/soak.py --seconds 7200 --output build/soak-2h.json
 `verify.sh` 转换素材、运行核心/渲染测试、构建 macOS 应用并对共享模块做 iOS Simulator 交叉编译。测试中的两小时养成模拟使用注入时钟，不代表真实运行两小时。`soak.py` 按墙钟时间持续切换动作/状态、隐藏恢复、模拟生命周期暂停恢复，记录每 5 秒 CPU 和 RSS；它不能替代真实系统睡眠或多显示器热插拔。
 
 当前验证证据和剩余实机检查见 [docs/HANDOFF.md](docs/HANDOFF.md)，行为区别见 [docs/BEHAVIOR.md](docs/BEHAVIOR.md)。回滚只需回退 Apple 相关提交；原 C# 项目未修改，用户存档不应随代码回滚删除。
+
+## 图标与后续还原
+
+像素风 AppIcon、母图及导出说明见 [Design/README.md](Design/README.md)；资源目录通过工程生成脚本同步接入。完整原版能力矩阵见 [UPSTREAM_COMPARISON.md](docs/UPSTREAM_COMPARISON.md)，先还原 macOS 玩法、后扩展 iOS 的阶段门槛见 [ROADMAP.md](docs/ROADMAP.md)。本轮仅修改图标配置与文档，不改变养成或存档。

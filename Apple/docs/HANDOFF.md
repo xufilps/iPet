@@ -32,10 +32,18 @@
 
 正式存档位于 Application Support/VPetApple；恢复前退出应用并复制整个目录，保留未来版本和损坏文件。构建失败可回退 Apple 相关提交，原C#与素材文件未修改。工作区出现的其他未跟踪 `.DS_Store` 未纳入交付提交，也未清理。
 
-下一步先完成真实两小时和输入/多屏/睡眠验收，再准备 Developer ID 签名、公证与公开发行；iOS阶段在复用核心和渲染的基础上实现应用内养宠，云同步、小组件、通知及旧存档导入另行设计。
+下一步先完成真实两小时和输入/多屏/睡眠验收，再按 ROADMAP.md 推进养成经济、动作界面、数据兼容、扩展集成，最后实现 iOS 与发行；每阶段先形成具体规格。
 
 ## iPet 更名与源码发布
 
 应用、Swift Package、Xcode工程/scheme、菜单与脚本统一更名为iPet，bundle ID为org.xufilps.iPet。历史存档目录VPetApple保留，新bundle缺少的偏好从旧bundle导入（smoke模式不迁移正式偏好）。README新增完整原生版说明，并在末尾完整保留原README的7775字节；LICENSE与上游字节一致，NOTICE、原作者署名与动画图片授权随源码及应用保留。
 
 目标GitHub仓库：https://github.com/xufilps/iPet，默认分支main。仅以正常快进推送发布源码，不创建Release或公证安装包；本次更名不改变已有两小时/多屏/睡眠等待验边界。构建验证日志位于build/verification；更名启动测试使用隔离存档并自动退出。
+
+## 像素风图标与原版还原路线修订
+
+当前分支 `codex/ipet`，应用版本仍为v0.1.0。新增参考原图生成的pixel-v1图标、1024母图、16–1024导出、AppIcon配置及生成说明；此前白色小宠物候选保留，但不进入应用。Finder的iPet简介已实际显示新图标（小图与预览均核对）；Release产物包含AppIcon.icns/Assets.car，Info.plist的CFBundleIconName为AppIcon。图标来源见Design/README.md，原角色授权与原素材保持不变。
+
+本轮重新通过11项核心和5项渲染测试、macOS Release/ad-hoc签名验证、iOS Simulator共享模块编译、图标尺寸/资源槽检查、工程重复生成一致性、本地文档链接检查，以及原README后缀7775字节与LICENSE完整性。独立审查复核资源哈希、工程配置、源码依据和未完成状态，无重要待修复问题。设备环境沿用上述arm64 Mac；未新增最低系统、Intel或iOS真机验收证据。验证日志仍在build/verification。
+
+新增UPSTREAM_COMPARISON.md作为能力清单及持续差异矩阵，ROADMAP.md明确0–6阶段门槛；本轮只完成图标配置和文档，不改变养成/存档。两小时真实运行、快速点击/拖动焦点、多屏和系统睡眠仍待验收；不宣称性能优于原版。回滚本轮图标/文档提交即可恢复此前工程，保留正式存档和原资源；图标哈希位于Design/SHA256SUMS，当前产物哈希位于BUILD_MANIFEST.sha256。
