@@ -42,6 +42,7 @@ public struct AnimationStage: Codable, Sendable {
     }
 }
 public struct AnimationClip: Codable, Sendable {
+    public var graphID: String? = nil
     public let action: PetAction
     public let mood: PetMood
     public let stages: [AnimationStage]
@@ -58,7 +59,7 @@ public struct PetManifest: Codable, Sendable {
     }
     public func validate(root: URL, checkFiles: Bool) throws {
         func fail(_ message: String) -> NSError { NSError(domain: "VPetAssets", code: 1, userInfo: [NSLocalizedDescriptionKey: message]) }
-        guard version == 1, canvasWidth.isFinite, canvasHeight.isFinite, canvasWidth > 0, canvasHeight > 0,
+        guard (1...2).contains(version), canvasWidth.isFinite, canvasHeight.isFinite, canvasWidth > 0, canvasHeight > 0,
               clips.contains(where: { $0.action == .idle && $0.mood == .normal }),
               regions["head"] != nil, regions["body"] != nil else { throw fail("资源清单缺少基础配置。") }
         for region in regions.values {
@@ -66,7 +67,7 @@ public struct PetManifest: Codable, Sendable {
         }
         var identifiers = Set<String>()
         for clip in clips {
-            guard identifiers.insert(clip.action.rawValue + clip.mood.rawValue).inserted, !clip.stages.isEmpty,
+            guard identifiers.insert(clip.action.rawValue + (clip.graphID ?? "") + clip.mood.rawValue).inserted, !clip.stages.isEmpty,
                   Set(clip.stages.map(\.phase)).count == clip.stages.count else { throw fail("动画重复或缺少阶段。") }
             for stage in clip.stages {
                 guard !stage.layers.isEmpty, Set(stage.layers.map(\.z)).count == stage.layers.count else { throw fail("动画图层无效。") }
@@ -74,7 +75,7 @@ public struct PetManifest: Codable, Sendable {
                     guard !layer.frames.isEmpty else { throw fail("动画没有帧。") }
                     for frame in layer.frames {
                         guard frame.duration.isFinite, frame.duration > 0, frame.width > 0, frame.height > 0,
-                              !frame.path.hasPrefix("/"), !frame.path.split(separator: "/").contains("..") else { throw fail("动画帧配置无效。") }
+                              PetCatalog.safePath(frame.path) else { throw fail("动画帧配置无效。") }
                         if checkFiles && !FileManager.default.fileExists(atPath: root.appendingPathComponent(frame.path).path) { throw fail("缺少动画帧：\(frame.path)") }
                     }
                 }
@@ -83,6 +84,12 @@ public struct PetManifest: Codable, Sendable {
                 }
             }
         }
+    }
+    public func resolveActivity(graphID: String, mood: PetMood) -> AnimationClip {
+        clips.first { $0.action == .activity && $0.graphID == graphID && $0.mood == mood }
+        ?? clips.first { $0.action == .activity && $0.graphID == graphID && $0.mood == .normal }
+        ?? clips.first { $0.action == .activity && $0.graphID == graphID }
+        ?? resolve(action:.idle,mood:mood)
     }
     public func resolve(action: PetAction, mood: PetMood) -> AnimationClip {
         clips.first { $0.action == action && $0.mood == mood }

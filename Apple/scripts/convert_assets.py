@@ -54,7 +54,15 @@ def convert(source, destination):
             raise ValueError(f"Empty animation: {directory}")
         return {'z': z, 'frames': frames}
     clips = []
-    for action, subtree in ACTIONS.items():
+    diagnostics = []
+    roots = [(action,subtree,None) for action,subtree in ACTIONS.items()]
+    for line in (source/'pet/vup.lps').read_text(encoding='utf-8-sig').splitlines():
+        if not line.startswith('work:'): continue
+        graph=fields(line)['Graph'].lower()
+        matches=[p for p in (pet/'WORK').iterdir() if p.is_dir() and p.name.lower()==graph]
+        if len(matches)!=1: raise ValueError(f'Unresolved activity graph: {graph}')
+        roots.append(('activity',matches[0].relative_to(pet).as_posix(),graph))
+    for action, subtree, graph in roots:
         root = pet / subtree
         # A few distributions only include slow walking variants.
         if not root.exists() and action == 'walkLeft':
@@ -69,13 +77,14 @@ def convert(source, destination):
                 stages = [{'phase': 'loop', 'layers': [layer(matching[0], 0)], 'foodTrack': []}]
             else:
                 for phase, prefix in [('start', 'a'), ('loop', 'b'), ('end', 'c')]:
-                    choices = [p for p in matching if p.name.lower().split('_')[0] == prefix or p.name.lower().split('_')[-1] == prefix]
+                    choices = [p for p in matching if any(part.lower().split('_')[0] == prefix or part.lower().split('_')[-1] == prefix for part in p.relative_to(root).parts)]
                     if choices:
                         stages.append({'phase': phase, 'layers': [layer(choices[0], 0)], 'foodTrack': []})
             if stages:
-                clips.append({'action': action, 'mood': mode, 'stages': stages})
+                clips.append({'action': action, 'mood': mode, 'stages': stages, **({'graphID': graph} if graph else {})})
+                if graph and len(stages)<3: diagnostics.append(f'{graph}/{mode}: available phases '+','.join(x['phase'] for x in stages))
     # FoodAnimation is a sandwich of synchronized back/front frames and an item track.
-    for action, subtree in [('eat', 'Eat'), ('drink', 'Drink')]:
+    for action, subtree in [('eat', 'Eat'), ('drink', 'Drink'), ('gift', 'Gift')]:
         root = pet / subtree
         infos = [(p, line, fields(line)) for p in sorted(root.rglob('info.lps')) for line in p.read_text(encoding='utf-8-sig').splitlines()]
         graph_paths = {(fields(line).get('PNGAnimation'), fields(line).get('mode', '').lower()): (p.parent / fields(line)['path'].replace('\\', '/')) for p, line, f in infos if line.startswith('PNGAnimation#') and 'path' in fields(line)}
@@ -98,6 +107,9 @@ def convert(source, destination):
                     frame.update(x=values[1], y=values[2], width=values[3], rotation=values[4] if len(values) > 4 else 0, opacity=values[5] if len(values) > 5 else 1, visible=True)
                 else:
                     frame['visible'] = False
+                if not 0 <= frame['opacity'] <= 1:
+                    diagnostics.append(f'{action}/{mode}/a{i}: invalid source opacity {frame["opacity"]}, clamped to 0...1')
+                    frame['opacity']=max(0,min(1,frame['opacity']))
                 track.append(frame); previous = frame; i += 1
             clips.append({'action': action, 'mood': mode, 'stages': [{'phase': 'loop', 'layers': [layer(back, 0), layer(front, 2)], 'foodTrack': track}]})
     config = (source / 'pet/vup.lps').read_text(encoding='utf-8-sig')
@@ -106,7 +118,7 @@ def convert(source, destination):
         if line.startswith(('touchhead:', 'touchbody:')):
             f = fields(line)
             regions['head' if line.startswith('touchhead') else 'body'] = {'x': float(f['px']), 'y': float(f['py']), 'width': float(f['sw']), 'height': float(f['sh'])}
-    manifest = {'version': 1, 'canvasWidth': 500, 'canvasHeight': 500, 'regions': regions, 'clips': clips}
+    manifest = {'version': 2, 'diagnostics': diagnostics, 'canvasWidth': 500, 'canvasHeight': 500, 'regions': regions, 'clips': clips}
     write_if_changed(destination / 'manifest.json', (json.dumps(manifest, ensure_ascii=False, indent=2) + '\n').encode('utf-8'))
     write_if_changed(destination / 'sources.sha256.json', (json.dumps(records, indent=2, sort_keys=True) + '\n').encode('utf-8'))
     if not any(c['action'] == 'idle' and c['mood'] == 'Nomal' for c in clips):

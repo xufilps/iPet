@@ -51,27 +51,47 @@ import PetCore
     private var sprites: [Int: SKSpriteNode] = [:]
     private var masks: [Int: [UInt8]] = [:]
     private var framePaths: [Int: String] = [:]
-    private let item = SKLabelNode(fontNamed: "Apple Color Emoji")
+    private let item = SKSpriteNode(color: .white, size: .zero)
+    private var foodPath: String?
+    public var hasFoodImage: Bool { foodPath != nil && item.texture != nil }
+    public private(set) var requestedGraphID: String?
     private var previousTime: TimeInterval?
     public var cacheBytes: Int { cache.bytes }
     public init(manifest: PetManifest, assetRoot: URL) {
         self.manifest = manifest; self.assetRoot = assetRoot
         super.init(size: CGSize(width: manifest.canvasWidth, height: manifest.canvasHeight))
         scaleMode = .aspectFit; backgroundColor = .clear
-        item.zPosition = 1; item.verticalAlignmentMode = .center; item.horizontalAlignmentMode = .center
+        item.zPosition = 1
         addChild(item)
         play(.idle, mood: .normal)
     }
     required init?(coder: NSCoder) { fatalError("Use manifest initializer") }
     public func play(_ action: PetAction, mood: PetMood) {
+        requestedGraphID=nil
         requestedAction = action; self.mood = mood
         let clip = manifest.resolve(action: action, mood: mood)
         if clip.action != action || clip.mood != mood { onDiagnostic?("动画回退：\(action.rawValue)/\(mood.rawValue) → \(clip.action.rawValue)/\(clip.mood.rawValue)") }
         timeline = AnimationTimeline(clip: clip, looping: [.idle, .sleep, .raised, .walkLeft, .walkRight].contains(action))
+        installTimeline()
+    }
+    private func installTimeline() {
         previousTime = nil
         for node in sprites.values { node.removeFromParent() }
         sprites.removeAll(); masks.removeAll(); framePaths.removeAll(); item.isHidden = true
         render()
+    }
+    public func playActivity(graphID: String, mood: PetMood) {
+        requestedAction = .activity;requestedGraphID=graphID;self.mood=mood
+        let clip=manifest.resolveActivity(graphID:graphID,mood:mood)
+        if clip.graphID != graphID || clip.mood != mood { onDiagnostic?("活动动画回退：\(graphID)/\(mood.rawValue)") }
+        timeline=AnimationTimeline(clip:clip,looping:true);installTimeline()
+    }
+    public func setFoodImage(path: String?) {
+        foodPath=nil;item.texture=nil
+        guard let path else { return }
+        guard PetCatalog.safePath(path), path.hasPrefix("items/"), path.hasSuffix(".png") else { onDiagnostic?("拒绝不合法食物图片路径。");return }
+        if let entry=cache.get(AnimationFrame(path:path,duration:1,width:1,height:1),root:assetRoot) { foodPath=path;item.texture=entry.texture }
+        else { onDiagnostic?("物品图片缺失或无法解码：\(path)") }
     }
     public func setTextureResolution(pixelWidth: Int) {
         let target = min(1024, max(256, ((pixelWidth + 127) / 128) * 128))
@@ -82,7 +102,7 @@ import PetCore
     public func resetTiming() { previousTime = nil }
     public func releaseTextures() {
         for node in sprites.values { node.texture = nil }
-        framePaths.removeAll(); masks.removeAll(); cache.clear()
+        framePaths.removeAll(); masks.removeAll(); cache.clear();item.texture=nil
     }
     nonisolated public override func update(_ currentTime: TimeInterval) {
         MainActor.assumeIsolated { advance(currentTime) }
@@ -121,9 +141,10 @@ import PetCore
             }
         }
         if let food = stage.food(at: elapsed), food.visible {
-            item.text = requestedAction == .drink ? "🥛" : "🍞"
-            item.fontSize = food.width; item.alpha = food.opacity
-            item.position = CGPoint(x: food.x + food.width / 2, y: size.height - food.y - food.width / 2)
+            if item.texture == nil, let path=foodPath { setFoodImage(path:path) }
+            let imageSize=item.texture?.size() ?? CGSize(width:1,height:1)
+            item.size=CGSize(width:food.width,height:food.width*imageSize.height/max(1,imageSize.width));item.alpha=food.opacity
+            item.position = CGPoint(x: food.x + food.width / 2, y: size.height - food.y - item.size.height / 2)
             item.zRotation = -food.rotation * .pi / 180; item.isHidden = false
         } else { item.isHidden = true }
     }
