@@ -103,7 +103,7 @@ public final class PetEngine {
         state=next
         if mode == .useImmediately {
             lastInteraction=activeSeconds
-            if state.mood == .ill { stopActivity(.stateFailed) }
+            if state.mood == .ill, let session=state.activity, catalog.activity(session.activityID) != nil { stopActivity(.stateFailed) }
             events.append(.itemUsed(id:id))
         }
         return result(true,mode == .inventory ? "已买入背包：\(item.name)。" : "已使用：\(item.name)。")
@@ -174,7 +174,7 @@ public final class PetEngine {
         } else if state.feeling <= 25 { state.changeAffection(-t); state.experience -= t }
         // Random.Next(0,1) is always zero in C#; do not add random health loss.
         if state.drink <= 25 { state.experience -= t }
-        if state.mood == .ill { stopActivity(.stateFailed) }
+        if state.mood == .ill, let session=state.activity, catalog.activity(session.activityID) != nil { stopActivity(.stateFailed) }
     }
 }
 private extension PetCommand { var isHead: Bool { if case .touchHead = self { true } else { false } } }

@@ -55,6 +55,7 @@ import PetCore
     private var foodPath: String?
     public var hasFoodImage: Bool { foodPath != nil && item.texture != nil }
     public private(set) var requestedGraphID: String?
+    public private(set) var isFinishingActivity = false
     private var previousTime: TimeInterval?
     public var cacheBytes: Int { cache.bytes }
     public init(manifest: PetManifest, assetRoot: URL) {
@@ -67,7 +68,7 @@ import PetCore
     }
     required init?(coder: NSCoder) { fatalError("Use manifest initializer") }
     public func play(_ action: PetAction, mood: PetMood) {
-        requestedGraphID=nil
+        isFinishingActivity=false; requestedGraphID=nil
         requestedAction = action; self.mood = mood
         let clip = manifest.resolve(action: action, mood: mood)
         if clip.action != action || clip.mood != mood { onDiagnostic?("动画回退：\(action.rawValue)/\(mood.rawValue) → \(clip.action.rawValue)/\(clip.mood.rawValue)") }
@@ -81,10 +82,17 @@ import PetCore
         render()
     }
     public func playActivity(graphID: String, mood: PetMood) {
-        requestedAction = .activity;requestedGraphID=graphID;self.mood=mood
+        isFinishingActivity=false;requestedAction = .activity;requestedGraphID=graphID;self.mood=mood
         let clip=manifest.resolveActivity(graphID:graphID,mood:mood)
         if clip.graphID != graphID || clip.mood != mood { onDiagnostic?("活动动画回退：\(graphID)/\(mood.rawValue)") }
         timeline=AnimationTimeline(clip:clip,looping:true);installTimeline()
+    }
+    @discardableResult public func restoreBase(state: PetState, catalog: PetCatalog, force: Bool = false) -> Bool {
+        guard force || !isFinishingActivity else { return false }
+        let base=PetPresentation(state:state,catalog:catalog)
+        if let graph=base.graphID { playActivity(graphID:graph,mood:state.mood) }
+        else { play(base.action,mood:state.mood) }
+        return true
     }
     public func setFoodImage(path: String?) {
         foodPath=nil;item.texture=nil
@@ -97,6 +105,10 @@ import PetCore
         let target = min(1024, max(256, ((pixelWidth + 127) / 128) * 128))
         guard cache.pixelWidth != target else { return }
         releaseTextures(); cache.pixelWidth = target; render()
+    }
+    @discardableResult public func finishActivity() -> Bool {
+        guard requestedAction == .activity else { return false }
+        isFinishingActivity = true; timeline?.requestFinish(); return true
     }
     public func finishAction() { timeline?.requestFinish() }
     public func resetTiming() { previousTime = nil }

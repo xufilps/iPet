@@ -27,6 +27,7 @@ struct ActivityView: View {
                         HStack {
                             VStack(alignment:.leading,spacing:4) {
                                 Text(activity.name)
+                                Text(activity.decisionDescription).font(.caption).foregroundStyle(.secondary)
                                 Text("\(Int(activity.durationSeconds/60)) 分钟 · 完成奖励 \(Int(activity.finishBonus*100))% · 等级 \(activity.levelLimit)+").font(.caption).foregroundStyle(.secondary)
                             }
                             Spacer()

@@ -13,6 +13,14 @@ public struct ActivityDefinition: Codable, Equatable, Sendable, Identifiable {
         self.id=id; self.name=name; self.graphID=graphID; self.kind=kind; self.durationSeconds=durationSeconds; self.levelLimit=levelLimit; self.moneyBase=moneyBase; self.strengthFood=strengthFood; self.strengthDrink=strengthDrink; self.feeling=feeling; self.finishBonus=finishBonus
     }
 }
+public extension ActivityDefinition {
+    var decisionDescription: String {
+        func number(_ value:Double) -> String { value.formatted(.number.precision(.fractionLength(0...3))) }
+        let unit=kind == .work ? "金币" : "活动经验"
+        let mood=kind == .play ? "心情变化 \(number(-feeling*0.05))/15秒" : "心情消耗权重 \(number(feeling))（随空闲时间变化）"
+        return "满状态参考：\(unit) +\(number(max(0,moneyBase*0.05*1.7)))/15秒；基础需求：饱腹 \(number(strengthFood*0.05))、饮水 \(number(strengthDrink*0.05))/15秒；\(mood)。实际收益和消耗受状态与体力替代影响。"
+    }
+}
 public enum ItemCategory: String, Codable, Sendable, CaseIterable { case food, meal, snack, drink, functional, drug, gift
     public var title: String { switch self { case .food: "食物"; case .meal: "正餐"; case .snack: "零食"; case .drink: "饮料"; case .functional: "功能性"; case .drug: "药品"; case .gift: "礼品" } }
 }

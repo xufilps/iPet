@@ -40,4 +40,21 @@ final class PetEconomyIntegrationTests: XCTestCase {
         XCTAssertEqual(PetPresentation(state:state,catalog:catalog).action,.sleep)
         XCTAssertEqual(state.money,1000)
     }
+    func testUnknownPausedActivitySurvivesIllnessAndItemUse() {
+        let clock=FakeClock(); var state=PetState();state.health=10
+        var session=ActivitySession(activityID:"unknown");session.isPaused=true;session.elapsedSeconds=123;session.earned=45;state.activity=session
+        let catalog=PetCatalog(items:[ItemDefinition(id:"item",name:"测试",price:0)])
+        let engine=PetEngine(state:state,clock:clock,random:FixedRandom(),catalog:catalog)
+        clock.now=15;engine.tick();XCTAssertEqual(engine.state.activity,session)
+        let second=PetEngine(state:state,catalog:catalog)
+        _=second.perform(.buyItem("item",mode:.useImmediately));XCTAssertEqual(second.state.activity,session)
+        XCTAssertFalse(second.drainEvents().contains { if case .activityStopped = $0 { true } else { false } })
+        XCTAssertFalse(engine.drainEvents().contains { if case .activityStopped = $0 { true } else { false } })
+        _=engine.perform(.stopActivity);XCTAssertNil(engine.state.activity)
+    }
+    func testActivityDecisionInformation() {
+        let work=testWork();let details=work.decisionDescription
+        for value in ["金币","0.68","饱腹","0.175","饮水","0.125","心情"] { XCTAssertTrue(details.contains(value),value) }
+        XCTAssertTrue(testWork(kind:.study).decisionDescription.contains("经验"))
+    }
 }

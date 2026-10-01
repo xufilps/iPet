@@ -66,9 +66,9 @@
 
 交付13项内置活动、118项物品与原图、金币/经验收益、完成奖金、购物/背包/药品、食用衰减、五个原生页面以及JSON v1→v2升级。详见[实施记录](PHASE-2-EXECUTION.md)、[规格](specs/PHASE-2.md)及[行为对照](BEHAVIOR.md)。4条限时商品排除；原随机变体池、统计/排程、第三方MOD、LPS导入、C#插件、Steam/云同步和iOS应用仍不支持。
 
-自动验证环境为arm64 Mac、macOS27.0 (26A428)、Xcode27.0 (27A266a)、Swift6.4，源码语言模式Swift6，部署目标macOS14/iOS17。30项核心、7项渲染、10项Python检查通过；macOS Release构建/ad-hoc签名检查与iOS Simulator共享模块编译通过，工程生成两次字节一致，原README 7775字节后缀及LICENSE保持。原始日志在Apple/build/verification/，不纳入Git。未运行应用进行本轮实机体验/长期资源测试；v0.1的历史120秒观察不代表v0.2证据，最低系统与Intel也待验。
+自动验证环境为arm64 Mac、macOS27.0 (26A428)、Xcode27.0 (27A266a)、Swift6.4，源码语言模式Swift6，部署目标macOS14/iOS17。32项核心、8项渲染、10项Python检查通过；macOS Release构建/ad-hoc签名检查与iOS Simulator共享模块编译通过，工程生成两次字节一致，原README 7775字节后缀及LICENSE保持。原始日志在Apple/build/verification/，不纳入Git。未运行应用进行本轮实机体验/长期资源测试；v0.1的历史120秒观察不代表v0.2证据，最低系统与Intel也待验。
 
-所选清单为67个动作/Graph/状态组合、2158个唯一PNG帧（约271.8MiB），物品图片另计；缓存估算上限仍48MiB，节点持有纹理和SpriteKit/GPU开销另计，不能作为进程RSS保证。新活动增加包体，不声称比原版更省资源。缺状态回退同Graph正常/其他状态；studytwo/Happy缺结束阶段，跳绳按B目录首个变体，Gift非法源透明度截断并记录诊断。PNG完整解码在渲染时进行，转换只校验头与尺寸。
+所选清单为67个动作/Graph/状态组合、2158个唯一PNG帧（约271.8MiB），物品图片另计，当前构建应用约284.9MiB；缓存估算上限仍48MiB，节点持有纹理和SpriteKit/GPU开销另计，不能作为进程RSS保证。新活动增加包体，不声称比原版更省资源。缺状态回退同Graph正常/其他状态；studytwo/Happy缺结束阶段，跳绳按B目录首个变体，Gift非法源透明度截断并记录诊断。PNG完整解码在渲染时进行，转换只校验头与尺寸。
 
 存档目录仍为Application Support/VPetApple。升级前独立保留pet.v1-before-upgrade-UUID.json；正常previous轮换不覆盖此原件。活动加载后暂停，用户继续；睡眠/退出不补算。未知商品/活动ID保留并在面板提示，未来格式或目录版本暂停写入。保存失败只提示，不重放购买/使用；再保存只是写当前快照。
 

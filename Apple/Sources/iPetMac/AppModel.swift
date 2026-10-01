@@ -127,7 +127,9 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     func command(_ command: PetCommand) {
         walkingUntil = 0
         let action = engine.send(command); state = engine.state
-        consumeEvents(); petScene.play(action, mood: state.mood); save()
+        consumeEvents()
+        if !petScene.isFinishingActivity || ![.idle,.sleep].contains(action) { petScene.play(action,mood:state.mood) }
+        save()
     }
     func perform(_ command: PetEconomyCommand) {
         let result = engine.perform(command)
@@ -162,14 +164,16 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
                 }
             }
         }
-        if stopped { state = engine.state; if !usedItem { restoreBaseAnimation() }; save() }
+        if stopped {
+            state = engine.state
+            if !usedItem && !petScene.finishActivity() { restoreBaseAnimation() }
+            save()
+        }
         return usedItem
     }
-    private func restoreBaseAnimation() {
+    private func restoreBaseAnimation(force: Bool = false) {
         guard petScene != nil, petView?.isInteracting != true else { return }
-        let base=PetPresentation(state:engine.state,catalog:catalog)
-        if let graph=base.graphID { petScene.playActivity(graphID:graph,mood:engine.state.mood) }
-        else { petScene.play(base.action,mood:engine.state.mood) }
+        petScene.restoreBase(state:engine.state,catalog:catalog,force:force)
     }
     @objc private func showActivities() { selectedPage = .activity; showControls() }
     @objc private func showShop() { selectedPage = .shop; showControls() }
@@ -206,7 +210,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     @objc func toggleVisibility() {
         visible.toggle(); menuVisibility.title = visible ? "隐藏桌宠" : "显示桌宠"
         walkingUntil = 0
-        if visible { restoreBaseAnimation(); petView.isPaused = false; petPanel.orderFrontRegardless() }
+        if visible { restoreBaseAnimation(force:true); petView.isPaused = false; petPanel.orderFrontRegardless() }
         else { petPanel.orderOut(nil); petView.isPaused = true; petScene.releaseTextures() }
     }
     func updateSize() {
@@ -238,7 +242,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     private func resume() {
         engine.resetClock(); lastTick = nil; lastSave = ProcessInfo.processInfo.systemUptime
         nextActivity = lastSave + 20; suspended = false
-        restoreBaseAnimation(); petView.isPaused = !visible; clampPosition()
+        restoreBaseAnimation(force:true); petView.isPaused = !visible; clampPosition()
     }
     func save() {
         guard writable else { return }
