@@ -51,6 +51,16 @@ struct ControlsView: View {
                 Text("停止定时养成与当前活动；抚摸只反馈，购买即用只预览。已有库存使用仍消耗并生效，买入背包仍扣款。实际属性保留，开启后恢复判断且不补算。")
                     .font(.caption).foregroundStyle(.secondary)
             }
+            Toggle("窗口置顶",isOn:$model.topMost).onChange(of:model.topMost) { model.updateWindowPreferences() }
+            Toggle("角色全部点击穿透",isOn:$model.passThrough).onChange(of:model.passThrough) { model.updateWindowPreferences() }
+            HStack {
+                Text("角色不透明度")
+                Slider(value:$model.opacity,in:0.05...1,step:0.05).onChange(of:model.opacity) { model.updateWindowPreferences() }
+                Text(model.opacity.formatted(.percent.precision(.fractionLength(0)))).monospacedDigit().frame(width:45)
+            }
+            Button("恢复窗口默认设置") { model.resetWindowPreferences() }
+            Text("默认只让透明区域穿透。全部穿透时角色不能点击或拖动，可从菜单栏恢复默认；独立工具栏仍可操作，不透明度仅影响角色。")
+                .font(.caption).foregroundStyle(.secondary)
             Toggle("随宠工具栏",isOn:$model.toolbarEnabled).onChange(of:model.toolbarEnabled) { model.updateToolbarPreference() }
             Toggle("自主移动",isOn:$model.autoMove).onChange(of:model.autoMove) { model.updateAutoMove() }
             HStack {

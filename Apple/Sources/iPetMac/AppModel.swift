@@ -17,6 +17,10 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     private var lastUIRefresh = 0.0
     @Published var message = ""
     @Published var size = UserDefaults.standard.object(forKey: "petSize") as? Double ?? 280
+    @Published var topMost=true
+    @Published var passThrough=false
+    @Published var opacity=1.0
+    private var windowBehavior:PetWindowBehavior { PetWindowBehavior(topMost:topMost,passThrough:passThrough,opacity:opacity) }
     @Published var simulationEnabled=true
     @Published var fixedMood:PetMood = .normal
     var presentationMood:PetMood { engine?.presentationMood ?? state.mood }
@@ -70,6 +74,9 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         autoMove = defaults.object(forKey: "autoMove") as? Bool ?? true
         toolbarEnabled = !smokeMode && defaults.bool(forKey:"toolbarEnabled")
         favoriteItems = smokeMode ? []:Set(defaults.stringArray(forKey:"favoriteItems") ?? [])
+        topMost=smokeMode ? true:(defaults.object(forKey:"topMost") as? Bool ?? true)
+        passThrough = !smokeMode && defaults.bool(forKey:"passThrough")
+        opacity=smokeMode ? 1:PetWindowBehavior(opacity:defaults.object(forKey:"opacity") as? Double ?? 1).opacity
         simulationEnabled=smokeMode ? true:(defaults.object(forKey:"simulationEnabled") as? Bool ?? true)
         fixedMood=smokeMode ? .normal:(PetMood(rawValue:defaults.string(forKey:"fixedMood") ?? "") ?? .normal)
         interactionCycle=smokeMode ? 200:min(1000,max(30,defaults.object(forKey:"interactionCycle") as? Int ?? 200))
@@ -171,6 +178,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         } else { resetPosition() }
         petPanel.orderFrontRegardless()
         toolbar=PetToolbarWindow { [weak self] action in self?.toolbarAction(action) }
+        applyWindowPreferences()
         refreshToolbar()
         updateTextureResolution()
         buildMenu()
@@ -200,6 +208,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         menuToolbar=item("随宠工具栏",#selector(toggleToolbar));menuToolbar.state=toolbarEnabled ? .on : .off;menu.addItem(menuToolbar)
         menu.addItem(item("休息 / 起床", #selector(rest)))
         menuVisibility = item("隐藏桌宠", #selector(toggleVisibility)); menu.addItem(menuVisibility)
+        menu.addItem(item("恢复窗口默认设置", #selector(resetWindowPreferences)))
         menu.addItem(item("重置位置", #selector(resetPosition))); menu.addItem(.separator())
         menu.addItem(item("退出 iPet", #selector(quit))); statusItem.menu = menu
         let main = NSMenu(), appMenu = NSMenu()
@@ -378,8 +387,8 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
             _ = petScene.playMoodTransition(from:oldMood,to:engine.presentationMood)
         }
         if visible {
-            petPanel.ignoresMouseEvents = !petView.isInteracting && !petView.opaqueUnderMouse()
-            if sideHidePlan != nil,!petView.isInteracting {
+            petPanel.ignoresMouseEvents = windowBehavior.ignoresMouse(interacting:petView.isInteracting,opaque:petView.opaqueUnderMouse())
+            if sideHidePlan != nil,!passThrough,!petView.isInteracting {
                 let hovered=petPanel.frame.contains(NSEvent.mouseLocation)
                 if hovered != sideHideHovered { sideHideHovered=hovered;petScene.setSideHideHovered(hovered) }
             }
@@ -486,6 +495,27 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     }
     private func updateTextureResolution() {
         petScene.setTextureResolution(pixelWidth: Int(size * (petPanel.screen?.backingScaleFactor ?? 2)))
+    }
+    private func applyWindowPreferences() {
+        let behavior=windowBehavior
+        petPanel.level=behavior.topMost ? .floating:.normal
+        petPanel.alphaValue=behavior.opacity
+        petPanel.ignoresMouseEvents=behavior.ignoresMouse(interacting:petView.isInteracting,opaque:petView.opaqueUnderMouse())
+        speech.setTopMost(behavior.topMost);toolbar?.setTopMost(behavior.topMost)
+    }
+    func updateWindowPreferences() {
+        petView.cancelInteraction();cancelMovement();restoreBaseAnimation(force:true)
+        opacity=windowBehavior.opacity;applyWindowPreferences();persistPosition()
+        if !smokeMode {
+            UserDefaults.standard.set(topMost,forKey:"topMost")
+            UserDefaults.standard.set(passThrough,forKey:"passThrough")
+            UserDefaults.standard.set(opacity,forKey:"opacity")
+        }
+    }
+    @objc func resetWindowPreferences() {
+        topMost=true;passThrough=false;opacity=1
+        updateWindowPreferences()
+        if visible { petPanel.orderFrontRegardless() }
     }
     func updateSimulationSettings() {
         cancelInventoryUse();petView.cancelInteraction();cancelMovement();autonomy.reset()

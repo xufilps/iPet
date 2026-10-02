@@ -168,3 +168,9 @@ macOS按32件一批、批间让出主线程，进度显示并可停止剩余，�
 MainLogic.EventTimer的EnableFunction控制FunctionSpend，关闭使用NoFunctionMOD；设置关闭退出Work/Sleep，抚摸/pinch受EnableFunction保护。iPet关闭时退出活动不发完成奖金、退出休息，不推进定时属性/经验/活动或释放储存增量，时钟基准重建，开启不补算。固定呈现状态独立于真实PetState属性，影响动画、移动资格和本地文本模式，数字条件仍取真实属性；偏好本机保存，JSON v2不新增字段。开启恢复实际状态判断。
 
 原winBetterBuy关闭只显示食物动画，不扣款/TakeItem；库存Food UseAction不受该开关保护，仍TakeItem并Consume。iPet购买即用在关闭时只预览，已有库存仍扣库存/逐件生效；新原生买入背包继续正常扣款，是明确产品适配。关闭时拒绝新养成活动避免无计算会话，原工作界面路径尚需完整比较；手动休息仍可展示，定时恢复不会发生。对话主动效果沿现有规则，不把开关宣称为全数据冻结；完整禁用模式统计/插件等未迁移，真实UI体验待验。
+
+## 阶段3W：窗口显示偏好
+
+原TopMost/HitThrough以及Opacity范围0.05...1适配为NSPanel floating/normal、全部角色ignoresMouseEvents和角色alphaValue。默认保持置顶、非透明角色可操作/透明区穿透、不透明度1；全部穿透优先于alpha/交互，切换先取消手势和边缘移动恢复可见基础，避免计时自动alpha覆盖配置。穿透时不触发侧挂悬停探头，菜单栏恢复默认不依赖角色点击。
+
+独立说话/工具栏层级跟随置顶，但保持不透明度与工具栏可操作，为原生可读性适配；设置本机持久化，测试模式默认隔离，保存v2不变。原OpacityMain/OpacityHitThrough动态组合和全屏策略未迁移；规则测试不能证明真实AppKit焦点/物理穿透/遮挡，最终实机与压力仍待验。

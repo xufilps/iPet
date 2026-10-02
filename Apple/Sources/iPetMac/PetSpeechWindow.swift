@@ -17,6 +17,7 @@ private struct SpeechBubble:View {
     private let panel=PetPanel(contentRect:.zero,styleMask:[.borderless,.nonactivatingPanel],backing:.buffered,defer:false)
     private var contentSize=CGSize.zero
     var isVisible:Bool { panel.isVisible }
+    func setTopMost(_ value:Bool) { panel.level=value ? .floating:.normal }
     init() {
         panel.title="iPet · 说话";panel.isOpaque=false;panel.backgroundColor = .clear
         panel.hasShadow=true;panel.level = .floating;panel.hidesOnDeactivate=false

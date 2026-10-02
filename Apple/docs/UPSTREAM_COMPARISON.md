@@ -1,6 +1,6 @@
 # Windows 原版与 iPet 的持续差异矩阵
 
-原版基线：`1a06c5981330564bab05a098d2d7969a4b119dd3`；iPet 当前基线：v0.2.0，已推进至阶段3V；部分实机验收已记录，压力测试按用户要求留到功能完善后。原版功能依据上游固定基线源码，不将第三方插件功能算作内置功能；当前行为依据 Apple 源码和已记录验证。后续每次迁移更新本表、行为说明和交接记录。源码入口编号在文末，阶段对应 [ROADMAP.md](ROADMAP.md)。
+原版基线：`1a06c5981330564bab05a098d2d7969a4b119dd3`；iPet 当前基线：v0.2.0，已推进至阶段3W；部分实机验收已记录，压力测试按用户要求留到功能完善后。原版功能依据上游固定基线源码，不将第三方插件功能算作内置功能；当前行为依据 Apple 源码和已记录验证。后续每次迁移更新本表、行为说明和交接记录。源码入口编号在文末，阶段对应 [ROADMAP.md](ROADMAP.md)。
 
 状态定义：**已保留**为纳入范围的原规则已移植；**已适配**为平台或产品行为有明确变化；**部分实现**为有可用子集；**尚未迁移**为没有原生实现；**需要平台替代**为原机制不能直接复用；**待验证**为代码或构建证据不足以完成验收。状态指本行能力，不代表整个类别完成。
 
@@ -188,3 +188,5 @@ PetIdleCycles、PetManifest.fidgetCandidates/resolveFidget、PetScene和AppModel
 阶段3U将硬编码互动周期改为30...1000可调/默认200，本机偏好保存；原MainLogic max(20,InteractionCycle-CountNomal)范围沿用，修改不清空计数或抢先采样。依据winGameSetting.InteractionSlider、Setting.InteractionCycle → PetAutonomy.setInteractionCycle、AppModel/ControlsView。仍15秒采样/基础待机才触发，活动中互动权重和扩展池未迁移；养成关闭/固定状态仍缺，真实频率观感待验。
 
 阶段3V接入养成开关与关闭时固定呈现状态，时钟重建且恢复不补算；关闭退出活动/休息、抚摸仅反馈。原FunctionSpend/NoFunctionMOD、CalFunctionBox、winBetterBuy与库存Food UseAction分别核对：购买即用仅动画，库存使用仍生效；原生买入背包仍扣款、关闭拒绝新活动为适配，不宣称所有禁用模式入口完全一致。固定模式影响动画/移动/文本筛选但不改数字属性或JSON。依据PetEngine.configureSimulation/presentationMood、PetDialogue可选模式、PetScene.restoreBase与AppModel/ControlsView/ShopView；保存v2不变，真实切换/恢复观感待验。
+
+阶段3W新增置顶/普通层级、角色全部穿透、不透明度0.05...1及菜单/设置恢复默认；正常模式沿alpha自动穿透，独立工具栏仍可操作，辅助面板层级跟随且不降低可读性。原winGameSetting TopMost/HitThrough/Opacity → PetWindowBehavior、AppModel.applyWindowPreferences与原生面板；OpacityMain/OpacityHitThrough动态组合、全屏和真实焦点/遮挡/穿透仍未完成，部分实现，保存v2不变。

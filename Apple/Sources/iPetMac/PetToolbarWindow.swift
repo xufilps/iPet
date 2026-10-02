@@ -58,6 +58,7 @@ private struct PetToolbarView:View {
     private let display=ToolbarPresentation()
     private var hosting:NSHostingView<PetToolbarView>!
     var visibleFrame:CGRect? { panel.isVisible ? panel.frame : nil }
+    func setTopMost(_ value:Bool) { panel.level=value ? .floating:.normal }
     init(action:@escaping (ToolbarAction)->Void) {
         panel.title="iPet · 快捷工具栏";panel.isOpaque=false;panel.backgroundColor = .clear
         panel.hasShadow=true;panel.level = .floating;panel.hidesOnDeactivate=false
