@@ -24,17 +24,26 @@ final class PetPanel: NSPanel {
         let local = convert(window.convertPoint(fromScreen: NSEvent.mouseLocation), from: nil)
         return bounds.contains(local) && petScene?.isOpaque(at: scenePoint(local)) == true
     }
+    private func logInput(_ event: NSEvent) {
+        if ProcessInfo.processInfo.environment["IPET_MANUAL_TEST"] == "1" {
+            NSLog("IPET_MOUSE type=%d local=(%.1f,%.1f) cursor=(%.1f,%.1f)",event.type.rawValue,event.locationInWindow.x,event.locationInWindow.y,NSEvent.mouseLocation.x,NSEvent.mouseLocation.y)
+        }
+    }
     override func mouseDown(with event: NSEvent) {
-        origin = window?.frame.origin; mouseOrigin = NSEvent.mouseLocation; dragging = false
+        logInput(event)
+        origin = window?.frame.origin; mouseOrigin = window?.convertPoint(toScreen:event.locationInWindow); dragging = false
     }
     override func mouseDragged(with event: NSEvent) {
-        guard let origin, let mouseOrigin else { return }
-        let current = NSEvent.mouseLocation
+        logInput(event)
+        guard let origin, let mouseOrigin, let window else { return }
+        // Event coordinates stay correct for queued/coalesced and directed input.
+        let current = window.convertPoint(toScreen:event.locationInWindow)
         let dx = current.x - mouseOrigin.x, dy = current.y - mouseOrigin.y
         if !dragging && hypot(dx, dy) > 4 { dragging = true; onDragStart?() }
-        if dragging { window?.setFrameOrigin(NSPoint(x: origin.x + dx, y: origin.y + dy)) }
+        if dragging { window.setFrameOrigin(NSPoint(x: origin.x + dx, y: origin.y + dy)) }
     }
     override func mouseUp(with event: NSEvent) {
+        logInput(event)
         defer { dragging = false; origin = nil; mouseOrigin = nil }
         if dragging { onDragEnd?() }
         else { onTouch?(petScene?.region(at: scenePoint(convert(event.locationInWindow, from: nil)))) }

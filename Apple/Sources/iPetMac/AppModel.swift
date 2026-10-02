@@ -36,6 +36,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     private var suspended = false
     private var observers: [NSObjectProtocol] = []
     private var menuVisibility: NSMenuItem!
+    private var manualTest: Bool { ProcessInfo.processInfo.environment["IPET_MANUAL_TEST"] == "1" }
     private var smokeMode: Bool { ProcessInfo.processInfo.environment["IPET_SMOKE_TEST"] == "1" }
     init() {
         // Preserve preferences when moving from the prototype bundle identifier.
@@ -50,7 +51,12 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     func start() throws {
         size = size.isFinite ? min(500, max(150, size)) : 280
         let base: URL
-        if smokeMode { base = FileManager.default.temporaryDirectory.appendingPathComponent("iPet-smoke-\(ProcessInfo.processInfo.processIdentifier)") }
+        if smokeMode {
+            // Fixed, explicit fixture directory enables repeat-launch acceptance; production path is never used.
+            if manualTest, let path=ProcessInfo.processInfo.environment["IPET_TEST_SAVE_DIRECTORY"], path.hasPrefix("/"), !path.isEmpty {
+                base=URL(fileURLWithPath:path,isDirectory:true)
+            } else { base = FileManager.default.temporaryDirectory.appendingPathComponent("iPet-smoke-\(ProcessInfo.processInfo.processIdentifier)") }
+        }
         else { base = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent("VPetApple") }
         store = PetSaveStore(directory: base)
         do { state = try store.load() ?? PetState(); message = store.recoveryMessage ?? "" }
@@ -77,18 +83,21 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         petView.autoresizingMask = [.width, .height]; petView.presentScene(petScene)
         petPanel.contentView = petView
         petView.onTouch = { [weak self] region in
+            self?.recordAcceptanceInput("touch:\(region ?? "panel")")
             if region == "head" { self?.command(.touchHead) }
             else if region == "body" { self?.command(.touchBody) }
             else { self?.showControls() }
         }
         petView.onDragStart = { [weak self] in
             guard let self else { return }
+            self.recordAcceptanceInput("drag-start")
             self.engine.recordInteraction()
             self.walkingUntil = 0; self.petScene.play(.raised, mood: self.state.mood)
         }
         petView.onDragEnd = { [weak self] in
             guard let self else { return }
             self.petScene.finishAction(); self.clampPosition(); self.persistPosition()
+            self.recordAcceptanceInput("drag-end")
         }
         if let x = UserDefaults.standard.object(forKey: "petX") as? Double, let y = UserDefaults.standard.object(forKey: "petY") as? Double {
             petPanel.setFrameOrigin(NSPoint(x: x, y: y)); clampPosition()
@@ -103,7 +112,11 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         lastSave = ProcessInfo.processInfo.systemUptime; nextActivity = lastSave + 20
         timer = Timer.publish(every: 1.0 / 30, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.tick() }
         if !message.isEmpty { showControls() }
-        if smokeMode { startSmokeTest() }
+        if smokeMode && !manualTest { startSmokeTest() }
+    }
+    private func recordAcceptanceInput(_ event:String) {
+        guard manualTest else { return }
+        NSLog("IPET_INPUT event=%@ front=%@ key=%d x=%.1f y=%.1f",event,NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "unknown",petPanel.isKeyWindow ? 1 : 0,petPanel.frame.minX,petPanel.frame.minY)
     }
     private func buildMenu() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -122,7 +135,14 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         let preferences = item("状态与设置…", #selector(showControls)); preferences.keyEquivalent = ","
         let exit = item("退出 iPet", #selector(quit)); exit.keyEquivalent = "q"
         appMenu.addItem(preferences); appMenu.addItem(.separator()); appMenu.addItem(exit)
-        let root = NSMenuItem(); root.submenu = appMenu; main.addItem(root); NSApp.mainMenu = main
+        let root = NSMenuItem(); root.submenu = appMenu; main.addItem(root)
+        // NSTextField's command shortcuts use the standard menu responder chain.
+        let edit = NSMenu(title: "编辑")
+        for (title, action, key) in [("撤销", "undo:", "z"), ("重做", "redo:", "Z"), ("剪切", "cut:", "x"), ("复制", "copy:", "c"), ("粘贴", "paste:", "v"), ("全选", "selectAll:", "a")] {
+            edit.addItem(NSMenuItem(title:title,action:Selector(action),keyEquivalent:key))
+        }
+        let editRoot=NSMenuItem(title:"编辑",action:nil,keyEquivalent:""); editRoot.submenu=edit; main.addItem(editRoot)
+        NSApp.mainMenu = main
     }
     func command(_ command: PetCommand) {
         walkingUntil = 0
