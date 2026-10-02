@@ -7,7 +7,7 @@ def ident(name): return hashlib.sha1(name.encode()).hexdigest()[:24].upper()
 objects = {}
 def obj(name, value): objects[ident(name)] = value; return ident(name)
 def refs(names): return '(' + ', '.join(ident(n) for n in names) + ',)'
-files = ['main.swift', 'AppModel.swift', 'ControlsView.swift', 'PetWindow.swift', 'ActivityView.swift', 'ShopView.swift', 'InventoryView.swift', 'PetSpeechWindow.swift', 'PetToolbarWindow.swift', 'StatisticsView.swift']
+files = ['main.swift', 'AppModel.swift', 'ControlsView.swift', 'PetWindow.swift', 'ActivityView.swift', 'ShopView.swift', 'InventoryView.swift', 'PetSpeechWindow.swift', 'PetToolbarWindow.swift', 'StatisticsView.swift', 'PackageView.swift']
 for f in files:
     obj(f, f'isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = {f}; sourceTree = "<group>";')
     obj('build-' + f, f'isa = PBXBuildFile; fileRef = {ident(f)};')

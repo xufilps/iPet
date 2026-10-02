@@ -44,6 +44,22 @@ def normalize_work(raw):
             w['levelLimit']=0
     return w
 
+def normalize_package(raw):
+    f={k.lower():v for k,v in raw.items()}
+    kind=f.get('worktype','Work').lower()
+    if kind not in ['work','study']: raise ValueError('Unknown package type')
+    raw_days=number(f,'Duration')
+    if raw_days != int(raw_days): raise ValueError('Package duration must be an integer')
+    days=max(1,int(raw_days))
+    price=number(f,'Price');price=1 if price<0 else price
+    ratio=number(f,'LevelInNeed');ratio=1.25 if ratio<1 else ratio
+    commission=number(f,'Commissions');commission=.2 if commission<0 else commission
+    use=power(commission*100-15,1.5)+power(ratio*100-120,1.5)+(price*ratio*100-100)/4
+    if use/math.sqrt(days)<10: commission,ratio,price,days=.2,1.25,1,7
+    if not (0<=commission<=1 and 0<=price<=1e12 and 1<=ratio<=1e6 and 1<=days<=36500):
+        raise ValueError('Package exceeds supported bounds')
+    return {'kind':kind,'durationDays':days,'unitPrice':price,'levelRatio':ratio,'commission':commission}
+
 def convert_gameplay(source, destination):
     records={}; diagnostics=[]
     def read(path):
@@ -78,12 +94,19 @@ def convert_gameplay(source, destination):
             for key,original in [('strength','Strength'),('food','StrengthFood'),('drink','StrengthDrink'),('feeling','Feeling'),('health','Health'),('affection','Likability'),('experience','Exp')]:item[key]=number(f,original)
             if item['price']<0: raise ValueError('Negative price')
             items.append(item)
-    for group in [activities,items]:
+    packages=[]
+    for line in read(source/'text/SchedulePackage.lps'):
+        if not line.startswith('SchedulePackage:'): continue
+        raw=fields(line);f={k.lower():v for k,v in raw.items()};name=f.get('name')
+        if not name or len(name)>100: raise ValueError('Missing or long package name')
+        package=normalize_package(raw)
+        packages.append(dict(package,id='core.package.'+package['kind']+'.'+name,name=name,description=f.get('describe','').replace('/n','\n'),source=raw))
+    for group in [activities,items,packages]:
         if len({x['id'] for x in group}) != len(group): raise ValueError('Duplicate catalogue ID')
-    result={'version':1,'activities':activities,'items':items,'diagnostics':diagnostics}
+    result={'version':1,'activities':activities,'items':items,'packages':packages,'diagnostics':diagnostics}
     write_if_changed(destination/'gameplay.json',(json.dumps(result,ensure_ascii=False,indent=2,allow_nan=False)+'\n').encode())
     write_if_changed(destination/'gameplay-sources.sha256.json',(json.dumps(records,ensure_ascii=False,sort_keys=True,indent=2)+'\n').encode())
-    print(f'Gameplay: {len(activities)} activities, {len(items)} items, {len(diagnostics)} missing images')
+    print(f'Gameplay: {len(activities)} activities, {len(items)} items, {len(packages)} packages, {len(diagnostics)} missing images')
 
 if __name__=='__main__':
     root=Path(__file__).resolve().parents[1]

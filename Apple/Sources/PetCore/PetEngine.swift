@@ -80,6 +80,16 @@ public final class PetEngine {
     @discardableResult public func perform(_ command: PetEconomyCommand) -> PetCommandResult {
         do { try catalog.validate(); try state.validate() } catch { return PetCommandResult(accepted:false,message:"数据不合法，操作已拒绝。") }
         switch command {
+        case .signPackage(let id,let level,let replace):
+            return transactPackage { PetPackageRules.sign(state:&$0,id:id,level:level,replace:replace,catalog:catalog,now:wallClock.now) }
+        case .renewPackages:
+            return transactPackage { PetPackageRules.renew(state:&$0,catalog:catalog,now:wallClock.now) }
+        case .setPackageAutoRenew(let kind,let enabled):
+            return transactPackage { next in
+                guard var contract=next.package(kind) else { return result(false,"没有此类已签套餐。") }
+                contract.autoRenew=enabled;next.setPackage(contract,kind:kind)
+                return PetPackageRules.renew(state:&next,catalog:catalog,now:wallClock.now)
+            }
         case .startActivity(let id): return startActivity(id,multiplier:1)
         case .startMultipliedActivity(let id,let multiplier): return startActivity(id,multiplier:multiplier)
         case .stopActivity: stopActivity(.manual); return result(true,"活动已停止。")
@@ -95,6 +105,13 @@ public final class PetEngine {
             return transactItem(id:id,purchase:true,mode:mode)
         case .useItem(let id): return transactItem(id:id,purchase:false,mode:.useImmediately)
         }
+    }
+    private func transactPackage(_ transaction:(inout PetState)->PetCommandResult) -> PetCommandResult {
+        var next=state
+        let response=transaction(&next)
+        guard response.accepted else { return response }
+        do { try next.validate() } catch { return result(false,"套餐操作产生不合法数据，已拒绝且未扣款。") }
+        state=next;return response
     }
     private func startActivity(_ id:String,multiplier:Int) -> PetCommandResult {
         guard simulationEnabled else { return result(false,"请先启用养成，再开始活动。") }

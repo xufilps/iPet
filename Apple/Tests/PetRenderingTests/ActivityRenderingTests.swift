@@ -196,7 +196,8 @@ final class ActivityRenderingTests: XCTestCase {
             XCTAssertTrue(manifest.clips.contains { $0.action == .fidget && $0.graphID == graph })
         }
         await MainActor.run {
-            let scene=PetScene(manifest:manifest,assetRoot:assets)
+            // The loop exits probabilistically; use the upper draw to make this completion path deterministic.
+            let scene=PetScene(manifest:manifest,assetRoot:assets,random:VariantRandom(value:1.0.nextDown))
             var cycles=0;scene.onIdleCycle = { cycles += 1 }
             for i in 0...100 { scene.update(Double(i)*0.25) }
             XCTAssertGreaterThan(cycles,0)

@@ -11,7 +11,7 @@ public struct ActivitySession: Codable, Equatable, Sendable {
 }
 public enum ActivityStopReason: String, Codable, Sendable { case completed, manual, stateFailed }
 public enum PurchaseMode: Sendable { case useImmediately, inventory }
-public enum PetEconomyCommand: Sendable { case startActivity(String), startMultipliedActivity(String,multiplier:Int), stopActivity, resumeActivity, pauseActivity, buyItem(String, mode: PurchaseMode), useItem(String) }
+public enum PetEconomyCommand: Sendable { case signPackage(String,level:Int,replace:Bool), setPackageAutoRenew(ActivityKind,enabled:Bool), renewPackages, startActivity(String), startMultipliedActivity(String,multiplier:Int), stopActivity, resumeActivity, pauseActivity, buyItem(String, mode: PurchaseMode), useItem(String) }
 public struct PetCommandResult: Sendable { public let accepted: Bool; public let message: String }
 public enum PetEvent: Sendable { case activityStopped(id: String, reason: ActivityStopReason, earned: Double, bonus: Double), itemUsed(id: String) }
 public protocol PetWallClock { var now: Date { get } }

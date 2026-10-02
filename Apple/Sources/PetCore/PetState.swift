@@ -25,6 +25,7 @@ public struct PetState: Codable, Equatable, Sendable {
     public var catalogVersion = 1
     public var progress:PetProgress?
     public var activity: ActivitySession?
+    public var workPackage,studyPackage:PetSignedPackage?
     public init() {}
     public var level: Int { Int(sqrt(max(0, min(experience, 1e12))) / 10) + 1 }
     public var affectionMax: Double { Double(90 + level * 10) }
@@ -37,6 +38,8 @@ public struct PetState: Codable, Equatable, Sendable {
     }
     public func validate() throws {
         try progress?.validate()
+        try workPackage?.validate();try studyPackage?.validate()
+        guard workPackage == nil || workPackage?.kind == .work,studyPackage == nil || studyPackage?.kind == .study else { throw PetSaveError.invalidState }
         let bounded = [strength, food, drink, feeling, health]
         guard !name.isEmpty, name.count <= 100,
               bounded.allSatisfy({ $0.isFinite && (0...100).contains($0) }),

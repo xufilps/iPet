@@ -31,6 +31,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     @Published var toolbarEnabled=false
     @Published private(set) var favoriteItems:Set<String>=[]
     @Published private(set) var favoriteActivities:Set<String>=[]
+    @Published private(set) var packageWriteFailed=false
     @Published private(set) var inventoryUseProgress:String?
     private var inventoryUseTask:Task<Void,Never>?
     private(set) var engine: PetEngine!
@@ -242,7 +243,30 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         }
         save()
     }
+    var packageOperationsEnabled:Bool { writable && !packageWriteFailed && inventoryUseTask == nil }
+    func signPackage(id:String,level:Int) {
+        guard packageOperationsEnabled,let definition=catalog.packageDefinition(id) else { message="套餐操作暂不可用，请检查存档写入和背包使用状态。";return }
+        var confirmed=false
+        if let old=engine.state.package(definition.kind),old.isActive(at:Date()) {
+            let alert=NSAlert();alert.messageText="替换仍有效的套餐？"
+            let quote=definition.quote(level:level,now:Date()),refund=PetPackageRules.refund(contract:old,catalog:catalog,now:Date())
+            alert.informativeText="原套餐：\(old.name)\n新套餐：\(definition.name) · 全价\((quote?.price ?? 0).formatted(.number.precision(.fractionLength(2))))金币\n预计退款\(refund.formatted(.number.precision(.fractionLength(2))))金币。需先满足全价余额；确认时按最新状态和时间重新校验。"
+            if catalog.packageDefinition(old.definitionID)==nil { alert.informativeText += "\n旧套餐定义未识别，退款按0处理。" }
+            alert.addButton(withTitle:"确认替换");alert.addButton(withTitle:"取消")
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+            confirmed=true
+        }
+        perform(.signPackage(id,level:level,replace:confirmed))
+    }
     func perform(_ command: PetEconomyCommand) {
+        switch command {
+        case .signPackage,.setPackageAutoRenew,.renewPackages:
+            guard packageOperationsEnabled else { message="套餐操作已暂停，请检查存档写入和背包使用状态。";return }
+            let response=engine.perform(command);state=engine.state;message=response.message
+            if response.accepted,!save() { packageWriteFailed=true;message += " 套餐变更已保留在内存，暂停后续套餐操作，请重试保存，避免再次扣款。" }
+            return
+        default:break
+        }
         guard inventoryUseTask == nil else { message="正在使用背包物品，请完成或取消后再操作。";return }
         let result = engine.perform(command)
         state = engine.state; message = result.message
@@ -570,7 +594,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     }
     @discardableResult func save() -> Bool {
         guard writable else { return false }
-        do { try store.save(engine.state);return true }
+        do { try store.save(engine.state);packageWriteFailed=false;return true }
         catch { message = "保存失败：\(error.localizedDescription)"; NSLog("%@", message);return false }
     }
     func stop() { cancelInventoryUse();cancelMovement();speech.hide();toolbar?.hide();petView?.cancelInteraction();timer?.cancel(); if engine != nil { save() }; persistPositionIfReady() }

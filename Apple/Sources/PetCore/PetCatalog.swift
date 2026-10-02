@@ -40,12 +40,17 @@ public struct PetCatalog: Codable, Equatable, Sendable {
     public var version: Int
     public var activities: [ActivityDefinition]
     public var items: [ItemDefinition]
-    public init(activities: [ActivityDefinition] = [], items: [ItemDefinition] = [], version: Int = 1) { self.activities=activities; self.items=items; self.version=version }
+    public var packages:[PetPackageDefinition]?
+    public var packageDefinitions:[PetPackageDefinition] { packages ?? [] }
+    public func packageDefinition(_ id:String) -> PetPackageDefinition? { packageDefinitions.first { $0.id==id } }
+    public init(activities: [ActivityDefinition] = [], items: [ItemDefinition] = [], version: Int = 1,packages:[PetPackageDefinition]?=nil) { self.activities=activities; self.items=items; self.version=version;self.packages=packages }
     public static func load(from url: URL) throws -> Self { let value=try JSONDecoder().decode(Self.self,from: Data(contentsOf: url)); try value.validate(); return value }
     public func activity(_ id: String) -> ActivityDefinition? { activities.first { $0.id == id } }
     public func item(_ id: String) -> ItemDefinition? { items.first { $0.id == id } }
     public static func safePath(_ path: String) -> Bool { !path.isEmpty && !path.hasPrefix("/") && !path.contains("\\") && !path.split(separator: "/").contains("..") && !path.contains(":") }
     public func validate() throws {
+        guard packageDefinitions.count<=10000,Set(packageDefinitions.map(\.id)).count==packageDefinitions.count else { throw PetSaveError.invalidDocument }
+        for package in packageDefinitions { try package.validate() }
         guard version == 1, Set(activities.map(\.id)).count == activities.count, Set(items.map(\.id)).count == items.count else { throw PetSaveError.invalidDocument }
         for a in activities {
             guard !a.id.isEmpty, !a.name.isEmpty, !a.graphID.isEmpty, a.levelLimit >= 0, a.durationSeconds > 0, [a.durationSeconds,a.moneyBase,a.strengthFood,a.strengthDrink,a.feeling,a.finishBonus].allSatisfy({ $0.isFinite && abs($0) <= 1e12 }), (0...2).contains(a.finishBonus) else { throw PetSaveError.invalidDocument }
