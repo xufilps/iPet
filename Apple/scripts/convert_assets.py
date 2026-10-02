@@ -57,6 +57,7 @@ def convert(source, destination):
     diagnostics = []
     roots = [(action,subtree,subtree.split("/")[-1] if action in ("walkLeft","walkRight") else None) for action,subtree in ACTIONS.items()]
     roots += [(action,'MOVE/'+graph,graph) for action,side in [('walkLeft','left'),('walkRight','right')] for graph in ['walk.'+side+'.faster','walk.'+side+'.slow','crawl.'+side]]
+    roots += [('climb','MOVE/'+graph,graph) for graph in ['climb.left','climb.right']]
     roots += [('fidget', 'IDEL/Boring', 'boring'), ('fidget', 'IDEL/Squat', 'squat'), ('stateUp','Switch/Up',None),('stateDown','Switch/Down',None)]
     for line in (source/'pet/vup.lps').read_text(encoding='utf-8-sig').splitlines():
         if not line.startswith('work:'): continue
@@ -85,7 +86,7 @@ def convert(source, destination):
                     choices = [p for p in matching if any(part.lower().split('_')[0] == prefix or part.lower().split('_')[-1] == prefix for part in p.relative_to(root).parts)]
                     if choices:
                         stage = {'phase': phase, 'layers': [layer(choices[0], 0)], 'foodTrack': []}
-                        if action in ('head','body','fidget','walkLeft','walkRight') and len(choices)>1:
+                        if action in ('head','body','fidget','walkLeft','walkRight','climb') and len(choices)>1:
                             stage['variants'] = [[layer(path,0)] for path in choices[1:]]
                         stages.append(stage)
             if stages:

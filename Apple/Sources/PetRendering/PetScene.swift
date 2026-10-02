@@ -90,7 +90,7 @@ import PetCore
         requestedAction = action; self.mood = mood
         let clip = manifest.resolve(action: action, mood: mood)
         if clip.action != action || clip.mood != mood { onDiagnostic?("动画回退：\(action.rawValue)/\(mood.rawValue) → \(clip.action.rawValue)/\(clip.mood.rawValue)") }
-        timeline = AnimationTimeline(clip: clip.selectingVariants(random:&random), looping: [.idle, .sleep, .raised, .walkLeft, .walkRight].contains(action))
+        timeline = AnimationTimeline(clip: clip.selectingVariants(random:&random), looping: [.idle, .sleep, .raised, .walkLeft, .walkRight, .climb].contains(action))
         installTimeline()
     }
     private func installTimeline() {
@@ -125,16 +125,16 @@ import PetCore
         timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:false)
         installTimeline()
     }
-    public var isMovementAnimation:Bool { timeline.map { [.walkLeft,.walkRight].contains($0.clip.action) } ?? false }
+    public var isMovementAnimation:Bool { timeline.map { [.walkLeft,.walkRight,.climb].contains($0.clip.action) } ?? false }
     public var currentPhase:AnimationPhase? { timeline?.stage.phase }
     public func playMovement(_ action:PetAction,graphID:String,mood:PetMood) {
         transitionSteps=[];transitionTarget=nil;isFinishingActivity=false
         requestedAction=action;requestedGraphID=graphID;self.mood=mood
         let clip=manifest.clips.first { $0.action==action && $0.graphID==graphID && $0.mood==mood }
             ?? manifest.clips.first { $0.action==action && $0.graphID==graphID && $0.mood == .normal }
-            ?? manifest.resolve(action:action,mood:mood)
+            ?? manifest.resolve(action:action == .climb ? .idle : action,mood:mood)
         if clip.graphID != graphID || clip.mood != mood { onDiagnostic?("移动动画回退：\(graphID)/\(mood.rawValue)") }
-        guard [.walkLeft,.walkRight].contains(clip.action) else { play(.idle,mood:mood);return }
+        guard [.walkLeft,.walkRight,.climb].contains(clip.action) else { play(.idle,mood:mood);return }
         timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:true);installTimeline()
     }
     public func playFidget(graphID: String, mood: PetMood) {
@@ -235,7 +235,7 @@ import PetCore
                     if requestedAction != .idle {
                         let completed=requestedAction, target=transitionTarget
                         play(.idle,mood:target ?? mood)
-                        if target != nil { onActionFinished?(completed) }
+                        if target != nil || [.walkLeft,.walkRight,.climb].contains(completed) { onActionFinished?(completed) }
                         return
                     }
                 }

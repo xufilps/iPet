@@ -53,6 +53,45 @@ final class ActivityRenderingTests: XCTestCase {
             XCTAssertFalse(scene.isMovementAnimation)
         }
     }
+    func testClimbingUsesItsGraphAndMovementLoopCallback() async throws {
+        let manifest=try PetManifest.load(from:root),assets=root
+        await MainActor.run {
+            let scene=PetScene(manifest:manifest,assetRoot:assets)
+            var calls=0
+            scene.onMovementLoop={ calls+=1;return false }
+            scene.playMovement(.climb,graphID:"climb.left",mood:.normal)
+            XCTAssertEqual(scene.requestedGraphID,"climb.left");XCTAssertTrue(scene.isMovementAnimation)
+            scene.update(0)
+            var time=0.0
+            while calls==0 && time<10 { time+=0.25;scene.update(time) }
+            XCTAssertEqual(calls,1);XCTAssertEqual(scene.currentPhase,.end)
+            scene.onMovementLoop=nil
+        }
+    }
+    func testUndecodableClimbNotifiesOwnerForPositionRecovery() async throws {
+        let manifest=try PetManifest.load(from:root)
+        let missing=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        await MainActor.run {
+            let scene=PetScene(manifest:manifest,assetRoot:missing)
+            var completed:[PetAction]=[]
+            scene.onActionFinished={ completed.append($0) }
+            scene.playMovement(.climb,graphID:"climb.left",mood:.normal)
+            XCTAssertEqual(scene.requestedAction,.idle)
+            XCTAssertEqual(completed,[.climb])
+            scene.onActionFinished=nil
+        }
+    }
+    func testMissingRightClimbDoesNotUseLeftWallAnimation() async throws {
+        var object=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:root.appendingPathComponent("manifest.json"))) as? [String:Any])
+        let clips=try XCTUnwrap(object["clips"] as? [[String:Any]])
+        object["clips"]=clips.filter { $0["graphID"] as? String != "climb.right" }
+        let manifest=try JSONDecoder().decode(PetManifest.self,from:JSONSerialization.data(withJSONObject:object)),assets=root
+        await MainActor.run {
+            let scene=PetScene(manifest:manifest,assetRoot:assets)
+            scene.playMovement(.climb,graphID:"climb.right",mood:.normal)
+            XCTAssertEqual(scene.requestedAction,.idle)
+        }
+    }
     var root: URL { URL(fileURLWithPath:#filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Resources/PetAssets") }
     func testRepeatTouchPreservesStartAndContinuesOnlyOneLoop() throws {
         let manifest=try PetManifest.load(from:root)
