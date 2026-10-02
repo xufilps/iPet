@@ -137,6 +137,25 @@ import PetCore
         guard [.walkLeft,.walkRight,.climb].contains(clip.action) else { play(.idle,mood:mood);return }
         timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:true);installTimeline()
     }
+    @discardableResult public func playSideHide(graphID:String,mood:PetMood) -> Bool {
+        guard let clip=manifest.clips.first(where: { $0.action == .sideHide && $0.graphID == graphID && $0.mood == mood })
+            ?? manifest.clips.first(where: { $0.action == .sideHide && $0.graphID == graphID && $0.mood == .normal }) else {
+            onDiagnostic?("侧挂动画缺失：\(graphID)/\(mood.rawValue)");play(.idle,mood:mood);return false
+        }
+        transitionSteps=[];transitionTarget=nil;isFinishingActivity=false
+        requestedAction = .sideHide;requestedGraphID=graphID;self.mood=mood
+        if clip.mood != mood { onDiagnostic?("侧挂状态回退：\(graphID)/\(mood.rawValue)") }
+        timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:true);installTimeline()
+        return requestedAction == .sideHide
+    }
+    public func finishSideHide() {
+        guard requestedAction == .sideHide,let clip=timeline?.clip else { return }
+        // Upstream click recovery plays C directly, including clicks during A.
+        let end=clip.stages.filter { $0.phase == .end }
+        guard !end.isEmpty else { let completed=requestedAction;play(.idle,mood:mood);onActionFinished?(completed);return }
+        timeline=AnimationTimeline(clip:AnimationClip(graphID:clip.graphID,action:clip.action,mood:clip.mood,stages:end),looping:false)
+        installTimeline()
+    }
     public func playFidget(graphID: String, mood: PetMood) {
         transitionSteps=[];transitionTarget=nil
         isFinishingActivity=false;requestedAction = .fidget;requestedGraphID=graphID;self.mood=mood
@@ -235,7 +254,7 @@ import PetCore
                     if requestedAction != .idle {
                         let completed=requestedAction, target=transitionTarget
                         play(.idle,mood:target ?? mood)
-                        if target != nil || [.walkLeft,.walkRight,.climb].contains(completed) { onActionFinished?(completed) }
+                        if target != nil || [.walkLeft,.walkRight,.climb,.sideHide].contains(completed) { onActionFinished?(completed) }
                         return
                     }
                 }
