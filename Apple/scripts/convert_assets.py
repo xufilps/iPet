@@ -58,7 +58,7 @@ def convert(source, destination):
     roots = [(action,subtree,subtree.split("/")[-1] if action in ("walkLeft","walkRight") else None) for action,subtree in ACTIONS.items()]
     roots += [(action,'MOVE/'+graph,graph) for action,side in [('walkLeft','left'),('walkRight','right')] for graph in ['walk.'+side+'.faster','walk.'+side+'.slow','crawl.'+side]]
     roots += [('sideHide','SideHide_'+side+'_'+kind,'sidehide.'+side.lower()+('' if kind=='Main' else '.rise')) for side in ['Left','Right'] for kind in ['Main','Rise']]
-    roots += [('climb','MOVE/'+graph,graph) for graph in ['climb.left','climb.right']]
+    roots += [('climb','MOVE/'+graph,graph) for graph in ['climb.left','climb.right','climb.top.left','climb.top.right','fall.left','fall.right']]
     roots += [('fidget', 'IDEL/Boring', 'boring'), ('fidget', 'IDEL/Squat', 'squat'), ('stateUp','Switch/Up',None),('stateDown','Switch/Down',None)]
     for line in (source/'pet/vup.lps').read_text(encoding='utf-8-sig').splitlines():
         if not line.startswith('work:'): continue

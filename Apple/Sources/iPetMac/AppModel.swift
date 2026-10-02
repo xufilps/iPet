@@ -309,7 +309,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
                 else if petScene.currentPhase == .loop,let screen=petPanel.screen {
                     if let frame=plan.advance(pet:petPanel.frame,screen:screen.visibleFrame,seconds:delta) { petPanel.setFrame(frame,display:true) }
                     else {
-                        if moveCycles.triesCompatibility(),!tryClimbAtEdge() { endWalking() }
+                        if moveCycles.triesCompatibility(),!tryTraversal() { endWalking() }
                         else if climbPlan == nil { endWalking() }
                     }
                 }
@@ -331,7 +331,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         if let behavior = autonomy.poll(eligible:eligible,allowsMovement:autoMove,mood:engine.state.mood) {
             switch behavior {
             case .walkLeft, .walkRight:
-                if moveRandom.unit()<0.5,tryClimbAtEdge() { break }
+                if moveRandom.unit()<0.5,tryTraversal() { break }
                 if let screen=petPanel.screen,let plan=PetWalkPlan.make(left:behavior == .walkLeft,crawl:moveRandom.unit()<0.5,mood:engine.state.mood,pet:petPanel.frame,screen:screen.visibleFrame) {
                     beginWalking(plan)
                 }
@@ -367,9 +367,9 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         moveCycles.begin(distance:plan.distance)
         petScene.playMovement(.climb,graphID:plan.graphID,mood:engine.state.mood)
     }
-    private func tryClimbAtEdge() -> Bool {
+    private func tryTraversal() -> Bool {
         guard let screen=petPanel.screen else { return false }
-        let candidates=PetClimbPlan.candidates(mood:engine.state.mood,pet:petPanel.frame,screen:screen.visibleFrame)
+        let candidates=PetClimbPlan.traversalCandidates(mood:engine.state.mood,pet:petPanel.frame,screen:screen.visibleFrame)
         guard !candidates.isEmpty else { return false }
         beginClimbing(candidates[min(candidates.count-1,Int(moveRandom.unit()*Double(candidates.count)))]);return true
     }
@@ -387,13 +387,13 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         guard (walkPlan != nil || climbPlan != nil),visible,!suspended,autoMove,!petView.isInteracting,engine.state.mood != .ill else { walkPlan=nil;climbPlan=nil;return false }
         if moveCycles.continueAfterLoop() { return true }
         if let climb=climbPlan {
-            if moveCycles.triesCompatibility(),let screen=edgeScreen,let next=PetClimbPlan.make(left:climb.left,up:climb.up,mood:engine.state.mood,pet:petPanel.frame,screen:screen) { beginClimbing(next);return true }
+            if moveCycles.triesCompatibility(),let screen=edgeScreen,let next=climb.continued(mood:engine.state.mood,pet:petPanel.frame,screen:screen) { beginClimbing(next);return true }
             climbPlan=nil;return false
         }
         guard let plan=walkPlan else { return false }
         if moveCycles.triesCompatibility(),let screen=petPanel.screen {
             let candidates=plan.compatible(mood:engine.state.mood,pet:petPanel.frame,screen:screen.visibleFrame)
-            if candidates.isEmpty,tryClimbAtEdge() { return true }
+            if candidates.isEmpty,tryTraversal() { return true }
             if !candidates.isEmpty {
                 let index=min(candidates.count-1,Int(moveRandom.unit()*Double(candidates.count)))
                 beginWalking(candidates[index]);return true

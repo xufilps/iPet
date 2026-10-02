@@ -29,4 +29,53 @@ final class PetClimbTests:XCTestCase {
         XCTAssertEqual(up.advance(pet:near,screen:screen,seconds:0.125)?.minY,500)
         XCTAssertNil(up.advance(pet:CGRect(x:-72.5,y:500,width:250,height:250),screen:screen,seconds:0.125))
     }
+    func testTopLocateSpeedAndDistance() throws {
+        let screen=CGRect(x:-1000,y:50,width:1000,height:900),pet=CGRect(x:-600,y:650,width:250,height:250)
+        let left=try XCTUnwrap(PetClimbPlan.makeTop(left:true,mood:.normal,pet:pet,screen:screen))
+        XCTAssertEqual(left.graphID,"climb.top.left");XCTAssertEqual(left.distance,10)
+        let located=left.located(pet:pet,screen:screen)
+        XCTAssertEqual(located.minY,775)
+        XCTAssertEqual(left.advance(pet:located,screen:screen,seconds:0.125)?.minX,-604)
+        XCTAssertNil(PetClimbPlan.makeTop(left:true,mood:.normal,pet:CGRect(x:-600,y:649,width:250,height:250),screen:screen))
+        XCTAssertNil(PetClimbPlan.makeTop(left:true,mood:.ill,pet:pet,screen:screen))
+        let right=try XCTUnwrap(PetClimbPlan.makeTop(left:false,mood:.poor,pet:pet,screen:screen))
+        XCTAssertEqual(right.advance(pet:right.located(pet:pet,screen:screen),screen:screen,seconds:0.125)?.minX,-596)
+    }
+    func testFallVectorAndCoupledBoundary() throws {
+        let screen=CGRect(x:0,y:0,width:1000,height:800),pet=CGRect(x:400,y:300,width:250,height:250)
+        let left=try XCTUnwrap(PetClimbPlan.makeFall(left:true,mood:.happy,pet:pet,screen:screen))
+        XCTAssertEqual(left.graphID,"fall.left");XCTAssertEqual(left.distance,7)
+        XCTAssertEqual(left.located(pet:pet,screen:screen),pet)
+        XCTAssertEqual(left.advance(pet:pet,screen:screen,seconds:0.125),CGRect(x:393,y:295,width:250,height:250))
+        let near=CGRect(x:52,y:100,width:250,height:250)
+        let next=try XCTUnwrap(left.advance(pet:near,screen:screen,seconds:0.125))
+        XCTAssertEqual(next.minX,50);XCTAssertEqual(next.minY,100-10.0/7,accuracy:0.000001)
+        XCTAssertNil(left.advance(pet:next,screen:screen,seconds:0.125))
+        XCTAssertNil(PetClimbPlan.makeFall(left:true,mood:.normal,pet:CGRect(x:99,y:300,width:250,height:250),screen:screen))
+        XCTAssertNil(PetClimbPlan.makeFall(left:true,mood:.normal,pet:CGRect(x:400,y:99,width:250,height:250),screen:screen))
+        XCTAssertNil(PetClimbPlan.makeFall(left:true,mood:.ill,pet:pet,screen:screen))
+    }
+
+    func testTopAndFallGraphsStartLoopAndFinish() async throws {
+        let root=URL(fileURLWithPath:#filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Resources/PetAssets")
+        let manifest=try PetManifest.load(from:root)
+        for graph in ["climb.top.left","climb.top.right","fall.left","fall.right"] {
+            for mood in [PetMood.happy,.normal,.poor] {
+                let clip=try XCTUnwrap(manifest.clips.first { $0.graphID == graph && $0.mood == mood })
+                XCTAssertEqual(clip.stages.map(\.phase),[.start,.loop,.end])
+            }
+            await MainActor.run {
+                let scene=PetScene(manifest:manifest,assetRoot:root)
+                scene.playMovement(.climb,graphID:graph,mood:.normal)
+                XCTAssertEqual(scene.requestedGraphID,graph);XCTAssertEqual(scene.currentPhase,.start)
+                XCTAssertTrue(scene.isMovementAnimation)
+                scene.onMovementLoop={ false }
+                scene.update(0)
+                for step in 1...80 { scene.update(Double(step)*0.25) }
+                XCTAssertEqual(scene.requestedAction,.idle)
+                XCTAssertFalse(scene.isMovementAnimation)
+            }
+        }
+    }
+
 }
