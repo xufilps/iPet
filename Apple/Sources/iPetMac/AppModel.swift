@@ -84,6 +84,11 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         petView.allowsTransparency = true; petView.preferredFramesPerSecond = 30
         petView.autoresizingMask = [.width, .height]; petView.presentScene(petScene)
         petPanel.contentView = petView
+        petView.onPressBegin = { [weak self] in self?.engine.recordInteraction();self?.autonomy.reset() }
+        petView.canLift = { [weak self] point in
+            guard let self else { return false }
+            return self.petScene.canRaise(at:point,mood:self.engine.state.mood)
+        }
         petView.onTouch = { [weak self] region in
             self?.recordAcceptanceInput("touch:\(region ?? "panel")")
             if region == "head" { self?.command(.touchHead) }
@@ -147,16 +152,21 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         NSApp.mainMenu = main
     }
     func command(_ command: PetCommand) {
+        petView.cancelInteraction()
         walkingUntil = 0; autonomousUntil = 0; autonomy.reset()
         let action = engine.send(command); state = engine.state
         consumeEvents()
-        if !petScene.isFinishingActivity || ![.idle,.sleep].contains(action) { petScene.play(action,mood:state.mood) }
+        if !petScene.isFinishingActivity || ![.idle,.sleep].contains(action) {
+            if [.head,.body].contains(action) { petScene.playTouch(action,mood:state.mood) }
+            else { petScene.play(action,mood:state.mood) }
+        }
         save()
     }
     func perform(_ command: PetEconomyCommand) {
         let result = engine.perform(command)
         state = engine.state; message = result.message
         if result.accepted {
+            petView.cancelInteraction()
             walkingUntil = 0; autonomousUntil = 0; autonomy.reset()
             let usedItem = consumeEvents()
             if !usedItem { restoreBaseAnimation() }
@@ -240,6 +250,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         if now - lastSave >= 60 { save(); lastSave = now }
     }
     @objc func toggleVisibility() {
+        petView.cancelInteraction()
         visible.toggle(); menuVisibility.title = visible ? "隐藏桌宠" : "显示桌宠"
         walkingUntil = 0; autonomousUntil = 0; autonomy.reset()
         if visible { restoreBaseAnimation(force:true); petView.isPaused = false; petPanel.orderFrontRegardless() }
@@ -270,7 +281,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         guard !smokeMode else { return }
         UserDefaults.standard.set(petPanel.frame.minX, forKey: "petX"); UserDefaults.standard.set(petPanel.frame.minY, forKey: "petY")
     }
-    private func suspend() { save(); suspended = true; walkingUntil = 0; autonomousUntil = 0; autonomy.reset(); petView.isPaused = true; petScene.releaseTextures() }
+    private func suspend() { petView.cancelInteraction();save(); suspended = true; walkingUntil = 0; autonomousUntil = 0; autonomy.reset(); petView.isPaused = true; petScene.releaseTextures() }
     private func resume() {
         engine.resetClock(); lastTick = nil; lastSave = ProcessInfo.processInfo.systemUptime
         autonomousUntil = 0; autonomy.reset(); suspended = false
@@ -281,7 +292,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         do { try store.save(engine.state) }
         catch { message = "保存失败：\(error.localizedDescription)"; NSLog("%@", message) }
     }
-    func stop() { timer?.cancel(); if engine != nil { save() }; persistPositionIfReady() }
+    func stop() { petView?.cancelInteraction();timer?.cancel(); if engine != nil { save() }; persistPositionIfReady() }
     private func persistPositionIfReady() { if petPanel != nil { persistPosition() } }
     @objc func showControls() {
         if controls == nil {

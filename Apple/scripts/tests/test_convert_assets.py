@@ -56,6 +56,14 @@ class ConversionTests(unittest.TestCase):
         self.assertEqual([f['duration'] for f in frames],[0.001,0.002])
         self.assertTrue(frames[0]['path'].endswith('0001.png'))
 
+    def test_original_raised_regions_keep_per_mood_coordinates(self):
+        raised=''.join(f'|{mode}_px#0:|{mode}_py#{200 if mode=="ill" else 50}:|{mode}_sw#500:|{mode}_sh#200:' for mode in ['happy','nomal','poorcondition','ill'])
+        self.config.write_text(self.config.read_text()+'touchraised:'+raised+'\n')
+        self.run_conversion()
+        regions=json.loads((self.output/'manifest.json').read_text())['regions']
+        self.assertEqual(regions['raised:Nomal']['y'],50)
+        self.assertEqual(regions['raised:Ill']['y'],200)
+
     def test_default_alternatives_are_exported_and_validated(self):
         directory=self.source/'pet/vup/Default/Nomal/2'
         directory.mkdir(parents=True)

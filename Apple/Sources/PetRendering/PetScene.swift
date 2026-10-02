@@ -72,6 +72,16 @@ import PetCore
         play(.idle, mood: .normal)
     }
     required init?(coder: NSCoder) { fatalError("Use manifest initializer") }
+    public func canRaise(at point: CGPoint, mood: PetMood) -> Bool {
+        manifest.regions["raised:"+mood.rawValue]?.contains(x:Double(point.x),y:Double(size.height-point.y)) == true
+    }
+    public func playTouch(_ action: PetAction, mood: PetMood) {
+        if [.head,.body].contains(action), requestedAction == action, let current=timeline, current.clip.action == action {
+            if current.stage.phase == .start { return }
+            if timeline?.requestContinue() == true { return }
+        }
+        play(action,mood:mood)
+    }
     public func play(_ action: PetAction, mood: PetMood) {
         transitionSteps=[];transitionTarget=nil
         isFinishingActivity=false; requestedGraphID=nil

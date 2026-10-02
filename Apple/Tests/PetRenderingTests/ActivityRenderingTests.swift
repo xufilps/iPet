@@ -5,6 +5,35 @@ import PetCore
 private struct VariantRandom: PetRandom { var value: Double; mutating func unit() -> Double { value } }
 final class ActivityRenderingTests: XCTestCase {
     var root: URL { URL(fileURLWithPath:#filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Resources/PetAssets") }
+    func testRepeatTouchPreservesStartAndContinuesOnlyOneLoop() throws {
+        let manifest=try PetManifest.load(from:root)
+        var timeline=AnimationTimeline(clip:manifest.resolve(action:.head,mood:.normal),looping:false)
+        XCTAssertFalse(timeline.requestContinue())
+        timeline.advance(timeline.stage.duration)
+        XCTAssertEqual(timeline.stage.phase,.loop)
+        XCTAssertTrue(timeline.requestContinue());XCTAssertTrue(timeline.requestContinue())
+        timeline.advance(timeline.stage.duration)
+        XCTAssertEqual(timeline.stage.phase,.loop)
+        timeline.advance(timeline.stage.duration)
+        XCTAssertEqual(timeline.stage.phase,.end)
+        XCTAssertFalse(timeline.requestContinue())
+    }
+    func testSceneRepeatedTouchKeepsStartVariantAndRaisedAreaMatchesMood() async throws {
+        let manifest=try PetManifest.load(from:root),assets=root
+        await MainActor.run {
+            let scene=PetScene(manifest:manifest,assetRoot:assets)
+            XCTAssertTrue(scene.canRaise(at:CGPoint(x:200,y:400),mood:.normal))
+            XCTAssertFalse(scene.canRaise(at:CGPoint(x:200,y:400),mood:.ill))
+            XCTAssertTrue(scene.canRaise(at:CGPoint(x:200,y:200),mood:.ill))
+            scene.playTouch(.head,mood:.normal)
+            let first=scene.children.filter { $0.zPosition == 0 }.first
+            scene.update(0);scene.update(0.1)
+            scene.playTouch(.head,mood:.normal)
+            XCTAssertTrue(first === scene.children.filter { $0.zPosition == 0 }.first)
+            scene.playTouch(.body,mood:.normal)
+            XCTAssertEqual(scene.requestedAction,.body)
+        }
+    }
     func testUndecodableTransitionFallsBackToTargetMood() async throws {
         let manifest=try PetManifest.load(from:root)
         let missing=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

@@ -3,20 +3,25 @@
 import AppKit
 import SpriteKit
 import PetRendering
+import PetCore
 
 final class PetPanel: NSPanel {
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 }
 @MainActor final class PetView: SKView {
+    var onPressBegin: (() -> Void)?
+    var canLift: ((CGPoint) -> Bool)?
     var onTouch: ((String?) -> Void)?
     var onDragStart: (() -> Void)?
     var onDragEnd: (() -> Void)?
     private var origin: NSPoint?
     private var mouseOrigin: NSPoint?
-    private var dragging = false
-    var isDragging: Bool { dragging }
-    var isInteracting: Bool { mouseOrigin != nil }
+    private var gesture = PetPointerGesture()
+    private var pressTask: Task<Void,Never>?
+    private var lastViewPoint: CGPoint?
+    var isDragging: Bool { gesture.isLifted }
+    var isInteracting: Bool { gesture.isPressed }
     private var petScene: PetScene? { scene as? PetScene }
     func scenePoint(_ viewPoint: CGPoint) -> CGPoint { scene?.convertPoint(fromView: viewPoint) ?? .zero }
     func opaqueUnderMouse() -> Bool {
@@ -29,24 +34,52 @@ final class PetPanel: NSPanel {
             NSLog("IPET_MOUSE type=%d local=(%.1f,%.1f) cursor=(%.1f,%.1f)",event.type.rawValue,event.locationInWindow.x,event.locationInWindow.y,NSEvent.mouseLocation.x,NSEvent.mouseLocation.y)
         }
     }
+    private func checkLongPress() {
+        let allowed=lastViewPoint.map { canLift?(scenePoint($0)) == true } ?? false
+        if gesture.poll(time:ProcessInfo.processInfo.systemUptime,canLift:allowed) { onDragStart?() }
+    }
+    func cancelInteraction() {
+        pressTask?.cancel();pressTask=nil
+        let lifted=gesture.isLifted
+        gesture.cancel();origin=nil;mouseOrigin=nil;lastViewPoint=nil
+        if lifted { onDragEnd?() }
+    }
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window == nil { cancelInteraction() }
+    }
     override func mouseDown(with event: NSEvent) {
-        logInput(event)
-        origin = window?.frame.origin; mouseOrigin = window?.convertPoint(toScreen:event.locationInWindow); dragging = false
+        logInput(event);cancelInteraction()
+        guard let window else { return }
+        origin=window.frame.origin;mouseOrigin=window.convertPoint(toScreen:event.locationInWindow)
+        lastViewPoint=convert(event.locationInWindow,from:nil)
+        gesture.begin(x:Double(mouseOrigin!.x),y:Double(mouseOrigin!.y),time:ProcessInfo.processInfo.systemUptime)
+        onPressBegin?()
+        pressTask=Task { @MainActor [weak self] in
+            do { try await Task.sleep(for:.milliseconds(300)) } catch { return }
+            guard !Task.isCancelled else { return }
+            self?.checkLongPress()
+        }
     }
     override func mouseDragged(with event: NSEvent) {
         logInput(event)
-        guard let origin, let mouseOrigin, let window else { return }
-        // Event coordinates stay correct for queued/coalesced and directed input.
-        let current = window.convertPoint(toScreen:event.locationInWindow)
-        let dx = current.x - mouseOrigin.x, dy = current.y - mouseOrigin.y
-        if !dragging && hypot(dx, dy) > 4 { dragging = true; onDragStart?() }
-        if dragging { window.setFrameOrigin(NSPoint(x: origin.x + dx, y: origin.y + dy)) }
+        guard let origin, let mouseOrigin, let window, gesture.isPressed else { return }
+        lastViewPoint=convert(event.locationInWindow,from:nil)
+        let current=window.convertPoint(toScreen:event.locationInWindow)
+        if gesture.move(x:Double(current.x),y:Double(current.y)) { pressTask?.cancel();onDragStart?() }
+        if gesture.isLifted { window.setFrameOrigin(NSPoint(x:origin.x+current.x-mouseOrigin.x,y:origin.y+current.y-mouseOrigin.y)) }
     }
     override func mouseUp(with event: NSEvent) {
         logInput(event)
-        defer { dragging = false; origin = nil; mouseOrigin = nil }
-        if dragging { onDragEnd?() }
-        else { onTouch?(petScene?.region(at: scenePoint(convert(event.locationInWindow, from: nil)))) }
+        lastViewPoint=convert(event.locationInWindow,from:nil)
+        checkLongPress();pressTask?.cancel();pressTask=nil
+        let released=gesture.release()
+        origin=nil;mouseOrigin=nil;lastViewPoint=nil
+        switch released {
+        case .drop: onDragEnd?()
+        case .tap: onTouch?(petScene?.region(at:scenePoint(convert(event.locationInWindow,from:nil))))
+        case .none: break
+        }
     }
-    override func rightMouseDown(with event: NSEvent) { onTouch?(nil) }
+    override func rightMouseDown(with event: NSEvent) { cancelInteraction();onTouch?(nil) }
 }

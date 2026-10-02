@@ -120,15 +120,23 @@ public struct AnimationTimeline {
     public private(set) var elapsed = 0.0
     public private(set) var finished = false
     private var keepLooping: Bool
+    private var continueOnce = false
     public init(clip: AnimationClip, looping: Bool) { self.clip = clip; keepLooping = looping }
     public var stage: AnimationStage { clip.stages[stageIndex] }
-    public mutating func requestFinish() { keepLooping = false }
+    public mutating func requestFinish() { keepLooping = false;continueOnce=false }
+    @discardableResult public mutating func requestContinue() -> Bool {
+        guard !finished, stage.phase == .loop, !keepLooping else { return false }
+        continueOnce=true;return true
+    }
     public mutating func advance(_ delta: Double) {
         guard !finished, delta.isFinite, delta >= 0 else { return }
         elapsed += delta
         while elapsed >= stage.duration {
             if stage.phase == .loop && keepLooping {
                 elapsed.formTruncatingRemainder(dividingBy: stage.duration); return
+            }
+            if stage.phase == .loop && continueOnce {
+                continueOnce=false;elapsed -= stage.duration;continue
             }
             elapsed -= stage.duration
             if stageIndex + 1 < clip.stages.count { stageIndex += 1 } else { finished = true; elapsed = stage.duration; return }

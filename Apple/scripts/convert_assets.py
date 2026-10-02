@@ -125,6 +125,11 @@ def convert(source, destination):
         if line.startswith(('touchhead:', 'touchbody:')):
             f = fields(line)
             regions['head' if line.startswith('touchhead') else 'body'] = {'x': float(f['px']), 'y': float(f['py']), 'width': float(f['sw']), 'height': float(f['sh'])}
+        if line.startswith('touchraised:'):
+            f = fields(line)
+            for mode in MODES:
+                prefix=mode.lower()+'_'
+                regions['raised:'+mode]={'x':float(f[prefix+'px']),'y':float(f[prefix+'py']),'width':float(f[prefix+'sw']),'height':float(f[prefix+'sh'])}
     manifest = {'version': 3, 'diagnostics': diagnostics, 'canvasWidth': 500, 'canvasHeight': 500, 'regions': regions, 'clips': clips}
     write_if_changed(destination / 'manifest.json', (json.dumps(manifest, ensure_ascii=False, indent=2) + '\n').encode('utf-8'))
     write_if_changed(destination / 'sources.sha256.json', (json.dumps(records, indent=2, sort_keys=True) + '\n').encode('utf-8'))
