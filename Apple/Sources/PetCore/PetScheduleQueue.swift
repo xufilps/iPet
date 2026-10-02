@@ -20,6 +20,7 @@ public enum PetScheduleEdit: Sendable {
     case appendActivity(String, multiplier:Int)
     case appendWait(minutes:Int)
     case insertWait(before:Int, minutes:Int)
+    case setWait(Int, minutes:Int)
     case remove(Int)
     case move(Int, offset:Int)
 }
@@ -71,6 +72,9 @@ public struct PetScheduleQueue: Codable, Equatable, Sendable {
             case .insertWait(let before,let minutes):
                 guard let index=next.entries.firstIndex(where:{ $0.id==before }), (1...1440).contains(minutes) else { return response(false,"插入位置或等待时间不可用。") }
                 try next.insert(PetScheduleEntry(id:next.nextID,multiplier:1,waitMinutes:minutes),at:index)
+            case .setWait(let id,let minutes):
+                guard (1...1440).contains(minutes),let index=next.entries.firstIndex(where:{ $0.id==id }),next.entries[index].waitMinutes != nil else { return response(false,"等待项目或时长不可用。") }
+                next.entries[index].waitMinutes=minutes
             case .remove(let id):
                 guard let index=next.entries.firstIndex(where:{ $0.id==id }) else { return response(false,"日程项目不存在。") }
                 try next.mergeNeighbors(at:index)

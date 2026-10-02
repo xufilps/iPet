@@ -90,6 +90,16 @@ final class PetScheduleQueueTests:XCTestCase {
             #"{"entries":[],"nextID":9223372036854775807}"#
         ] { XCTAssertThrowsError(try JSONDecoder().decode(PetScheduleQueue.self,from:Data(raw.utf8))) }
     }
+    func testEditingWaitChangesDurationWithoutIdentityOrInvalidPartialChanges() throws {
+        var q=PetScheduleQueue();_=edit(&q,.appendWait(minutes:30));_=edit(&q,.appendActivity("work",multiplier:1))
+        XCTAssertTrue(edit(&q,.setWait(1,minutes:5)).accepted)
+        XCTAssertEqual(q.entries[0].waitMinutes,5);XCTAssertEqual(q.entries.map(\.id),[1,2]);XCTAssertEqual(q.nextID,3)
+        let before=q
+        for command:PetScheduleEdit in [.setWait(1,minutes:0),.setWait(1,minutes:1441),.setWait(2,minutes:30),.setWait(999,minutes:30)] {
+            XCTAssertFalse(edit(&q,command).accepted);XCTAssertEqual(q,before)
+        }
+        XCTAssertFalse(edit(&q,.setWait(1,minutes:10),locked:true).accepted);XCTAssertEqual(q,before)
+    }
     func testMergeOverflowDuringRemovalPreservesEveryEntry() throws {
         var q=PetScheduleQueue()
         _=edit(&q,.appendWait(minutes:1440));_=edit(&q,.appendActivity("work",multiplier:1));_=edit(&q,.appendWait(minutes:30));let before=q

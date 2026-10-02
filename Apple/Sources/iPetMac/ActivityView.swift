@@ -25,14 +25,18 @@ struct ActivityView: View {
                         Text("\(Int(session.elapsedSeconds/60)) / \(Int(activity.durationSeconds/60)) 分钟 · 已获 \(session.earned.formatted(.number.precision(.fractionLength(2)))) \(activity.kind == .work ? "金币" : "经验")")
                     }
                     HStack {
-                        if session.isPaused { Button("继续活动") { model.perform(.resumeActivity) }.disabled(!feedback.canResume) }
+                        if session.isPaused { Button("继续活动") { model.perform(.resumeActivity) }.disabled(!feedback.canResume || (session.scheduleEntryID != nil && !model.scheduleAccess.allows(.resume,state:model.state))) }
                         else { Button("暂停活动") { model.perform(.pauseActivity) } }
                         Button("结束活动") { model.perform(.stopActivity) }
+                    }
+                    if session.scheduleEntryID != nil {
+                        Button("查看日程与运行控制") { model.selectedPage = .schedule }
+                        Text("此活动由日程执行。未达到整数分钟半程就结束会停止日程，达到后间隔30秒继续；暂停/继续活动会同步暂停/继续日程。").font(.caption).foregroundStyle(.secondary)
                     }
                     Text("提前结束保留已获收益；仅正常完成可获得完成奖励。切换活动会结束当前活动。").font(.caption).foregroundStyle(.secondary)
                     Divider()
                 }
-                DisclosureGroup("任务套餐（排程尚未接入）") { PackageView(model:model) }
+                DisclosureGroup("任务套餐") { PackageView(model:model) }
                 TextField("搜索活动名称",text:$search)
                 HStack {
                     Picker("类别",selection:$kind) {

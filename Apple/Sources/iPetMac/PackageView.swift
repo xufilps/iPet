@@ -5,12 +5,12 @@ struct PackageView:View {
     @ObservedObject var model:AppModel
     var body:some View {
         VStack(alignment:.leading,spacing:12) {
-            Text("套餐用于后续日程授权，当前手动活动无需套餐。原版此基线只展示抽成字段，未实际扣除活动收益。").font(.caption).foregroundStyle(.secondary)
-            Text("续费在主动检查或切换开关时尝试；成功后按原规则降低授权等级并关闭开关。套餐期限按墙钟计算，过期本身不会扣款。").font(.caption).foregroundStyle(.secondary)
+            Text("套餐用于日程授权，当前手动活动无需套餐。原版此基线只展示抽成字段，未实际扣除活动收益。").font(.caption).foregroundStyle(.secondary)
+            Text("续费在日程每项开始、主动检查或切换开关时尝试；成功后按原规则降低授权等级并关闭开关。套餐期限按墙钟计算，过期本身不会扣款。").font(.caption).foregroundStyle(.secondary)
             ForEach([ActivityKind.work,.study],id:\.self) { PackageGroup(model:model,kind:$0) }
             if model.packageWriteFailed {
                 Text("套餐变更尚未保存，后续套餐操作已暂停。重试仅保存当前状态，不重放签署或续费。").font(.caption).foregroundStyle(.orange)
-                Button("重试保存当前状态") { model.save() }
+                Button("重试保存当前状态") { model.save() }.disabled(!model.scheduleAccess.canRetrySave)
             }
             Button("检查已启用的到期续费") { model.perform(.renewPackages) }.disabled(!model.packageOperationsEnabled)
         }

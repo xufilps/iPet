@@ -8,7 +8,7 @@ import UniformTypeIdentifiers
 import PetCore
 import PetRendering
 
-enum ControlPage: String, CaseIterable { case status="状态", activity="活动", shop="商店", inventory="背包", settings="设置", statistics="统计" }
+enum ControlPage: String, CaseIterable { case status="状态", activity="活动", schedule="日程", shop="商店", inventory="背包", settings="设置", statistics="统计" }
 
 @MainActor final class AppModel: ObservableObject {
     @Published var state = PetState()
@@ -206,7 +206,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         let menu = NSMenu()
         func item(_ title: String, _ selector: Selector) -> NSMenuItem { let item = NSMenuItem(title: title, action: selector, keyEquivalent: ""); item.target = self; return item }
         menu.addItem(item("状态与设置…", #selector(showControls)))
-        menu.addItem(item("活动…", #selector(showActivities))); menu.addItem(item("商店…", #selector(showShop)))
+        menu.addItem(item("日程…",#selector(showSchedule)));menu.addItem(item("活动…", #selector(showActivities))); menu.addItem(item("商店…", #selector(showShop)))
         menu.addItem(item("背包…", #selector(showInventory)))
         menu.addItem(item("统计与历史…", #selector(showStatistics)))
         menu.addItem(item("聊一句", #selector(sayClick)))
@@ -243,6 +243,9 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         }
         save()
     }
+    var scheduleAccess:PetScheduleAccess {
+        PetScheduleAccess(writable:writable,saveFailed:packageWriteFailed,busy:inventoryUseTask != nil,simulationEnabled:simulationEnabled)
+    }
     var packageOperationsEnabled:Bool { writable && !packageWriteFailed && inventoryUseTask == nil }
     func signPackage(id:String,level:Int) {
         guard packageOperationsEnabled,let definition=catalog.packageDefinition(id) else { message="套餐操作暂不可用，请检查存档写入和背包使用状态。";return }
@@ -260,10 +263,10 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     }
     func perform(_ command: PetEconomyCommand) {
         switch command {
-        case .schedule(.start),.schedule(.resume):
-            guard packageOperationsEnabled else { message="请先恢复存档写入，再启动或继续日程。";return }
+        case .schedule(let action):
+            guard scheduleAccess.allows(action,state:engine.state) else { message="日程操作暂不可用，请检查运行状态、队列、存档写入和背包使用状态。";return }
         case .resumeActivity where engine.state.activity?.scheduleEntryID != nil:
-            guard packageOperationsEnabled else { message="请先恢复存档写入，再继续日程活动。";return }
+            guard scheduleAccess.allows(.resume,state:engine.state) else { message="请先恢复存档写入，再继续日程活动。";return }
         case .signPackage,.setPackageAutoRenew,.renewPackages:
             guard packageOperationsEnabled else { message="套餐操作已暂停，请检查存档写入和背包使用状态。";return }
             let response=engine.perform(command);state=engine.state;message=response.message
@@ -359,6 +362,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         guard petScene != nil, sideHidePlan == nil, petView?.isInteracting != true else { return }
         _ = petScene.restoreBase(state:engine.state,catalog:catalog,force:force,mood:presentationMood)
     }
+    @objc private func showSchedule() { selectedPage = .schedule;showControls() }
     @objc private func showActivities() { selectedPage = .activity; showControls() }
     @objc private func showShop() { selectedPage = .shop; showControls() }
     @objc private func showStatistics() { selectedPage = .statistics;showControls() }
@@ -643,6 +647,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
             let quantity=preview.inventory.values.reduce(0,+)
             let unknown=preview.inventory.keys.filter { catalog.item($0) == nil }.count
             alert.informativeText="\(preview.name) · 等级 \(preview.level) · 金币 \(preview.money.formatted(.number.precision(.fractionLength(2))))\n库存 \(quantity) 件，未知物品 \(unknown) 种；导入活动保持暂停。\n当前最新状态和导入原件会独立保留在存档目录。Windows LPS不支持。"
+            if preview.schedule?.isRunning == true { alert.informativeText += "\n导入日程将保持暂停，不自动续费或执行。" }
             if let session=preview.activity { alert.informativeText += "\n导入活动倍率：\(session.effectiveMultiplier)倍。" }
             if !simulationEnabled,preview.activity != nil { alert.informativeText += "\n养成当前关闭，导入活动会按该设置结束；原始会话仍保留在导入原件。" }
             alert.addButton(withTitle:"恢复并保留原件");alert.addButton(withTitle:"取消")

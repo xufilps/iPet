@@ -16,6 +16,7 @@ struct ControlsView: View {
             TabView(selection:$model.selectedPage) {
                 status.tabItem { Text("状态") }.tag(ControlPage.status)
                 ActivityView(model:model).tabItem { Text("活动") }.tag(ControlPage.activity)
+                ScheduleView(model:model).tabItem { Text("日程") }.tag(ControlPage.schedule)
                 ShopView(model:model).tabItem { Text("商店") }.tag(ControlPage.shop)
                 InventoryView(model:model).tabItem { Text("背包") }.tag(ControlPage.inventory)
                 StatisticsView(model:model).tabItem { Text("统计") }.tag(ControlPage.statistics)
