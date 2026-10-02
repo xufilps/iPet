@@ -40,9 +40,9 @@ final class PetProgressTests:XCTestCase {
         XCTAssertEqual(try Data(contentsOf:XCTUnwrap(store.migrationBackupURL)),original)
         XCTAssertEqual(try store.load(),state)
         let header=try JSONSerialization.jsonObject(with:Data(contentsOf:store.primary)) as! [String:Any]
-        XCTAssertEqual(header["version"] as? Int,3)
+        XCTAssertEqual(header["version"] as? Int,4)
         state.progress?.spent = .nan;XCTAssertThrowsError(try state.validate())
-        let future=Data("{\"version\":4}".utf8);try future.write(to:store.primary)
+        let future=Data("{\"version\":5}".utf8);try future.write(to:store.primary)
         XCTAssertThrowsError(try store.load());XCTAssertEqual(try Data(contentsOf:store.primary),future)
     }
     func testHistoryIsBoundedAndManualEndsHaveNoBonus() throws {

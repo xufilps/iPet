@@ -7,10 +7,12 @@ final class PetSimulationSettingTests:XCTestCase {
         let before=engine.state
         for time in 1...100 { clock.now=Double(time)*15;engine.tick() }
         _=engine.send(.touchHead);_=engine.send(.touchPinch)
-        XCTAssertEqual(engine.state,before);XCTAssertEqual(engine.presentationMood,.happy)
-        XCTAssertEqual(try JSONDecoder().decode(PetState.self,from:JSONEncoder().encode(engine.state)),before)
+        var attributes=engine.state;attributes.progress=before.progress
+        XCTAssertEqual(attributes,before);XCTAssertEqual(engine.presentationMood,.happy)
+        let paused=engine.state
+        XCTAssertEqual(try JSONDecoder().decode(PetState.self,from:JSONEncoder().encode(engine.state)),paused)
         engine.configureSimulation(enabled:true,fixedMood:.ill)
-        engine.tick();XCTAssertEqual(engine.state,before)
+        engine.tick();XCTAssertEqual(engine.state,paused)
         clock.now+=15;engine.tick();XCTAssertNotEqual(engine.state,before)
         XCTAssertEqual(engine.presentationMood,engine.state.mood)
     }

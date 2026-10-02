@@ -140,7 +140,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         petView.onPinchStart = { [weak self] in
             guard let self else { return }
             self.cancelMovement();self.autonomy.reset()
-            self.applyPinchEffects();self.petScene.play(.pinch,mood:self.engine.presentationMood)
+            self.engine.recordPinchStart();self.applyPinchEffects();self.petScene.play(.pinch,mood:self.engine.presentationMood)
             self.recordAcceptanceInput("pinch-start")
         }
         petView.onPressEnd = { [weak self] in

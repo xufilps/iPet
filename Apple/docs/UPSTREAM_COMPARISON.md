@@ -1,6 +1,6 @@
 # Windows 原版与 iPet 的持续差异矩阵
 
-原版基线：`1a06c5981330564bab05a098d2d7969a4b119dd3`；iPet 当前基线：v0.2.0，已推进至阶段5A（本地统计首批）；部分实机验收已记录，压力测试按用户要求留到功能完善后。原版功能依据上游固定基线源码，不将第三方插件功能算作内置功能；当前行为依据 Apple 源码和已记录验证。后续每次迁移更新本表、行为说明和交接记录。源码入口编号在文末，阶段对应 [ROADMAP.md](ROADMAP.md)。
+原版基线：`1a06c5981330564bab05a098d2d7969a4b119dd3`；iPet 当前基线：v0.2.0，已推进至阶段5B（原统计键首批）；部分实机验收已记录，压力测试按用户要求留到功能完善后。原版功能依据上游固定基线源码，不将第三方插件功能算作内置功能；当前行为依据 Apple 源码和已记录验证。后续每次迁移更新本表、行为说明和交接记录。源码入口编号在文末，阶段对应 [ROADMAP.md](ROADMAP.md)。
 
 状态定义：**已保留**为纳入范围的原规则已移植；**已适配**为平台或产品行为有明确变化；**部分实现**为有可用子集；**尚未迁移**为没有原生实现；**需要平台替代**为原机制不能直接复用；**待验证**为代码或构建证据不足以完成验收。状态指本行能力，不代表整个类别完成。
 
@@ -28,7 +28,7 @@
 | 原作资源与新图标 | 原图标、角色、LPS配置与PNG | 保留原目录；新像素风参考图标，LPS构建前转JSON；运行时不依赖LPS | 原生资源目录与资源子集 | 已适配 | U8 → A4、A5 | 0、3 |
 | 多角色与数据MOD | PetLoader/CoreMOD加载角色、食物、文本等 | 仅内置萝莉斯子集；无第三方数据加载接口 | 转换工具不是通用MOD兼容器 | 尚未迁移 | U5、U8、U10 → A4 | 4 |
 | 主题/文本/本地化 | Theme、MOD文本及本地化资源 | 固定简体中文原生界面 | 需要新数据模型和界面主题适配 | 尚未迁移 | U5、U9、U10 → A1 | 4 |
-| 本地存档安全 | LPS养成/设置及多存档管理 | Codable JSON v3，v1/v2升级原件保留、原子保存、损坏恢复和未来版本阻写 | 独立格式；历史VPetApple目录保留 | 已适配 | U7、U11 → A2 | 2、4 |
+| 本地存档安全 | LPS养成/设置及多存档管理 | Codable JSON v4，v1/v2/v3升级原件保留、原子保存、损坏恢复和未来版本阻写 | 独立格式；历史VPetApple目录保留 | 已适配 | U7、U11 → A2 | 2、4 |
 | 旧LPS存档导入 | 原版读取自己的LPS格式 | 无导入，不读写原Windows存档 | 需字段映射、版本和一次性迁移协议 | 尚未迁移 | U7、U11 → A2 | 4 |
 | C#代码插件 | CLR程序集加载、MainPlugin和原接口 | 不兼容C# ABI、事件或WPF插件界面 | Swift不能直接执行原插件；与数据MOD任务不同 | 需要平台替代 | U10、U12 → A1、A2 | 5研究 |
 | 排程/统计/活动日志 | ScheduleTask、Statistics、ActivityLog | 有本地购买/使用、活动时间/收益和最近200条结束记录；排程与完整原版键未迁移 | 独立结构化本地统计，旧历史不估算 | 部分实现 | U7、U13 → A1、A2 | 5 |
@@ -192,3 +192,5 @@ PetIdleCycles、PetManifest.fidgetCandidates/resolveFidget、PetScene和AppModel
 阶段3W新增置顶/普通层级、角色全部穿透、不透明度0.05...1及菜单/设置恢复默认；正常模式沿alpha自动穿透，独立工具栏仍可操作，辅助面板层级跟随且不降低可读性。原winGameSetting TopMost/HitThrough/Opacity → PetWindowBehavior、AppModel.applyWindowPreferences与原生面板；OpacityMain/OpacityHitThrough动态组合、全屏和真实焦点/遮挡/穿透仍未完成，部分实现，保存v2不变。
 
 阶段5A首批本地统计：成功购买/实际花费、使用数量、有效工作/学习/娱乐时间和含完成奖金的收益，最近200条结束历史及累计次数；旧历史不补造。依据StatisticsCalHandle、TakeItem和ActivityLogs订阅 → PetProgress、PetEngine和StatisticsView。保存从v2升级v3，v1/v2原件独立保留、未来v4阻写；原消费标价/全键/调试与联网日志未完整映射，状态部分实现，真实页面未验。详细迁移/回滚见行为与交接，动画v3/文本v1保持。
+
+阶段5B补StatisticsCalHandle的养成时间/强制睡眠/工作与非工作采样、当前金币/等级/好感及低状态经历键，触摸事件与pinch首轮计数、每物品/分类消费标价和原始药品经验/礼品好感。来源MainWindow.cs、MainWindow.xaml.cs → PetProgress.recordSample/recordUse和PetEngine/StatisticsView；原生物品ID前缀映射、结构化娱乐独立及有界字典为适配，不兼容原LPS统计导入。保存v4升级保留v1/v2/v3原件，未来v5保护；Steam上传、调试/联网全日志、原评价仍缺，部分实现，真实页面/输入待验。

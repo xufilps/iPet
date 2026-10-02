@@ -37,6 +37,7 @@ public final class PetEngine {
         self.catalog=catalog; self.wallClock=wallClock
         self.state = state; self.clock = clock; self.random = random; previous = clock.now
     }
+    public func recordPinchStart() { updateProgress { $0.increment("stat_touch_head");$0.increment("stat_touch_body") } }
     public func recordInteraction() { lastInteraction = activeSeconds }
     public func resetClock() { previous = clock.now; remainder = 0 }
     public func tick() {
@@ -63,6 +64,7 @@ public final class PetEngine {
         lastInteraction = activeSeconds
         switch command {
         case .touchHead, .touchBody:
+            updateProgress { $0.increment(command.isHead ? "stat_touch_head":"stat_touch_body") }
             if simulationEnabled && state.strength >= 10 && state.feeling < 100 { state.changeStrength(-2); state.changeFeeling(1) }
             state.resting = false
             return command.isHead ? .head : .body
@@ -133,7 +135,7 @@ public final class PetEngine {
         if mode == .useImmediately { PetItemRules.apply(item,to:&next,now:wallClock.now) }
         var progress=next.progress ?? PetProgress()
         if purchase { progress.purchased+=1;progress.spent+=item.price }
-        if mode == .useImmediately { progress.used+=1 }
+        if mode == .useImmediately { progress.used+=1;progress.recordUse(item) }
         next.progress=progress
         do { try next.validate() } catch { return result(false,"操作将产生不合法数据，已拒绝且未扣款。") }
         state=next
@@ -185,6 +187,7 @@ public final class PetEngine {
     }
     private func step() {
         let t = 0.05
+        let sampledMood=state.mood
         releaseStores()
         if state.resting {
             state.changeStrength(t * 2); state.changeFood(t)
@@ -222,6 +225,7 @@ public final class PetEngine {
         } else if state.feeling <= 25 { state.changeAffection(-t); state.experience -= t }
         // Random.Next(0,1) is always zero in C#; do not add random health loss.
         if state.drink <= 25 { state.experience -= t }
+        updateProgress { $0.recordSample(state:state,catalog:catalog,mood:sampledMood) }
         if state.mood == .ill, let session=state.activity, catalog.activity(session.activityID) != nil { stopActivity(.stateFailed) }
     }
 }
