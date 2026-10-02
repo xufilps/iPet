@@ -122,6 +122,16 @@ import PetCore
         timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:false)
         installTimeline()
     }
+    public var currentPhase:AnimationPhase? { timeline?.stage.phase }
+    public func playMovement(_ action:PetAction,graphID:String,mood:PetMood) {
+        transitionSteps=[];transitionTarget=nil;isFinishingActivity=false
+        requestedAction=action;requestedGraphID=graphID;self.mood=mood
+        let clip=manifest.clips.first { $0.action==action && $0.graphID==graphID && $0.mood==mood }
+            ?? manifest.clips.first { $0.action==action && $0.graphID==graphID && $0.mood == .normal }
+            ?? manifest.resolve(action:action,mood:mood)
+        if clip.graphID != graphID || clip.mood != mood { onDiagnostic?("移动动画回退：\(graphID)/\(mood.rawValue)") }
+        timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:true);installTimeline()
+    }
     public func playFidget(graphID: String, mood: PetMood) {
         transitionSteps=[];transitionTarget=nil
         isFinishingActivity=false;requestedAction = .fidget;requestedGraphID=graphID;self.mood=mood

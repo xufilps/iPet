@@ -32,7 +32,8 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     private var lastSave = 0.0
     private var lastTick: Double?
     private var walkingUntil = 0.0
-    private var walkingDirection = 1.0
+    private var walkPlan:PetWalkPlan?
+    private var moveRandom=SeededPetRandom(seed:UInt64.random(in:0...UInt64.max))
     private let autonomy = PetAutonomy()
     private var dialogue:PetDialogue!
     private let speech=PetSpeechWindow()
@@ -289,8 +290,10 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         if visible {
             petPanel.ignoresMouseEvents = !petView.isInteracting && !petView.opaqueUnderMouse()
             if !petView.isInteracting && walkingUntil > now && autoMove {
-                var origin = petPanel.frame.origin; origin.x += walkingDirection * 18 * delta
-                petPanel.setFrameOrigin(origin); clampPosition()
+                if petScene.currentPhase == .loop,let plan=walkPlan,let screen=petPanel.screen {
+                    if let frame=plan.advance(pet:petPanel.frame,screen:screen.visibleFrame,seconds:delta) { petPanel.setFrame(frame,display:true) }
+                    else { walkingUntil=0;walkPlan=nil;petScene.finishAction();persistPosition() }
+                }
             } else if walkingUntil > 0 { walkingUntil = 0; petScene.finishAction(); persistPosition() }
         }
         if autonomousUntil > 0 && now >= autonomousUntil {
@@ -301,8 +304,10 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         if let behavior = autonomy.poll(eligible:eligible,allowsMovement:autoMove,mood:engine.state.mood) {
             switch behavior {
             case .walkLeft, .walkRight:
-                walkingDirection = behavior == .walkRight ? 1 : -1;walkingUntil=now+5
-                petScene.play(behavior == .walkRight ? .walkRight : .walkLeft,mood:engine.state.mood)
+                if let screen=petPanel.screen,let plan=PetWalkPlan.make(left:behavior == .walkLeft,crawl:moveRandom.unit()<0.5,mood:engine.state.mood,pet:petPanel.frame,screen:screen.visibleFrame) {
+                    walkPlan=plan;walkingUntil=now+5
+                    petScene.playMovement(plan.action,graphID:plan.graphID,mood:engine.state.mood)
+                }
             case .fidget:
                 petScene.playFidget(graphID:autonomy.fidgetGraphID,mood:engine.state.mood)
             case .doze:

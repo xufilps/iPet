@@ -1,6 +1,6 @@
 # 对照原版的剩余功能 — 2026-10-02
 
-复核基线为原版 `1a06c598`；当前清单随阶段3E更新。原C#依据来自保留Git历史，当前实现以Swift源码为准。完整状态与来源见 [UPSTREAM_COMPARISON.md](UPSTREAM_COMPARISON.md)；以下按用户能观察到的体验组织缺口。
+复核基线为原版 `1a06c598`；当前清单随阶段3F更新。原C#依据来自保留Git历史，当前实现以Swift源码为准。完整状态与来源见 [UPSTREAM_COMPARISON.md](UPSTREAM_COMPARISON.md)；以下按用户能观察到的体验组织缺口。
 
 ## 已有能力，不重复当成待开发
 
@@ -11,11 +11,11 @@
 | 缺口 | 当前实际行为 | 原版依据 | 建议顺序 |
 | --- | --- | --- | --- |
 | 自主随机行为 | 已实现15秒抽选、两种待机与打盹；特殊待机/扩展池、活动中互动与随机循环退出仍缺 | MainLogic.EventTimer_Elapsed，MainDisplay.DisplayToIdel/StateONE/StateTWO | 1：先建立可测调度，分别考虑空闲、活动、休息、生病和人工互动 |
-| 动画变体与状态过渡 | 77组合并非全部动作；Default/抚摸/Boring/Squat变体和逐级状态过渡已接入，其余动画变体仍缺 | PlaySwitchAnimat、Graph/PetLoader；convert_assets.py choices[0] | 2：建立完整资源差距清单，再接入变体和Switch_Up/Down |
+| 动画变体与状态过渡 | 87组合并非全部动作；Default/抚摸/Boring/Squat变体和逐级状态过渡已接入，其余动画变体仍缺 | PlaySwitchAnimat、Graph/PetLoader；convert_assets.py choices[0] | 2：建立完整资源差距清单，再接入变体和Switch_Up/Down |
 | 抚摸/按压细节 | 原区域300ms长按提起与连续点击续循环已实现；动态提起/落下全集和按压配置仍缺 | Main.xaml.cs按压流程、MainDisplay.DisplayToTouchHead/Body | 3：完善输入状态机，与提起/拖动清楚区分 |
 | 说话栏与原文案 | 671条离线文案、原生气泡与空闲饥渴提醒已接入；选项式聊天、说话动画、语音和完整消息设置仍缺 | MessageBar、ClickText/LowText/SelectText、TalkBox | 4：先本地文本与状态提醒，再研究网络对话；不依赖AI服务 |
 | 随宠工具栏 | 可选原生工具栏及活动进度/暂停/继续/结束已接入；原多级快捷菜单、自动隐藏和完整WorkTimer反馈仍缺 | ToolBar.xaml/.cs、WorkTimer | 5：原生快捷入口和活动反馈，不复制WPF布局 |
-| 丰富移动/边缘行为 | 固定水平移动5秒并约束可见范围，无爬墙、边缘隐藏、智能范围与跨屏策略 | DisplayToMove、MoveSideHideCheck、winMoveArea | 6：动作和窗口规则一起实现，跨屏在真实验收后确认 |
+| 丰富移动/边缘行为 | 状态快/慢走、爬行、起步反向及边缘提前停止已实现；仍有5秒上限，缺原随机退出/衔接、爬墙、边缘隐藏、智能范围与跨屏策略 | DisplayToMove、MoveSideHideCheck、winMoveArea | 6：动作和窗口规则一起实现，跨屏在真实验收后确认 |
 
 前三项是“桌宠不像原版那么活”的主要原因。仅增加PNG数量不能补齐调度、输入和状态过渡规则；需要逐场景实现，而不是把所有素材一次性预加载。
 
@@ -51,3 +51,5 @@ Steam、工坊、云存档、联机、联网聊天和C#插件需要独立接口/
 阶段3C已接入300ms区域长按提起及同抚摸循环续一次；按住不刷收益，抚摸按点击逐次结算。轻点/拖动隔离输入检查通过，真实静止长按另待最终验收。下一步本地气泡/文本，动态提起变体和按压配置仍为缺口，详见[specs/PHASE-3C.md](specs/PHASE-3C.md)。
 
 阶段3D已补齐本地文本首批；下一项按上述顺序为丰富移动/边缘行为。统计、排程、丰富移动和数据兼容继续各自立规格，压力测试仍集中到最后，不因此标记阶段1完成。
+
+阶段3F已完成水平动作和边缘检查首批，下一项先追踪Distance随机循环退出与兼容动作选择，再独立处理爬墙/侧边隐藏。水平规则不是完整原版边缘行为，真实多屏和压力检查仍待最后验收。

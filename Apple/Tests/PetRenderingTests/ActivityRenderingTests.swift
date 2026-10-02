@@ -4,6 +4,21 @@ import PetCore
 @testable import PetRendering
 private struct VariantRandom: PetRandom { var value: Double; mutating func unit() -> Double { value } }
 final class ActivityRenderingTests: XCTestCase {
+    func testMovementGraphPreservesStartAndInterruptClearsGraph() async throws {
+        let manifest=try PetManifest.load(from:root),assets=root
+        let clip=try XCTUnwrap(manifest.clips.first { $0.graphID=="crawl.right" && $0.mood == .normal })
+        let start=try XCTUnwrap(clip.stages.first { $0.phase == .start })
+        await MainActor.run {
+            let scene=PetScene(manifest:manifest,assetRoot:assets)
+            scene.playMovement(.walkRight,graphID:"crawl.right",mood:.normal)
+            XCTAssertEqual(scene.requestedGraphID,"crawl.right");XCTAssertEqual(scene.currentPhase,.start)
+            scene.update(0)
+            for step in 1...Int(ceil(start.duration/0.1)+1) { scene.update(Double(step)*0.1) }
+            XCTAssertEqual(scene.currentPhase,.loop)
+            scene.play(.head,mood:.normal)
+            XCTAssertNil(scene.requestedGraphID);XCTAssertEqual(scene.currentPhase,.start)
+        }
+    }
     var root: URL { URL(fileURLWithPath:#filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Resources/PetAssets") }
     func testRepeatTouchPreservesStartAndContinuesOnlyOneLoop() throws {
         let manifest=try PetManifest.load(from:root)
