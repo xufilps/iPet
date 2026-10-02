@@ -10,6 +10,7 @@ final class PetPanel: NSPanel {
     override var canBecomeMain: Bool { false }
 }
 @MainActor final class PetView: SKView {
+    var onPanelRequested:(() -> Void)?
     var onPressBegin: (() -> Void)?
     var canLift: ((CGPoint) -> Bool)?
     var onTouch: ((String?) -> Void)?
@@ -81,5 +82,5 @@ final class PetPanel: NSPanel {
         case .none: break
         }
     }
-    override func rightMouseDown(with event: NSEvent) { cancelInteraction();onTouch?(nil) }
+    override func rightMouseDown(with event: NSEvent) { cancelInteraction();onPanelRequested?() }
 }

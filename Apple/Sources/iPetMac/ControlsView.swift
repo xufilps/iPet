@@ -30,7 +30,10 @@ struct ControlsView: View {
             Text("等级 \(model.state.level) · 经验 \(model.state.experience.formatted(.number.precision(.fractionLength(2)))) · 好感 \(model.state.affection.formatted(.number.precision(.fractionLength(1))))")
             metric("体力",model.state.strength); metric("饱腹",model.state.food)
             metric("饮水",model.state.drink); metric("心情",model.state.feeling); metric("健康",model.state.health)
-            Button(model.state.resting ? "起床" : "休息") { model.command(.toggleRest) }
+            HStack {
+                Button(model.state.resting ? "起床" : "休息") { model.command(.toggleRest) }
+                Button("聊一句") { model.sayClick() }.help("本地原版文本可能带少量属性或金币变化，每20秒可聊一次。")
+            }
             Text("工作赚取金币，学习与娱乐积累经验。状态会影响活动收益；饥渴或体力不足时先休息、补充食物。生病时可在商店选择药品，免费应急药也会带来属性代价。")
                 .font(.callout).foregroundStyle(.secondary)
             Spacer()

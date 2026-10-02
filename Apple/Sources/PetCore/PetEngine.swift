@@ -119,6 +119,13 @@ public final class PetEngine {
         state.activity=nil
         events.append(.activityStopped(id:session.activityID,reason:reason,earned:session.earned,bonus:bonus))
     }
+    @discardableResult public func applyDialogue(_ effects:PetDialogueEffects) -> Bool {
+        guard effects.isValid else { return false }
+        let before=state
+        eat(effects.petFood);state.resting=before.resting;state.money += effects.money
+        do { try state.validate() } catch { state=before;return false }
+        recordInteraction();return true
+    }
     private func eat(_ food: PetFood) {
         state.resting = false
         state.experience += food.experience
