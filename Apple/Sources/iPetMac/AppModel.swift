@@ -86,6 +86,10 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         petScene.play(state.resting ? .sleep : .idle, mood: state.mood)
         petScene.onIdleCycle = { [weak self] in self?.autonomy.recordIdleCycle() }
         petScene.onDiagnostic = { text in NSLog("%@", text) }
+        petScene.onPinchLoop = { [weak self] in
+            guard let self,self.visible,!self.suspended,self.petView.isInteracting,!self.petView.isDragging else { return false }
+            self.applyPinchEffects();return true
+        }
         petScene.onMovementLoop = { [weak self] in self?.movementLoop() ?? false }
         petScene.onActionFinished = { [weak self] action in
             guard let self else { return }
@@ -104,6 +108,21 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         petPanel.contentView = petView
         petView.onPanelRequested = { [weak self] in self?.showControls() }
         petView.onPressBegin = { [weak self] in self?.engine.recordInteraction();self?.autonomy.reset() }
+        petView.canPinch = { [weak self] point in
+            guard let self,self.sideHidePlan == nil else { return false }
+            return self.petScene.canPinch(at:point,mood:self.engine.state.mood)
+        }
+        petView.onPinchStart = { [weak self] in
+            guard let self else { return }
+            self.cancelMovement();self.autonomousUntil=0;self.autonomy.reset()
+            self.applyPinchEffects();self.petScene.play(.pinch,mood:self.engine.state.mood)
+            self.recordAcceptanceInput("pinch-start")
+        }
+        petView.onPressEnd = { [weak self] in
+            guard let self else { return }
+            if self.petScene.requestedAction == .pinch { self.petScene.finishAction() }
+            else if self.petScene.requestedAction == .idle { self.restoreBaseAnimation() }
+        }
         petView.canLift = { [weak self] point in
             guard let self else { return false }
             return self.petScene.canRaise(at:point,mood:self.engine.state.mood)
@@ -177,6 +196,9 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         }
         let editRoot=NSMenuItem(title:"编辑",action:nil,keyEquivalent:""); editRoot.submenu=edit; main.addItem(editRoot)
         NSApp.mainMenu = main
+    }
+    private func applyPinchEffects() {
+        _ = engine.send(.touchPinch);state=engine.state;autonomy.reset();consumeEvents();save()
     }
     func command(_ command: PetCommand) {
         petView.cancelInteraction()

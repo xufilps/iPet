@@ -12,6 +12,9 @@ final class PetPanel: NSPanel {
 @MainActor final class PetView: SKView {
     var onPanelRequested:(() -> Void)?
     var onPressBegin: (() -> Void)?
+    var canPinch:((CGPoint)->Bool)?
+    var onPinchStart:(()->Void)?
+    var onPressEnd:(()->Void)?
     var canLift: ((CGPoint) -> Bool)?
     var onTouch: ((String?) -> Void)?
     var onDragStart: (() -> Void)?
@@ -38,13 +41,18 @@ final class PetPanel: NSPanel {
         }
     }
     private func checkLongPress() {
+        if lastViewPoint.map({ canPinch?(scenePoint($0)) == true }) == true {
+            if gesture.pollHold(time:ProcessInfo.processInfo.systemUptime) { onPinchStart?() }
+            return
+        }
         let allowed=lastViewPoint.map { canLift?(scenePoint($0)) == true } ?? false
         if gesture.poll(time:ProcessInfo.processInfo.systemUptime,canLift:allowed) { onDragStart?() }
     }
     func cancelInteraction() {
         pressTask?.cancel();pressTask=nil
-        let lifted=gesture.isLifted
+        let pressed=gesture.isPressed,lifted=gesture.isLifted
         gesture.cancel();origin=nil;mouseOrigin=nil;lastViewPoint=nil;lastDragPoint=nil
+        if pressed { onPressEnd?() }
         if lifted { onDragEnd?() }
     }
     override func viewDidMoveToWindow() {
@@ -81,6 +89,7 @@ final class PetPanel: NSPanel {
         lastViewPoint=convert(event.locationInWindow,from:nil)
         checkLongPress();pressTask?.cancel();pressTask=nil
         let released=gesture.release()
+        onPressEnd?()
         origin=nil;mouseOrigin=nil;lastViewPoint=nil;lastDragPoint=nil
         switch released {
         case .drop: onDragEnd?()

@@ -56,6 +56,9 @@ public final class PetEngine {
             if state.strength >= 10 && state.feeling < 100 { state.changeStrength(-2); state.changeFeeling(1) }
             state.resting = false
             return command.isHead ? .head : .body
+        case .touchPinch:
+            if state.strength >= 10 && state.feeling < 100 { state.changeStrength(-2);state.changeFeeling(1) }
+            return .pinch
         case .feed: eat(.meal); return .eat
         case .water: eat(.water); return .drink
         case .toggleRest: stopActivity(.manual); state.resting.toggle(); return state.resting ? .sleep : .idle

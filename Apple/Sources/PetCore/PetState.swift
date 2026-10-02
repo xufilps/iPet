@@ -73,8 +73,8 @@ public struct PetState: Codable, Equatable, Sendable {
     }
     static func clamp(_ value: Double) -> Double { min(100, max(0, value)) }
 }
-public enum PetCommand: Sendable { case touchHead, touchBody, feed, water, toggleRest }
-public enum PetAction: String, Codable, Sendable, CaseIterable { case idle, fidget, stateUp, stateDown, head, body, raised, walkLeft, walkRight, sleep, eat, drink, gift, activity, climb, sideHide }
+public enum PetCommand: Sendable { case touchHead, touchBody, touchPinch, feed, water, toggleRest }
+public enum PetAction: String, Codable, Sendable, CaseIterable { case idle, fidget, stateUp, stateDown, head, body, raised, walkLeft, walkRight, sleep, eat, drink, gift, activity, climb, sideHide, pinch }
 public struct PetFood: Sendable {
     public let strength, food, drink, feeling, health, affection, experience: Double
     // Free basics are an Apple v0.1 adaptation, not Windows shop items.

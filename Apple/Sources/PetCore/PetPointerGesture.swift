@@ -14,6 +14,11 @@ public struct PetPointerGesture: Sendable {
         guard isPressed, !isLifted, (x-self.x)*(x-self.x)+(y-self.y)*(y-self.y) > 16 else { return false }
         isLifted=true;return true
     }
+    /// Claims a non-lifting long press once; motion can still become a drag.
+    public mutating func pollHold(time:Double) -> Bool {
+        guard isPressed,!isLifted,!longPressHandled,time-began>=0.3 else { return false }
+        longPressHandled=true;return true
+    }
     public mutating func poll(time: Double, canLift: Bool) -> Bool {
         guard isPressed, !isLifted, !longPressHandled, time-began >= 0.3 else { return false }
         longPressHandled=true

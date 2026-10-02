@@ -45,6 +45,7 @@ import PetCore
     public private(set) var requestedAction = PetAction.idle
     public private(set) var mood = PetMood.normal
     public var onIdleCycle: (() -> Void)?
+    public var onPinchLoop:(()->Bool)?
     public var onMovementLoop:(()->Bool)?
     private var timelineGeneration=0
     public var onActionFinished: ((PetAction) -> Void)?
@@ -77,6 +78,10 @@ import PetCore
         play(.idle, mood: .normal)
     }
     required init?(coder: NSCoder) { fatalError("Use manifest initializer") }
+    public func canPinch(at point:CGPoint,mood:PetMood) -> Bool {
+        manifest.regions["pinch"]?.contains(x:Double(point.x),y:Double(size.height-point.y)) == true
+            && manifest.clips.contains { $0.action == .pinch && $0.mood == mood && $0.stages.contains { $0.phase == .start } }
+    }
     public func canRaise(at point: CGPoint, mood: PetMood) -> Bool {
         manifest.regions["raised:"+mood.rawValue]?.contains(x:Double(point.x),y:Double(size.height-point.y)) == true
     }
@@ -120,7 +125,7 @@ import PetCore
         requestedAction = action; self.mood = mood
         let clip = manifest.resolve(action: action, mood: mood)
         if clip.action != action || clip.mood != mood { onDiagnostic?("动画回退：\(action.rawValue)/\(mood.rawValue) → \(clip.action.rawValue)/\(clip.mood.rawValue)") }
-        timeline = AnimationTimeline(clip: clip.selectingVariants(random:&random), looping: [.idle, .sleep, .raised, .walkLeft, .walkRight, .climb].contains(action))
+        timeline = AnimationTimeline(clip: clip.selectingVariants(random:&random), looping: [.idle, .sleep, .raised, .walkLeft, .walkRight, .climb, .pinch].contains(action))
         installTimeline()
     }
     private func installTimeline() {
@@ -278,6 +283,15 @@ import PetCore
                 let cycles=Int((timeline.elapsed+delta)/timeline.stage.duration)
                 for _ in 0..<cycles { onIdleCycle?() }
             }
+            if requestedAction == .pinch,let current=timeline,current.clip.action == .pinch,current.stage.phase == .loop {
+                let generation=timelineGeneration
+                let cycles=Int((current.elapsed+delta)/current.stage.duration)
+                for _ in 0..<cycles {
+                    let held=onPinchLoop?() ?? false
+                    if generation != timelineGeneration { return }
+                    if !held { timeline?.requestFinish();break }
+                }
+            }
             if isMovementAnimation,let current=timeline,current.stage.phase == .loop {
                 let generation=timelineGeneration
                 let cycles=Int((current.elapsed+delta)/current.stage.duration)
@@ -327,7 +341,7 @@ import PetCore
                     if requestedAction != .idle {
                         let completed=requestedAction, target=transitionTarget
                         play(.idle,mood:target ?? mood)
-                        if target != nil || [.walkLeft,.walkRight,.climb,.sideHide,.raised].contains(completed) { onActionFinished?(completed) }
+                        if target != nil || [.walkLeft,.walkRight,.climb,.sideHide,.raised,.pinch].contains(completed) { onActionFinished?(completed) }
                         return
                     }
                 }

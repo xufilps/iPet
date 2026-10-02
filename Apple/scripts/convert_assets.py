@@ -56,6 +56,7 @@ def convert(source, destination):
     clips = []
     diagnostics = []
     roots = [(action,subtree,subtree.split("/")[-1] if action in ("walkLeft","walkRight") else "raised.static" if action=="raised" else None) for action,subtree in ACTIONS.items()]
+    roots += [('pinch','Pinch',None)]
     roots += [('raised','Raise/Raised_Dynamic','raised.dynamic')]
     roots += [(action,'MOVE/'+graph,graph) for action,side in [('walkLeft','left'),('walkRight','right')] for graph in ['walk.'+side+'.faster','walk.'+side+'.slow','crawl.'+side]]
     roots += [('sideHide','SideHide_'+side+'_'+kind,'sidehide.'+side.lower()+('' if kind=='Main' else '.rise')) for side in ['Left','Right'] for kind in ['Main','Rise']]
@@ -88,7 +89,7 @@ def convert(source, destination):
                     choices = [p for p in matching if any(part.lower().split('_')[0] == prefix or part.lower().split('_')[-1] == prefix for part in p.relative_to(root).parts)]
                     if choices:
                         stage = {'phase': phase, 'layers': [layer(choices[0], 0)], 'foodTrack': []}
-                        if action in ('head','body','fidget','walkLeft','walkRight','climb','sideHide') and len(choices)>1:
+                        if action in ('head','body','fidget','walkLeft','walkRight','climb','sideHide','pinch') and len(choices)>1:
                             stage['variants'] = [[layer(path,0)] for path in choices[1:]]
                         stages.append(stage)
             if stages:
@@ -126,9 +127,9 @@ def convert(source, destination):
     config = (source / 'pet/vup.lps').read_text(encoding='utf-8-sig')
     regions = {}
     for line in config.splitlines():
-        if line.startswith(('touchhead:', 'touchbody:')):
+        if line.startswith(('touchhead:', 'touchbody:','pinch:')):
             f = fields(line)
-            regions['head' if line.startswith('touchhead') else 'body'] = {'x': float(f['px']), 'y': float(f['py']), 'width': float(f['sw']), 'height': float(f['sh'])}
+            regions['head' if line.startswith('touchhead') else 'pinch' if line.startswith('pinch') else 'body'] = {'x': float(f['px']), 'y': float(f['py']), 'width': float(f['sw']), 'height': float(f['sh'])}
         if line.startswith('touchraised:'):
             f = fields(line)
             for mode in MODES:
