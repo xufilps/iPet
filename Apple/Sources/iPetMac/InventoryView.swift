@@ -34,6 +34,9 @@ struct InventoryView: View {
             if inventory.unpricedCount>0 {
                 Text("另有 \(inventory.unpricedCount) 件未知物品未计价，数据仍保留。").font(.caption).foregroundStyle(.secondary)
             }
+            if let progress=model.inventoryUseProgress {
+                HStack { Text(progress).font(.caption).monospacedDigit();Button("停止剩余使用") { model.cancelInventoryUse() } }
+            }
             ScrollView {
                 LazyVStack(alignment:.leading,spacing:12) {
                     if inventory.ids.isEmpty {
@@ -44,8 +47,7 @@ struct InventoryView: View {
                         if let item=model.catalog.item(id) {
                             ItemRow(model:model,item:item) {
                                 favoriteButton(id:id)
-                                Text("数量 \(model.state.inventory[id,default:0])").monospacedDigit()
-                                Button("使用一件") { model.perform(.useItem(id)) }
+                                InventoryUseControls(model:model,id:id)
                             }
                         } else {
                             HStack {
@@ -62,5 +64,21 @@ struct InventoryView: View {
         Button { model.toggleFavorite(id:id) } label: {
             Image(systemName:model.favoriteItems.contains(id) ? "star.fill":"star")
         }.accessibilityLabel(model.favoriteItems.contains(id) ? "取消收藏":"收藏物品")
+    }
+}
+
+private struct InventoryUseControls:View {
+    @ObservedObject var model:AppModel
+    let id:String
+    @State private var quantity=1
+    private var available:Int { model.state.inventory[id,default:0] }
+    var body:some View {
+        HStack {
+            Text("库存 \(available)").monospacedDigit()
+            TextField("数量",value:$quantity,format:.number).frame(width:60).accessibilityLabel("使用数量")
+            Stepper("数量",value:$quantity,in:1...max(1,available)).labelsHidden()
+            Button("使用所选") { model.useInventory(id:id,count:min(max(1,quantity),available)) }
+        }.disabled(model.inventoryUseProgress != nil)
+            .onChange(of:available) { _,newValue in quantity=min(max(1,quantity),max(1,newValue)) }
     }
 }

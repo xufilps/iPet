@@ -21,6 +21,8 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     @Published var visible = true
     @Published var toolbarEnabled=false
     @Published private(set) var favoriteItems:Set<String>=[]
+    @Published private(set) var inventoryUseProgress:String?
+    private var inventoryUseTask:Task<Void,Never>?
     private(set) var engine: PetEngine!
     private(set) var store: PetSaveStore!
     private var writable = true
@@ -218,6 +220,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         save()
     }
     func perform(_ command: PetEconomyCommand) {
+        guard inventoryUseTask == nil else { message="正在使用背包物品，请完成或取消后再操作。";return }
         let result = engine.perform(command)
         state = engine.state; message = result.message
         if result.accepted {
@@ -227,6 +230,33 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
             if !usedItem { restoreBaseAnimation() }
             save()
         }
+    }
+    func useInventory(id:String,count:Int) {
+        guard inventoryUseTask == nil,count>0,catalog.item(id) != nil else { return }
+        guard writable else { message="存档写入已暂停，暂不能批量使用。";return }
+        let total=min(count,engine.state.inventory[id,default:0])
+        guard total>0 else { return }
+        petView.cancelInteraction();cancelMovement();autonomy.reset()
+        inventoryUseProgress="已使用 0 / \(total) 件"
+        inventoryUseTask=Task { [weak self] in
+            guard let self else { return }
+            var used=0
+            while used<total,!Task.isCancelled,!self.suspended {
+                let result=self.engine.useItems(id:id,count:min(32,total-used))
+                used+=result.used;self.state=self.engine.state
+                _=self.consumeEvents()
+                self.inventoryUseProgress="已使用 \(used) / \(total) 件"
+                self.message=result.used == 0 ? result.message:"已使用 \(used) / \(total) 件。"
+                guard self.save() else { break }
+                if result.used == 0 { break }
+                try? await Task.sleep(for:.milliseconds(10))
+            }
+            self.inventoryUseProgress=nil;self.inventoryUseTask=nil
+        }
+    }
+    func cancelInventoryUse() {
+        inventoryUseTask?.cancel()
+        if inventoryUseTask != nil { message="已停止剩余使用，完成部分已保存。" }
     }
     func toggleFavorite(id:String) {
         if favoriteItems.contains(id) { favoriteItems.remove(id) } else { favoriteItems.insert(id) }
@@ -238,7 +268,9 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     }
     @discardableResult private func consumeEvents() -> Bool {
         var usedItem = false, stopped = false
-        for event in engine.drainEvents() {
+        let events=engine.drainEvents()
+        let lastUsed=events.compactMap { event -> String? in if case let .itemUsed(id)=event { return id };return nil }.last
+        for event in events {
             switch event {
             case let .activityStopped(id, reason, earned, bonus):
                 stopped = true
@@ -246,14 +278,16 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
                 let unit=catalog.activity(id)?.kind == .work ? "金币" : "经验"
                 let reasonText=reason == .completed ? "完成" : reason == .manual ? "结束" : "因状态不佳停止"
                 message="\(title)\(reasonText)，已获\(earned.formatted(.number.precision(.fractionLength(2))))\(unit)，完成奖励\(bonus.formatted(.number.precision(.fractionLength(2))))。"
-            case let .itemUsed(id):
+            case .itemUsed: break
+            }
+        }
+        if let id=lastUsed {
                 if let item=catalog.item(id) {
                     usedItem = true
                     petScene.setFoodImage(path:item.imagePath)
                     let action: PetAction = item.graphID.lowercased() == "drink" ? .drink : item.graphID.lowercased() == "gift" ? .gift : .eat
                     petScene.play(action,mood:engine.state.mood)
                 }
-            }
         }
         if stopped {
             state = engine.state
@@ -464,18 +498,18 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         let frame=needsEdgeRecovery ? edgeScreen.map { PetClimbPlan.recovered(pet:petPanel.frame,screen:$0) } ?? petPanel.frame : petPanel.frame
         UserDefaults.standard.set(frame.minX, forKey: "petX"); UserDefaults.standard.set(frame.minY, forKey: "petY")
     }
-    private func suspend() { petView.cancelInteraction();speech.hide();toolbar?.hide();dialogue.resetTiming();save(); suspended = true; cancelMovement(); autonomy.reset(); petView.isPaused = true; petScene.releaseTextures() }
+    private func suspend() { cancelInventoryUse();petView.cancelInteraction();speech.hide();toolbar?.hide();dialogue.resetTiming();save(); suspended = true; cancelMovement(); autonomy.reset(); petView.isPaused = true; petScene.releaseTextures() }
     private func resume() {
         engine.resetClock();dialogue.resetTiming(); lastTick = nil; lastSave = ProcessInfo.processInfo.systemUptime
         autonomy.reset(); suspended = false
         restoreBaseAnimation(force:true); petView.isPaused = !visible; clampPosition()
     }
-    func save() {
-        guard writable else { return }
-        do { try store.save(engine.state) }
-        catch { message = "保存失败：\(error.localizedDescription)"; NSLog("%@", message) }
+    @discardableResult func save() -> Bool {
+        guard writable else { return false }
+        do { try store.save(engine.state);return true }
+        catch { message = "保存失败：\(error.localizedDescription)"; NSLog("%@", message);return false }
     }
-    func stop() { cancelMovement();speech.hide();toolbar?.hide();petView?.cancelInteraction();timer?.cancel(); if engine != nil { save() }; persistPositionIfReady() }
+    func stop() { cancelInventoryUse();cancelMovement();speech.hide();toolbar?.hide();petView?.cancelInteraction();timer?.cancel(); if engine != nil { save() }; persistPositionIfReady() }
     private func persistPositionIfReady() { if petPanel != nil { persistPosition() } }
     @objc func showControls() {
         if controls == nil {

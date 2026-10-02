@@ -87,6 +87,20 @@ public final class PetEngine {
         case .useItem(let id): return transactItem(id:id,purchase:false,mode:.useImmediately)
         }
     }
+    /// Applies each unit through the same rule path as a single inventory use.
+    public func useItems(id:String,count:Int) -> (used:Int,message:String) {
+        guard count>0 else { return (0,"请选择正数数量。") }
+        guard catalog.item(id) != nil else { return (0,"未知物品，操作已拒绝。") }
+        let available=state.inventory[id,default:0]
+        guard available>0 else { return (0,"背包没有该物品。") }
+        var used=0
+        for _ in 0..<min(count,available) {
+            let result=perform(.useItem(id))
+            guard result.accepted else { return (used,result.message) }
+            used+=1
+        }
+        return (used,"已使用 \(used) 件。")
+    }
     private func transactItem(id: String, purchase: Bool, mode: PurchaseMode) -> PetCommandResult {
         guard let item=catalog.item(id) else { return result(false,"未知物品，操作已拒绝。") }
         var next=state
