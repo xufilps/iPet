@@ -9,10 +9,11 @@ import PetCore
 import PetRendering
 import PetMacInput
 
-enum ControlPage: String, CaseIterable { case status="状态", activity="活动", schedule="日程", shortcuts="快捷", shop="商店", inventory="背包", settings="设置", statistics="统计" }
+enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状态", activity="活动", schedule="日程", shortcuts="快捷", shop="商店", inventory="背包", settings="设置", statistics="统计" }
 
 @MainActor final class AppModel: ObservableObject {
     @Published var state = PetState()
+    @Published private(set) var diagnostics=PetDiagnostics()
     @Published private(set) var shortcuts=PetShortcutList()
     @Published private(set) var shortcutError=""
     @Published private(set) var shortcutsEditable=true
@@ -106,7 +107,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         shortcutStore=PetShortcutStore(directory:base);reloadShortcuts()
         store = PetSaveStore(directory: base)
         do { state = try store.load() ?? PetState(); message = store.recoveryMessage ?? "" }
-        catch { writable = false; message = "\(error.localizedDescription) 本次仅运行，存档写入已暂停。" }
+        catch { writable = false; message = "\(error.localizedDescription) 本次仅运行，存档写入已暂停。";recordDiagnostic(.save,message) }
         guard let root = Bundle.main.resourceURL?.appendingPathComponent("PetAssets") else { throw PetSaveError.invalidDocument }
         assetRoot = root
         catalog = try PetCatalog.load(from: root.appendingPathComponent("gameplay.json"))
@@ -115,9 +116,9 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         state=engine.state
         dialogue=PetDialogue(catalog:try PetDialogueCatalog.load(from:root.appendingPathComponent("dialogue.json")))
         petScene = PetScene(manifest: try PetManifest.load(from: root), assetRoot: root)
+        petScene.onDiagnostic = { [weak self] text in self?.recordDiagnostic(.rendering,text);NSLog("%@",text) }
         petScene.play(state.resting ? .sleep : .idle, mood: presentationMood)
         petScene.onIdleCycle = { [weak self] in self?.autonomy.recordIdleCycle() }
-        petScene.onDiagnostic = { text in NSLog("%@", text) }
         petScene.onPinchLoop = { [weak self] in
             guard let self,self.visible,!self.suspended,self.petView.isInteracting,!self.petView.isDragging else { return false }
             self.applyPinchEffects();return true
@@ -194,7 +195,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         refreshToolbar()
         updateTextureResolution()
         buildMenu()
-        keyboardSender.onStatus = { [weak self] text in self?.message=text;self?.refreshToolbar() }
+        keyboardSender.onStatus = { [weak self] text in self?.message=text;self?.recordDiagnostic(.keyboard,text);self?.refreshToolbar() }
         let workspace = NSWorkspace.shared.notificationCenter
         observers.append(workspace.addObserver(forName:NSWorkspace.didActivateApplicationNotification,object:nil,queue:.main) { [weak self] _ in MainActor.assumeIsolated { self?.keyboardSender.frontmostApplicationChanged() } })
         observers.append(workspace.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in MainActor.assumeIsolated { self?.suspend() } })
@@ -219,6 +220,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         menu.addItem(item("日程…",#selector(showSchedule)));menu.addItem(item("活动…", #selector(showActivities))); menu.addItem(item("商店…", #selector(showShop)))
         menu.addItem(item("背包…", #selector(showInventory)))
         menu.addItem(item("统计与历史…", #selector(showStatistics)))
+        menu.addItem(item("本机诊断与报告…",#selector(showDiagnostics)))
         let custom=NSMenuItem(title:"自定义快捷",action:nil,keyEquivalent:"")
         shortcutMenu=NSMenu(title:"自定义快捷");shortcutMenu?.autoenablesItems=false;custom.submenu=shortcutMenu;menu.addItem(custom)
         rebuildShortcutMenu()
@@ -259,14 +261,14 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     func reloadShortcuts() {
         guard shortcutStore != nil else { return }
         do { shortcuts=try shortcutStore.load();shortcutsEditable=true;shortcutError="";rebuildShortcutMenu() }
-        catch { shortcutsEditable=false;shortcutError="快捷配置读取失败：\(error.localizedDescription) 原文件与上次已读取列表已保留。" }
+        catch { shortcutsEditable=false;shortcutError="快捷配置读取失败：\(error.localizedDescription) 原文件与上次已读取列表已保留。";recordDiagnostic(.shortcut,shortcutError) }
     }
     @discardableResult func editShortcut(_ action:PetShortcutEdit) -> Bool {
         guard shortcutsEditable,shortcutStore != nil else { return false }
         do {
             var next=shortcuts;try next.edit(action);try shortcutStore.save(next)
             shortcuts=next;shortcutError="";message="快捷入口已保存。";rebuildShortcutMenu();refreshToolbar();return true
-        } catch { shortcutError="快捷入口保存失败：\(error.localizedDescription) 已保存列表未改变。";return false }
+        } catch { shortcutError="快捷入口保存失败：\(error.localizedDescription) 已保存列表未改变。";recordDiagnostic(.shortcut,shortcutError);return false }
     }
     func runShortcut(_ id:Int) {
         guard let entry=shortcuts.entries.first(where:{ $0.id==id }) else { message="快捷入口已不存在。";return }
@@ -278,10 +280,26 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
             }
             keyboardSender.cancel()
             let url=try entry.resolvedURL()
-            if url.isFileURL,!FileManager.default.fileExists(atPath:url.path) { message="目标路径不存在，记录仍保留：\(entry.name)。";return }
-            guard NSWorkspace.shared.open(url) else { message="系统无法打开目标，记录仍保留：\(entry.name)。";return }
+            if url.isFileURL,!FileManager.default.fileExists(atPath:url.path) { message="目标路径不存在，记录仍保留：\(entry.name)。";recordDiagnostic(.shortcut,message);return }
+            guard NSWorkspace.shared.open(url) else { message="系统无法打开目标，记录仍保留：\(entry.name)。";recordDiagnostic(.shortcut,message);return }
             message="已向系统请求打开：\(entry.name)。"
-        } catch { message="打开快捷入口失败：\(error.localizedDescription)" }
+        } catch { message="打开快捷入口失败：\(error.localizedDescription)";recordDiagnostic(.shortcut,message) }
+    }
+    func recordDiagnostic(_ kind:PetDiagnosticKind,_ text:String) { diagnostics.record(kind,text,at:Date()) }
+    func clearDiagnostics() { diagnostics.clear() }
+    @objc private func showDiagnostics() { selectedPage = .diagnostics;showControls() }
+    func diagnosticReport(description:String,includeLogs:Bool) throws -> String {
+        let clips=petScene?.manifest.clips ?? []
+        let paths=Set(clips.flatMap { clip in clip.stages.flatMap { stage in (stage.layers+(stage.variants ?? []).flatMap { $0 }).flatMap { $0.frames.map(\.path) } } })
+        let report=PetDiagnosticReport(appVersion:Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String ?? "未知",systemVersion:ProcessInfo.processInfo.operatingSystemVersionString,clips:clips.count,frames:paths.count,items:catalog.items.count,simulationEnabled:simulationEnabled,visible:visible,writable:writable,saveFailed:packageWriteFailed)
+        return try report.text(log:diagnostics,description:description,includeLogs:includeLogs,at:Date())
+    }
+    func exportDiagnosticReport(_ preview:String) {
+        guard !preview.isEmpty,store != nil else { message="请先生成报告预览。";return }
+        let panel=NSSavePanel();panel.allowedContentTypes=[.plainText];panel.nameFieldStringValue="iPet-report.txt"
+        guard panel.runModal() == .OK,let url=panel.url else { return }
+        do { try PetDiagnosticReport.writePreview(preview,to:url,protectedDirectory:store.directory);message="已导出预览报告，未上传。" }
+        catch { message="报告导出失败：\(error.localizedDescription)" }
     }
     func openShortcutFolder() {
         do {
@@ -672,8 +690,9 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         let frame=needsEdgeRecovery ? edgeScreen.map { PetClimbPlan.recovered(pet:petPanel.frame,screen:$0) } ?? petPanel.frame : petPanel.frame
         UserDefaults.standard.set(frame.minX, forKey: "petX"); UserDefaults.standard.set(frame.minY, forKey: "petY")
     }
-    private func suspend() { keyboardSender.cancel(); cancelInventoryUse();petView.cancelInteraction();speech.hide();toolbar?.hide();dialogue.resetTiming();save(); suspended = true; cancelMovement(); autonomy.reset(); petView.isPaused = true; petScene.releaseTextures() }
+    private func suspend() { recordDiagnostic(.lifecycle,"系统即将睡眠，计时暂停且不补算。");keyboardSender.cancel(); cancelInventoryUse();petView.cancelInteraction();speech.hide();toolbar?.hide();dialogue.resetTiming();save(); suspended = true; cancelMovement(); autonomy.reset(); petView.isPaused = true; petScene.releaseTextures() }
     private func resume() {
+        recordDiagnostic(.lifecycle,"系统唤醒，重建计时基准。");
         engine.resetClock();dialogue.resetTiming(); lastTick = nil; lastSave = ProcessInfo.processInfo.systemUptime
         autonomy.reset(); suspended = false
         restoreBaseAnimation(force:true); petView.isPaused = !visible; clampPosition()
@@ -684,7 +703,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         catch {
             packageWriteFailed=true
             if engine.state.schedule?.isRunning == true,engine.state.schedule?.isPaused == false { _=engine.perform(.schedule(.pause));state=engine.state }
-            message = "保存失败：\(error.localizedDescription)";NSLog("%@",message);return false
+            message = "保存失败：\(error.localizedDescription)";recordDiagnostic(.save,message);NSLog("%@",message);return false
         }
     }
     func stop() { keyboardSender.cancel(); cancelInventoryUse();cancelMovement();speech.hide();toolbar?.hide();petView?.cancelInteraction();timer?.cancel(); if engine != nil { save() }; persistPositionIfReady() }
