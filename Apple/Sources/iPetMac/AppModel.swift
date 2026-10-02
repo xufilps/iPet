@@ -20,6 +20,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     @Published var autoMove = UserDefaults.standard.object(forKey: "autoMove") as? Bool ?? true
     @Published var visible = true
     @Published var toolbarEnabled=false
+    @Published private(set) var favoriteItems:Set<String>=[]
     private(set) var engine: PetEngine!
     private(set) var store: PetSaveStore!
     private var writable = true
@@ -62,6 +63,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         size = defaults.object(forKey: "petSize") as? Double ?? 280
         autoMove = defaults.object(forKey: "autoMove") as? Bool ?? true
         toolbarEnabled = !smokeMode && defaults.bool(forKey:"toolbarEnabled")
+        favoriteItems = smokeMode ? []:Set(defaults.stringArray(forKey:"favoriteItems") ?? [])
     }
     func start() throws {
         size = size.isFinite ? min(500, max(150, size)) : 280
@@ -225,6 +227,10 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
             if !usedItem { restoreBaseAnimation() }
             save()
         }
+    }
+    func toggleFavorite(id:String) {
+        if favoriteItems.contains(id) { favoriteItems.remove(id) } else { favoriteItems.insert(id) }
+        if !smokeMode { UserDefaults.standard.set(favoriteItems.sorted(),forKey:"favoriteItems") }
     }
     func itemMultiplier(id: String) -> Double {
         guard let item=catalog.item(id) else { return 0 }
