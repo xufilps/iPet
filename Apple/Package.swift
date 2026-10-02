@@ -5,9 +5,11 @@ import PackageDescription
 let package = Package(
     name: "iPet",
     platforms: [.macOS(.v14), .iOS(.v17)],
-    products: [.library(name: "PetCore", targets: ["PetCore"]), .library(name: "PetRendering", targets: ["PetRendering"])],
+    products: [.library(name: "PetMacInput", targets: ["PetMacInput"]), .library(name: "PetCore", targets: ["PetCore"]), .library(name: "PetRendering", targets: ["PetRendering"])],
     targets: [
         .target(name: "PetCore"),
+        .target(name: "PetMacInput", dependencies: ["PetCore"]),
+        .testTarget(name: "PetMacInputTests", dependencies: ["PetMacInput", "PetCore"]),
         .target(name: "PetRendering", dependencies: ["PetCore"]),
         .testTarget(name: "PetCoreTests", dependencies: ["PetCore"]),
         .testTarget(name: "PetRenderingTests", dependencies: ["PetRendering"])

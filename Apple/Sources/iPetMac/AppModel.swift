@@ -7,6 +7,7 @@ import SpriteKit
 import UniformTypeIdentifiers
 import PetCore
 import PetRendering
+import PetMacInput
 
 enum ControlPage: String, CaseIterable { case status="状态", activity="活动", schedule="日程", shortcuts="快捷", shop="商店", inventory="背包", settings="设置", statistics="统计" }
 
@@ -15,6 +16,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     @Published private(set) var shortcuts=PetShortcutList()
     @Published private(set) var shortcutError=""
     @Published private(set) var shortcutsEditable=true
+    let keyboardSender=PetKeyboardSender()
     private var shortcutStore:PetShortcutStore!
     private var shortcutMenu:NSMenu?
     @Published var selectedPage = ControlPage.status
@@ -192,7 +194,9 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         refreshToolbar()
         updateTextureResolution()
         buildMenu()
+        keyboardSender.onStatus = { [weak self] text in self?.message=text;self?.refreshToolbar() }
         let workspace = NSWorkspace.shared.notificationCenter
+        observers.append(workspace.addObserver(forName:NSWorkspace.didActivateApplicationNotification,object:nil,queue:.main) { [weak self] _ in MainActor.assumeIsolated { self?.keyboardSender.frontmostApplicationChanged() } })
         observers.append(workspace.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in MainActor.assumeIsolated { self?.suspend() } })
         observers.append(workspace.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in MainActor.assumeIsolated { self?.resume() } })
         observers.append(NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in MainActor.assumeIsolated { self?.edgeScreen=nil;self?.cancelMovement();self?.clampPosition();self?.restoreBaseAnimation(force:true); self?.updateTextureResolution() } })
@@ -267,7 +271,13 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     func runShortcut(_ id:Int) {
         guard let entry=shortcuts.entries.first(where:{ $0.id==id }) else { message="快捷入口已不存在。";return }
         do {
-            try entry.validate();let url=try entry.resolvedURL()
+            try entry.validate()
+            if entry.kind == .macKeys {
+                guard visible,!suspended else { message="请先显示桌宠并唤醒后再发送按键。";return }
+                _=keyboardSender.start(try PetKeyboardMacro.decodeTarget(entry.target),name:entry.name);return
+            }
+            keyboardSender.cancel()
+            let url=try entry.resolvedURL()
             if url.isFileURL,!FileManager.default.fileExists(atPath:url.path) { message="目标路径不存在，记录仍保留：\(entry.name)。";return }
             guard NSWorkspace.shared.open(url) else { message="系统无法打开目标，记录仍保留：\(entry.name)。";return }
             message="已向系统请求打开：\(entry.name)。"
@@ -292,11 +302,13 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         guard let menu=shortcutMenu else { return };menu.removeAllItems()
         for entry in shortcuts.entries {
             let item=NSMenuItem(title:entry.name,action:#selector(runShortcutMenu(_:)),keyEquivalent:"")
-            item.target=self;item.tag=entry.id;item.isEnabled=entry.kind != .windowsKeys && entry.kind != .macKeys;menu.addItem(item)
+            item.target=self;item.tag=entry.id;item.isEnabled=entry.kind != .windowsKeys;menu.addItem(item)
         }
         if !shortcuts.entries.isEmpty { menu.addItem(.separator()) }
+        let stopKeys=NSMenuItem(title:"停止剩余按键",action:#selector(stopKeyboard),keyEquivalent:"");stopKeys.target=self;menu.addItem(stopKeys)
         let manage=NSMenuItem(title:"管理快捷入口…",action:#selector(showShortcuts),keyEquivalent:"");manage.target=self;menu.addItem(manage)
     }
+    @objc private func stopKeyboard() { keyboardSender.cancel() }
     @objc private func runShortcutMenu(_ sender:NSMenuItem) { runShortcut(sender.tag) }
     var scheduleAccess:PetScheduleAccess {
         PetScheduleAccess(writable:writable,saveFailed:packageWriteFailed,busy:inventoryUseTask != nil,simulationEnabled:simulationEnabled)
@@ -460,6 +472,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         case .inventory: showInventory()
         case .shortcuts: showShortcuts()
         case .shortcut(let id): runShortcut(id)
+        case .stopKeyboard: keyboardSender.cancel()
         case .rest: command(.toggleRest)
         case .talk: sayClick()
         case .pauseOrResume: perform(state.activity?.isPaused == true ? .resumeActivity : .pauseActivity)
@@ -587,6 +600,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         walkPlan=nil;climbPlan=nil;persistPosition();return false
     }
     @objc func toggleVisibility() {
+        keyboardSender.cancel()
         petView.cancelInteraction()
         speech.hide();toolbar?.hide();dialogue.resetTiming()
         visible.toggle(); menuVisibility.title = visible ? "隐藏桌宠" : "显示桌宠"
@@ -658,7 +672,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         let frame=needsEdgeRecovery ? edgeScreen.map { PetClimbPlan.recovered(pet:petPanel.frame,screen:$0) } ?? petPanel.frame : petPanel.frame
         UserDefaults.standard.set(frame.minX, forKey: "petX"); UserDefaults.standard.set(frame.minY, forKey: "petY")
     }
-    private func suspend() { cancelInventoryUse();petView.cancelInteraction();speech.hide();toolbar?.hide();dialogue.resetTiming();save(); suspended = true; cancelMovement(); autonomy.reset(); petView.isPaused = true; petScene.releaseTextures() }
+    private func suspend() { keyboardSender.cancel(); cancelInventoryUse();petView.cancelInteraction();speech.hide();toolbar?.hide();dialogue.resetTiming();save(); suspended = true; cancelMovement(); autonomy.reset(); petView.isPaused = true; petScene.releaseTextures() }
     private func resume() {
         engine.resetClock();dialogue.resetTiming(); lastTick = nil; lastSave = ProcessInfo.processInfo.systemUptime
         autonomy.reset(); suspended = false
@@ -673,7 +687,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
             message = "保存失败：\(error.localizedDescription)";NSLog("%@",message);return false
         }
     }
-    func stop() { cancelInventoryUse();cancelMovement();speech.hide();toolbar?.hide();petView?.cancelInteraction();timer?.cancel(); if engine != nil { save() }; persistPositionIfReady() }
+    func stop() { keyboardSender.cancel(); cancelInventoryUse();cancelMovement();speech.hide();toolbar?.hide();petView?.cancelInteraction();timer?.cancel(); if engine != nil { save() }; persistPositionIfReady() }
     private func persistPositionIfReady() { if petPanel != nil { persistPosition() } }
     private func canManageSave() -> Bool {
         guard writable else { message="存档写入已暂停，先处理原文件后再导出或恢复。";return false }

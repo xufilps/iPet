@@ -7,7 +7,7 @@ def ident(name): return hashlib.sha1(name.encode()).hexdigest()[:24].upper()
 objects = {}
 def obj(name, value): objects[ident(name)] = value; return ident(name)
 def refs(names): return '(' + ', '.join(ident(n) for n in names) + ',)'
-files = ['main.swift', 'AppModel.swift', 'ControlsView.swift', 'PetWindow.swift', 'ActivityView.swift', 'ShopView.swift', 'InventoryView.swift', 'PetSpeechWindow.swift', 'PetToolbarWindow.swift', 'StatisticsView.swift', 'PackageView.swift', 'ScheduleView.swift', 'ShortcutView.swift']
+files = ['main.swift', 'AppModel.swift', 'ControlsView.swift', 'PetWindow.swift', 'ActivityView.swift', 'ShopView.swift', 'InventoryView.swift', 'PetSpeechWindow.swift', 'PetToolbarWindow.swift', 'StatisticsView.swift', 'PackageView.swift', 'ScheduleView.swift', 'ShortcutView.swift', 'KeyboardMacroEditor.swift']
 for f in files:
     obj(f, f'isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = {f}; sourceTree = "<group>";')
     obj('build-' + f, f'isa = PBXBuildFile; fileRef = {ident(f)};')
@@ -28,11 +28,11 @@ obj('sources-group', f'isa = PBXGroup; children = {refs(files)}; path = Sources/
 obj('products-group', f'isa = PBXGroup; children = {refs(["product"])}; name = Products; sourceTree = "<group>";')
 obj('main-group', f'isa = PBXGroup; children = {refs(["sources-group", "assets", "icon-catalog", "attribution", "code-license", "notice", "animation-license", "products-group"])}; sourceTree = "<group>";')
 obj('package', 'isa = XCLocalSwiftPackageReference; relativePath = .;')
-for product in ['PetCore', 'PetRendering']:
+for product in ['PetCore', 'PetRendering', 'PetMacInput']:
     obj('dep-' + product, f'isa = XCSwiftPackageProductDependency; productName = {product};')
     obj('link-' + product, f'isa = PBXBuildFile; productRef = {ident("dep-" + product)};')
 obj('sources', f'isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = {refs(["build-" + f for f in files])}; runOnlyForDeploymentPostprocessing = 0;')
-obj('frameworks', f'isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = {refs(["link-PetCore", "link-PetRendering"])}; runOnlyForDeploymentPostprocessing = 0;')
+obj('frameworks', f'isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = {refs(["link-PetCore", "link-PetRendering", "link-PetMacInput"])}; runOnlyForDeploymentPostprocessing = 0;')
 obj('resources', f'isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = {refs(["assets-build", "icon-catalog-build", "attribution-build", "code-license-build", "notice-build", "animation-license-build"])}; runOnlyForDeploymentPostprocessing = 0;')
 obj('convert', 'isa = PBXShellScriptBuildPhase; alwaysOutOfDate = 1; buildActionMask = 2147483647; files = (); inputPaths = (); outputPaths = (); name = "Convert built-in assets"; runOnlyForDeploymentPostprocessing = 0; shellPath = /bin/sh; shellScript = "set -eu\\n/usr/bin/python3 \\\"$SRCROOT/scripts/convert_assets.py\\\"\\n/usr/bin/python3 \\\"$SRCROOT/scripts/convert_gameplay.py\\\"\\n/usr/bin/python3 \\\"$SRCROOT/scripts/convert_dialogue.py\\\"\\n";')
 for configuration in ['Debug', 'Release']:
@@ -50,7 +50,7 @@ for configuration in ['Debug', 'Release']:
     }};''')
 obj('project-configs', f'isa = XCConfigurationList; buildConfigurations = {refs(["project-Debug", "project-Release"])}; defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;')
 obj('target-configs', f'isa = XCConfigurationList; buildConfigurations = {refs(["target-Debug", "target-Release"])}; defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;')
-obj('target', f'isa = PBXNativeTarget; buildConfigurationList = {ident("target-configs")}; buildPhases = {refs(["convert", "sources", "frameworks", "resources"])}; buildRules = (); dependencies = (); name = iPet; packageProductDependencies = {refs(["dep-PetCore", "dep-PetRendering"])}; productName = iPet; productReference = {ident("product")}; productType = "com.apple.product-type.application";')
+obj('target', f'isa = PBXNativeTarget; buildConfigurationList = {ident("target-configs")}; buildPhases = {refs(["convert", "sources", "frameworks", "resources"])}; buildRules = (); dependencies = (); name = iPet; packageProductDependencies = {refs(["dep-PetCore", "dep-PetRendering", "dep-PetMacInput"])}; productName = iPet; productReference = {ident("product")}; productType = "com.apple.product-type.application";')
 obj('project', f'isa = PBXProject; attributes = {{ LastUpgradeCheck = 1600; }}; buildConfigurationList = {ident("project-configs")}; compatibilityVersion = "Xcode 14.0"; developmentRegion = "zh-Hans"; hasScannedForEncodings = 0; knownRegions = ("zh-Hans", en, Base,); mainGroup = {ident("main-group")}; packageReferences = {refs(["package"])}; productRefGroup = {ident("products-group")}; projectDirPath = ""; projectRoot = ""; targets = {refs(["target"])};')
 text = '// !$*UTF8*$!\n{ archiveVersion = 1; classes = {}; objectVersion = 56; objects = {\n'
 text += '\n'.join(f'{key} = {{ {value} }};' for key, value in objects.items())

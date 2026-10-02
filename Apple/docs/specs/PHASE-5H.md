@@ -12,9 +12,14 @@
 
 官方依据：[Unicode键事件](https://developer.apple.com/documentation/coregraphics/cgevent/keyboardsetunicodestring(stringlength:unicodestring:))、[事件投递权限检查](https://developer.apple.com/documentation/coregraphics/cgpreflightposteventaccess())；当前macOS SDK CGEvent.h205/372/405/408核对Unicode setter、postToPid、preflight/request声明。不依赖第三方库，不由SDK可编译推断真实App权限已授予。
 
-进度：任务1实现及自动验证完成，任务2待实施。
+进度：任务1/2实现与自动验证完成，真实输入/授权/焦点仍待最终实机。
 
 阶段5H任务1：原生组合键/文本有序计划与配置兼容已实现；录制UI和实际发送仍待任务2，macKeys菜单禁用。宏v1校验步骤/文本/键码边界，文本按UTF16分块且不拆代理对，Tab/CRLF映射键事件；纯核心PID/权限门槛不执行平台投递。快捷配置v2读取v1不写盘，首次改写及恢复v1备份前保留独立原件；根未来v3及嵌套未来宏保护主档/备份/恢复。修复合法Unicode格式字符（如家庭emoji）被误判控制字符，真实C0/C1限制保留。宠物存档仍v7；回滚旧版先退出并备份整个目录，移开v2主档/previous后恢复独立v1原件。151核心+64渲染=215 Swift、17 Python/macOS/iOS/签名验证；未请求权限、投递真实按键或修改正式配置。独立6.1-sol审查受线程限额阻止，采用作者自查，不能替代独立审查或实机验收。详情本规格。
 
 
 RED→GREEN证据（忽略目录Apple/build/verification）：phase5h-core-red.log先缺模型；phase5h-unicode-red.log与phase5h-path-unicode-red.log复现合法emoji拒绝；phase5h-nested-future-red.log复现未来宏备份/恢复保护缺失。修复后完整验证见phase5h-core-final-verify.log；测试覆盖宏往返、分块、控制字符、固定投递门槛、v1原字节保留及根/嵌套未来版本保护。源码PetKeyboardMacro.swift、PetUnicodeControls.swift、PetShortcuts.swift及对应测试；发送器未实现不以模型测试宣称跨应用可用。
+
+
+任务2实现记录：新增独立macOS适配模块PetMacInput，原共享PetCore/PetRendering不依赖AppKit，iOS仍只构建共享模块。局部NSButton录制一次物理键/四类修饰键，Command等在本控件录制时优先于菜单；文本步骤追加、排序和删除并按原宏限制保存。快捷页、菜单栏和随宠Menu显式发送，编辑窗口前台拒绝；权限仅按钮申请，状态只报告请求投递。构造down/up后同一同步步骤投递原PID，各步骤前校验目标存活、权限和前台；前台激活通知取消，即使原目标随后返回也不续发。隐藏/睡眠/退出及打开链接/文件取消剩余；所有菜单提供停止入口。保存仍shortcut v2/宏v1、宠物v7，不读取剪贴板或全局监听。
+任务2测试：PetMacInputTests以注入环境检验权限、自己前台、忙碌、目标死亡、前台变更/返回与显式取消，构造真实CGEvent但post为假函数，核对键码、flags、Unicode及录制事件。RED日志phase5h-sender-red.log及phase5h-recorder-red.log分别缺类型，GREEN日志对应；实际授权、录制控件焦点和跨应用响应仍待最终实机，不以可编译当实机完成。
+用户追加边界：第五阶段完成后停下来汇报，不进入第六阶段；当前键盘批次结束不等于整个第五阶段完成，需继续核对原版剩余能力及研究限制。
