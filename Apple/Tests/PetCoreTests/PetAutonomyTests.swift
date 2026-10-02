@@ -78,4 +78,17 @@ final class PetAutonomyTests: XCTestCase {
         scheduler.setInteractionCycle(Int.min);XCTAssertEqual(scheduler.interactionCycle,30)
     }
 
+    func testActiveActivityEligibilityAndOriginalDoubleRange() {
+        var state=PetState();state.activity=ActivitySession(activityID:"work")
+        XCTAssertTrue(PetAutonomy.canStart(state:state,action:.activity,visible:true,interacting:false,finishing:false))
+        XCTAssertFalse(PetAutonomy.canStart(state:state,action:.idle,visible:true,interacting:false,finishing:false))
+        XCTAssertFalse(PetAutonomy.canStart(state:state,action:.activity,visible:true,interacting:false,finishing:true))
+        state.activity?.isPaused=true
+        XCTAssertFalse(PetAutonomy.canStart(state:state,action:.activity,visible:true,interacting:false,finishing:false))
+        for (working,expected) in [(false,Optional<PetAutonomousBehavior>(.walkLeft)),(true,Optional(.fidget))] {
+            let clock=FakeClock(),scheduler=PetAutonomy(clock:clock,random:FixedRandom(value:3.0/420))
+            clock.now=15;XCTAssertEqual(scheduler.poll(eligible:true,allowsMovement:true,mood:.normal,working:working),expected)
+        }
+    }
+
 }

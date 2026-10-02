@@ -18,7 +18,9 @@ public final class PetAutonomy {
         self.interactionCycle=min(1000,max(30,interactionCycle))
     }
     public static func canStart(state: PetState, action: PetAction, visible: Bool, interacting: Bool, finishing: Bool) -> Bool {
-        visible && !interacting && !finishing && action == .idle && !state.resting && state.activity == nil
+        guard visible,!interacting,!finishing,!state.resting else { return false }
+        if state.activity == nil { return action == .idle }
+        return action == .activity && state.activity?.isPaused == false
     }
     public func setInteractionCycle(_ value:Int) { interactionCycle=min(1000,max(30,value)) }
     public func reset() { previous=clock.now;nextSample=previous+15;idleCycles=0 }
@@ -27,14 +29,15 @@ public final class PetAutonomy {
         let value=random.unit()
         return value.isFinite ? min(1.0.nextDown,max(0,value)) : 0
     }
-    public func poll(eligible: Bool, allowsMovement: Bool, mood: PetMood) -> PetAutonomousBehavior? {
+    public func poll(eligible: Bool, allowsMovement: Bool, mood: PetMood,working:Bool=false) -> PetAutonomousBehavior? {
         let now=clock.now, delta=now-previous
         guard now.isFinite, delta.isFinite, delta >= 0, delta <= 30 else { reset();return nil }
         previous=now
         guard now >= nextSample else { return nil }
         nextSample=now+15
         guard eligible else { return nil }
-        let roll=Int(unit()*Double(max(20,interactionCycle-idleCycles)))
+        let range=max(20,interactionCycle-idleCycles)
+        let roll=Int(unit()*Double(working ? 2*range+20:range))
         switch roll {
         case 0...2:
             guard allowsMovement, mood != .ill else { return nil }

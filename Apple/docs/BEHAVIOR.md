@@ -188,3 +188,9 @@ StatisticsCalHandle绑定FunctionSpendHandle：stat_total_time及强制睡眠按
 头/身体事件各计一次，关闭养成也可计；pinch开始各计一次，持续B只用原效果命令不再加次数。成功使用累计stat_buytimes、buy_+原生物品ID、stat_betterbuy和分类标价，药品原始经验/礼品原始好感可为负且不乘衰减；原生ID有core.item前缀，不宣称直接原统计/LPS键导入兼容。界面实际支出与使用标价分开，分类次数为新增原生统计。
 
 保存v4新增可选counters字典，未知键保留，最多10000键/键长400/有限绝对值<=1e12；旧v3无字典从新事件起计，不推算。v1/v2/v3首次写前独立保留原字节，未来v5阻写，旧v3软件拒绝v4。回滚备份整个目录、移开v4主/previous、用独立v3原件与旧二进制恢复。Steam统计上传、完整调试/联网日志、评价题库仍未迁移，真实UI/输入和压力待验。
+
+## 阶段3X：活动基础动画中的随机动作
+
+原IsIdel包含Default/Work且非按压，Work基础显示使用2*max(20,InteractionCycle-CountNomal)+20随机范围，DisplayToNomal按当前WorkingState回NowWork。当前有效工作/学习/娱乐会话的activity基础动画可触发同一随机池，使用原扩大范围；暂停、休息、结束过渡、隐藏、输入及瞬时反馈期间不触发。活动循环不增加默认待机计数。
+
+随机走/待机/特殊待机/打盹只改变显示，逻辑会话/收益继续，打盹不设resting。结束回调由最新PetPresentation恢复，已停止/暂停活动不会复活旧graph，不额外结算收益或完成奖金；缺图沿既有诊断/基础恢复。15秒采样、原生移动区域和扩展池限制仍在，活动中移动/侧挂和真实输入未实机验证；保存v4/资源不变。

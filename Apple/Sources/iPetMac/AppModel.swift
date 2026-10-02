@@ -414,7 +414,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         }
         let eligible = !manualTest && PetAutonomy.canStart(state:engine.state,action:petScene.requestedAction,visible:visible,interacting:petView.isInteracting,finishing:petScene.isFinishingActivity)
         if let entry=dialogue.automatic(state:engine.state,eligible:eligible && !speech.isVisible,mood:presentationMood) { showSpeech(entry.rendered(state:engine.state)) }
-        if let behavior = autonomy.poll(eligible:eligible,allowsMovement:autoMove,mood:engine.presentationMood) {
+        if let behavior = autonomy.poll(eligible:eligible,allowsMovement:autoMove,mood:engine.presentationMood,working:petScene.requestedAction == .activity) {
             switch behavior {
             case .walkLeft, .walkRight:
                 _ = chooseMovement()

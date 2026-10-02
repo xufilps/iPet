@@ -284,4 +284,34 @@ final class ActivityRenderingTests: XCTestCase {
             XCTAssertTrue(visible)
         }
     }
+    func testDozeDuringActivityKeepsProgressAndRestoresLatestModel() async throws {
+        let manifest=try PetManifest.load(from:root),catalog=try PetCatalog.load(from:root.appendingPathComponent("gameplay.json")),assets=root
+        await MainActor.run {
+            let clock=ActivityAnimationClock()
+            let engine=PetEngine(clock:clock,random:VariantRandom(value:0),catalog:catalog)
+            let work=catalog.activities.first { $0.graphID == "workone" }!
+            XCTAssertTrue(engine.perform(.startActivity(work.id)).accepted)
+            let scene=PetScene(manifest:manifest,assetRoot:assets,random:VariantRandom(value:0))
+            scene.onActionFinished={ _ in _=scene.restoreBase(state:engine.state,catalog:catalog) }
+            scene.playDoze(mood:engine.state.mood);scene.update(0)
+            var time=0.0
+            for _ in 0..<300 { time+=0.1;clock.now=time;engine.tick();scene.update(time) }
+            XCTAssertFalse(engine.state.resting);XCTAssertEqual(engine.state.activity?.activityID,work.id)
+            XCTAssertGreaterThan(engine.state.activity?.elapsedSeconds ?? 0,29)
+            XCTAssertGreaterThan(engine.state.activity?.earned ?? 0,0)
+            scene.finishAction()
+            for _ in 0..<200 { time+=0.1;clock.now=time;engine.tick();scene.update(time) }
+            XCTAssertEqual(scene.requestedAction,.activity);XCTAssertEqual(scene.requestedGraphID,work.graphID)
+            scene.playFidget(graphID:"aside",mood:engine.state.mood)
+            XCTAssertTrue(engine.perform(.stopActivity).accepted)
+            scene.finishAction() // Fixed zero randomness holds ABC loops until explicitly ended.
+            scene.update(time)
+            for _ in 0..<300 { time+=0.1;scene.update(time) }
+            XCTAssertEqual(scene.requestedAction,.idle);XCTAssertNil(engine.state.activity)
+            XCTAssertEqual(engine.state.progress?.activityEnds,1)
+        }
+    }
+
 }
+
+private final class ActivityAnimationClock:PetClock { var now=0.0 }

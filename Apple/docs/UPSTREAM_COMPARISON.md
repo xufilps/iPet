@@ -1,6 +1,6 @@
 # Windows 原版与 iPet 的持续差异矩阵
 
-原版基线：`1a06c5981330564bab05a098d2d7969a4b119dd3`；iPet 当前基线：v0.2.0，已推进至阶段5B（原统计键首批）；部分实机验收已记录，压力测试按用户要求留到功能完善后。原版功能依据上游固定基线源码，不将第三方插件功能算作内置功能；当前行为依据 Apple 源码和已记录验证。后续每次迁移更新本表、行为说明和交接记录。源码入口编号在文末，阶段对应 [ROADMAP.md](ROADMAP.md)。
+原版基线：`1a06c5981330564bab05a098d2d7969a4b119dd3`；iPet 当前基线：v0.2.0，已推进至阶段3X（活动中随机动作）；部分实机验收已记录，压力测试按用户要求留到功能完善后。原版功能依据上游固定基线源码，不将第三方插件功能算作内置功能；当前行为依据 Apple 源码和已记录验证。后续每次迁移更新本表、行为说明和交接记录。源码入口编号在文末，阶段对应 [ROADMAP.md](ROADMAP.md)。
 
 状态定义：**已保留**为纳入范围的原规则已移植；**已适配**为平台或产品行为有明确变化；**部分实现**为有可用子集；**尚未迁移**为没有原生实现；**需要平台替代**为原机制不能直接复用；**待验证**为代码或构建证据不足以完成验收。状态指本行能力，不代表整个类别完成。
 
@@ -194,3 +194,5 @@ PetIdleCycles、PetManifest.fidgetCandidates/resolveFidget、PetScene和AppModel
 阶段5A首批本地统计：成功购买/实际花费、使用数量、有效工作/学习/娱乐时间和含完成奖金的收益，最近200条结束历史及累计次数；旧历史不补造。依据StatisticsCalHandle、TakeItem和ActivityLogs订阅 → PetProgress、PetEngine和StatisticsView。保存从v2升级v3，v1/v2原件独立保留、未来v4阻写；原消费标价/全键/调试与联网日志未完整映射，状态部分实现，真实页面未验。详细迁移/回滚见行为与交接，动画v3/文本v1保持。
 
 阶段5B补StatisticsCalHandle的养成时间/强制睡眠/工作与非工作采样、当前金币/等级/好感及低状态经历键，触摸事件与pinch首轮计数、每物品/分类消费标价和原始药品经验/礼品好感。来源MainWindow.cs、MainWindow.xaml.cs → PetProgress.recordSample/recordUse和PetEngine/StatisticsView；原生物品ID前缀映射、结构化娱乐独立及有界字典为适配，不兼容原LPS统计导入。保存v4升级保留v1/v2/v3原件，未来v5保护；Steam上传、调试/联网全日志、原评价仍缺，部分实现，真实页面/输入待验。
+
+阶段3X接入活动基础动画期间随机池资格及原2*rnd+20范围，工作/学习/娱乐的逻辑进度和收益不因显示动作暂停；打盹不转养成休息，动作结束恢复最新会话或默认，不复活已结束活动。依据MainLogic.IsIdel/EventTimer和MainDisplay.DisplayToNomal → PetAutonomy.canStart/poll、AppModel调度及既有PetScene.restoreBase。扩展插件池、旅行和真实活动移动/侧挂仍未完成，保存v4/素材不变，不能以组合回归替代实机体验。
