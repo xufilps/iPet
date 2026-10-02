@@ -50,6 +50,8 @@ import PetCore
     public var onActionFinished: ((PetAction) -> Void)?
     public var onDiagnostic: ((String) -> Void)?
     private var timeline: AnimationTimeline?
+    private var sideHideMain:AnimationClip?
+    private var sideHideReturning=false
     private var random: any PetRandom
     private var transitionSteps: [PetMoodTransition] = []
     private var transitionTarget: PetMood?
@@ -85,6 +87,7 @@ import PetCore
         play(action,mood:mood)
     }
     public func play(_ action: PetAction, mood: PetMood) {
+        sideHideMain=nil;sideHideReturning=false
         transitionSteps=[];transitionTarget=nil
         isFinishingActivity=false; requestedGraphID=nil
         requestedAction = action; self.mood = mood
@@ -128,6 +131,7 @@ import PetCore
     public var isMovementAnimation:Bool { timeline.map { [.walkLeft,.walkRight,.climb].contains($0.clip.action) } ?? false }
     public var currentPhase:AnimationPhase? { timeline?.stage.phase }
     public func playMovement(_ action:PetAction,graphID:String,mood:PetMood) {
+        sideHideMain=nil;sideHideReturning=false
         transitionSteps=[];transitionTarget=nil;isFinishingActivity=false
         requestedAction=action;requestedGraphID=graphID;self.mood=mood
         let clip=manifest.clips.first { $0.action==action && $0.graphID==graphID && $0.mood==mood }
@@ -145,18 +149,52 @@ import PetCore
         transitionSteps=[];transitionTarget=nil;isFinishingActivity=false
         requestedAction = .sideHide;requestedGraphID=graphID;self.mood=mood
         if clip.mood != mood { onDiagnostic?("侧挂状态回退：\(graphID)/\(mood.rawValue)") }
+        sideHideMain=clip;sideHideReturning=false
         timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:true);installTimeline()
         return requestedAction == .sideHide
     }
-    public func finishSideHide() {
-        guard requestedAction == .sideHide,let clip=timeline?.clip else { return }
-        // Upstream click recovery plays C directly, including clicks during A.
+    public func setSideHideHovered(_ hovered:Bool) {
+        guard requestedAction == .sideHide,let main=sideHideMain,let graph=main.graphID else { return }
+        if hovered {
+            guard requestedGraphID == graph || sideHideReturning else { return }
+            let rise=graph+".rise"
+            guard let clip=manifest.clips.first(where: { $0.action == .sideHide && $0.graphID == rise && $0.mood == mood })
+                ?? manifest.clips.first(where: { $0.action == .sideHide && $0.graphID == rise && $0.mood == .normal }) else {
+                onDiagnostic?("侧挂探头动画缺失：\(rise)");return
+            }
+            if clip.mood != mood { onDiagnostic?("侧挂探头状态回退：\(rise)/\(mood.rawValue)") }
+            sideHideReturning=false;requestedGraphID=rise
+            timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:true);installTimeline()
+        } else if requestedGraphID == graph+".rise",!sideHideReturning,let clip=timeline?.clip {
+            sideHideReturning=true
+            installSideHideEnd(clip)
+        }
+    }
+    private func installSideHideEnd(_ clip:AnimationClip) {
         let end=clip.stages.filter { $0.phase == .end }
-        guard !end.isEmpty else { let completed=requestedAction;play(.idle,mood:mood);onActionFinished?(completed);return }
+        if end.isEmpty {
+            if sideHideReturning { restoreSideHideLoop() }
+            else { let completed=requestedAction;play(.idle,mood:mood);onActionFinished?(completed) }
+            return
+        }
+        requestedGraphID=clip.graphID
         timeline=AnimationTimeline(clip:AnimationClip(graphID:clip.graphID,action:clip.action,mood:clip.mood,stages:end),looping:false)
         installTimeline()
     }
+    private func restoreSideHideLoop() {
+        guard let main=sideHideMain else { return }
+        sideHideReturning=false;requestedGraphID=main.graphID
+        let loop=main.stages.filter { $0.phase == .loop }
+        timeline=AnimationTimeline(clip:AnimationClip(graphID:main.graphID,action:main.action,mood:main.mood,stages:loop.isEmpty ? main.stages:loop),looping:true)
+        installTimeline()
+    }
+    public func finishSideHide() {
+        guard requestedAction == .sideHide,let main=sideHideMain else { return }
+        // Recovery from Main or Rise always plays Main C directly.
+        sideHideMain=nil;sideHideReturning=false;installSideHideEnd(main)
+    }
     public func playFidget(graphID: String, mood: PetMood) {
+        sideHideMain=nil;sideHideReturning=false
         transitionSteps=[];transitionTarget=nil
         isFinishingActivity=false;requestedAction = .fidget;requestedGraphID=graphID;self.mood=mood
         let clip=manifest.clips.first { $0.action == .fidget && $0.graphID == graphID && $0.mood == mood }
@@ -166,6 +204,7 @@ import PetCore
         timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:false);installTimeline()
     }
     public func playActivity(graphID: String, mood: PetMood) {
+        sideHideMain=nil;sideHideReturning=false
         transitionSteps=[];transitionTarget=nil
         isFinishingActivity=false;requestedAction = .activity;requestedGraphID=graphID;self.mood=mood
         let clip=manifest.resolveActivity(graphID:graphID,mood:mood)
@@ -224,6 +263,7 @@ import PetCore
             timeline?.advance(delta)
         }
         if timeline?.finished == true {
+            if sideHideReturning,sideHideMain != nil { restoreSideHideLoop();return }
             let completed = requestedAction
             if !transitionSteps.isEmpty { installNextTransition();return }
             let settledMood=transitionTarget ?? mood
