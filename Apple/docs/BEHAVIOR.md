@@ -126,3 +126,9 @@ pinch配置区域(149,128,56,59)转换为JSON，长按300ms先判断有当前状
 随机待机分支从9个有效Graph均匀选择，Single只播一次，A后按B边界以Next(++count)>duration退出到C；默认10，boring/squat20。未标状态目录默认Nomal，路径happy_like520为Happy；amusement_B没有A/Single，不作为可触发动作。非Ill按原逐阶段相邻回退，开心Squat借Nomal B，Ill无普通待机不借非Ill动画。人工动作/隐藏等取消计数，手动结束可退出，不运行旧完成回调。
 
 清单v3增加可选idleLoopLimit且兼容旧清单，保存v2/文本v1不变，展示不改养成。StateONE/StateTWO、扩展池、打盹20秒上限和逐循环变体重选尚待后续；真实动画观感、内存/卡顿与最终实机/压力未验。
+
+## 阶段3P特殊待机与打盹
+
+分支6进入ONE A/B，按duration10概率退出时1/(2+进入TWO次数)选择TWO A/B，否则ONE C完成；TWO概率退出后C只回ONE B，重置循环次数，完成回调不在内部返回时触发。缺当前状态ONE回普通待机，Ill无资源不借非Ill。人工结束/新动作清理内部状态，防止旧TWO C把新动作覆盖。
+
+打盹按sleep duration20概率退出，展示不设置resting，手动休息仍无限循环；移除旧固定20秒定时器，养成状态变化不按人工休息路径重置打盹。资源选择仍保持启动时显示状态，循环内换状态/变体与自动睡眠完整数值对照留后续。清单v3可选idleLoopLimit扩展specialIdle/sleep，保存v2/文本v1不变，真实观感、实机/压力未验。

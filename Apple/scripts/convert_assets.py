@@ -62,6 +62,7 @@ def convert(source, destination):
     roots += [('sideHide','SideHide_'+side+'_'+kind,'sidehide.'+side.lower()+('' if kind=='Main' else '.rise')) for side in ['Left','Right'] for kind in ['Main','Rise']]
     roots += [('climb','MOVE/'+graph,graph) for graph in ['climb.left','climb.right','climb.top.left','climb.top.right','fall.left','fall.right']]
     roots += [('fidget',p.relative_to(pet).as_posix(),p.name.lower()) for p in sorted((pet/'IDEL').iterdir(),key=natural) if p.is_dir()] if (pet/'IDEL').exists() else []
+    roots += [('specialIdle','State/StateONE','state.one'),('specialIdle','State/StateTWO','state.two')]
     roots += [('stateUp','Switch/Up',None),('stateDown','Switch/Down',None)]
     config_lines=(source/'pet/vup.lps').read_text(encoding='utf-8-sig').splitlines()
     durations=next((fields(line) for line in config_lines if line.startswith('duration:')), {})
@@ -116,11 +117,11 @@ def convert(source, destination):
                     choices = [p for p in matching if any(part.lower().split('_')[0] == prefix or part.lower().split('_')[-1] == prefix for part in p.relative_to(root).parts)]
                     if choices:
                         stage = {'phase': phase, 'layers': [layer(choices[0], 0)], 'foodTrack': []}
-                        if action in ('head','body','fidget','walkLeft','walkRight','climb','sideHide','pinch') and len(choices)>1:
+                        if action in ('head','body','fidget','walkLeft','walkRight','climb','sideHide','pinch','specialIdle') and len(choices)>1:
                             stage['variants'] = [[layer(path,0)] for path in choices[1:]]
                         stages.append(stage)
             if stages:
-                clips.append({'action': action, 'mood': mode, 'stages': stages, **({'graphID': graph} if graph else {})})
+                clips.append({'action': action, 'mood': mode, 'stages': stages, **({'graphID': graph} if graph else {}), **({'idleLoopLimit':int(durations.get('state' if action=='specialIdle' else 'sleep',10 if action=='specialIdle' else 20))} if action in ('specialIdle','sleep') else {})})
                 if graph and graph!='raised.dynamic' and len(stages)<3: diagnostics.append(f'{graph}/{mode}: available phases '+','.join(x['phase'] for x in stages))
     # FoodAnimation is a sandwich of synchronized back/front frames and an item track.
     for action, subtree in [('eat', 'Eat'), ('drink', 'Drink'), ('gift', 'Gift')]:

@@ -2,7 +2,7 @@
 import Foundation
 
 public enum PetAutonomousBehavior: Equatable, Sendable {
-    case walkLeft, walkRight, fidget, doze
+    case walkLeft, walkRight, fidget, doze, specialIdle
 }
 /// Visual-only selection. Does not change the pet's economy, resting state or save.
 public final class PetAutonomy {
@@ -39,8 +39,9 @@ public final class PetAutonomy {
         case 3...5:
             idleCycles=0;fidgetGraphID=unit() < 0.5 ? "boring" : "squat"
             return .fidget
+        case 6: idleCycles=0;return .specialIdle
         case 7: idleCycles=0;return .doze
-        default: return nil // Special idle and extension pools are separate migration tasks.
+        default: return nil // Extension interaction pools remain a separate migration task.
         }
     }
 }

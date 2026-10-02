@@ -80,7 +80,7 @@ public struct PetManifest: Codable, Sendable {
         var identifiers = Set<String>()
         for clip in clips {
             if let limit=clip.idleLoopLimit {
-                guard (0...1_000_000).contains(limit),clip.action == .fidget else { throw fail("待机循环配置无效。") }
+                guard (0...1_000_000).contains(limit),[.fidget,.specialIdle,.sleep].contains(clip.action) else { throw fail("待机循环配置无效。") }
             }
             guard identifiers.insert(clip.action.rawValue + (clip.graphID ?? "") + clip.mood.rawValue).inserted, !clip.stages.isEmpty,
                   Set(clip.stages.map(\.phase)).count == clip.stages.count else { throw fail("动画重复或缺少阶段。") }

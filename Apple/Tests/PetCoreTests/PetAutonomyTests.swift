@@ -3,7 +3,7 @@ import XCTest
 
 final class PetAutonomyTests: XCTestCase {
     func testOriginalSelectionBoundariesAndIdleCount() {
-        let expected: [(Double, PetAutonomousBehavior?)] = [(0,.walkLeft),(2.0/200,.walkLeft),(3.0/200,.fidget),(5.0/200,.fidget),(6.0/200,nil),(7.0/200,.doze),(8.0/200,nil),(11.0/200,nil)]
+        let expected: [(Double, PetAutonomousBehavior?)] = [(0,.walkLeft),(2.0/200,.walkLeft),(3.0/200,.fidget),(5.0/200,.fidget),(6.0/200,.specialIdle),(7.0/200,.doze),(8.0/200,nil),(11.0/200,nil)]
         for (value, result) in expected {
             let clock=FakeClock(), scheduler=PetAutonomy(clock:clock,random:FixedRandom(value:value))
             clock.now=14.99;XCTAssertNil(scheduler.poll(eligible:true,allowsMovement:true,mood:.normal))

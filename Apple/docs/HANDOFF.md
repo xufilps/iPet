@@ -207,3 +207,11 @@ toolbarEnabled仅新增UserDefaults偏好，smoke不读写，保存v2/动画v3/�
 106项Swift（54核心/52渲染）、15项Python、macOS Release/ad-hoc及iOS共享模块构建/签名通过；工程重复生成、原README7775字节后缀/LICENSE完整、文档链接/diff通过。测试覆盖原>duration边界、固定/非法随机、默认状态/Single、9Graph池、开心缺B回退、Ill不借非Ill和动画概率结束。旧C-only帧排序夹具补A成为可触发动作；旧侧挂打断测试显式结束新待机再检查，保留不能回旧侧挂断言。证据在忽略目录Apple/build/verification/idlepool-*及tests.log；真实显示、内存/卡顿、多屏/睡眠与压力未验。
 
 清单v3增加可选idleLoopLimit，兼容旧清单；保存v2/文本v1不变，无养成数据变化。资源包增加104.3MiB，仍按需48MiB纹理缓存，未以代码缓存上限替代实际内存测量。StateONE/StateTWO、扩展池、打盹20秒上限及逐循环变体重选尚缺，继续两阶段特殊待机；回滚源码/转换器重建，正式存档退出备份，不降级保存，最终压力保留。
+
+## 阶段3P两阶段特殊待机和打盹 — 2026-10-02
+
+版本仍v0.2.0，新增StateONE/TWO各三状态和阶段/变体，资源147组合/4248PNG/555.1MiB（物品另计）。分支6进入ONE，duration10概率退出时按1/(2+进入次数)进TWO或结束；TWO结束C后回ONE B，递增次数降低后续TWO概率。人工结束/动作清理内部返回。打盹按sleep duration20概率退出，旧固定20秒定时器移除，人工休息仍无限循环，养成状态变化不按人工休息路径重置打盹。
+
+110项Swift（56核心/54渲染）、15项Python、macOS Release/ad-hoc及iOS共享模块构建/签名通过；工程重复生成、原README7775字节后缀/LICENSE完整、文档链接/diff检查通过。纯核心验证ONE/TWO/返回和次数改变概率、分支6；渲染验证TWO C回ONE B无提前完成、最终结束/手动打断、Ill无资源、概率打盹退出与人工休息保持。测试去变体以隔离随机来源，同时实际素材完成加载验证。证据在忽略目录Apple/build/verification/specialidle-*及tests.log；真实观感、输入、多屏/睡眠与压力未验。
+
+保存v2/清单v3/文本v1不变，可选idleLoopLimit扩展specialIdle/sleep并兼容旧清单；展示保持启动时状态，循环内变体/状态重选、扩展随机插件和活动中互动尚缺，自动睡眠完整养成对照继续核对。回滚同步源码/转换器重建，正式存档退出备份，不降级保存；继续可独立实施的差异，最终实机和压力保留。
