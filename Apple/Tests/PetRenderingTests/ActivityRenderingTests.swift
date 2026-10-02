@@ -1,4 +1,5 @@
 import XCTest
+@preconcurrency import SpriteKit
 import PetCore
 @testable import PetRendering
 final class ActivityRenderingTests: XCTestCase {
@@ -47,6 +48,31 @@ final class ActivityRenderingTests: XCTestCase {
             XCTAssertEqual(finished,1);XCTAssertEqual(scene.requestedGraphID,"playone")
             XCTAssertFalse(scene.isFinishingActivity)
             scene.play(.head,mood:.normal);XCTAssertFalse(scene.finishActivity())
+        }
+    }
+    func testMissingFoodImageNeverShowsSolidSprite() async throws {
+        let manifest=try PetManifest.load(from:root), assets=root
+        await MainActor.run {
+            for action in [PetAction.eat,.drink,.gift] {
+                let scene=PetScene(manifest:manifest,assetRoot:assets)
+                var diagnostics:[String]=[];scene.onDiagnostic={ diagnostics.append($0) }
+                scene.setFoodImage(path:"items/missing.png");scene.play(action,mood:.normal)
+                let item=scene.children.first { $0.zPosition == 1 }!
+                for i in 0...60 { scene.update(Double(i)*0.25);XCTAssertTrue(item.isHidden,"missing image must not become a colored rectangle") }
+                XCTAssertFalse(diagnostics.isEmpty)
+            }
+        }
+    }
+    func testFoodTextureIsVisibleAndReloadsAfterRelease() async throws {
+        let manifest=try PetManifest.load(from:root),catalog=try PetCatalog.load(from:root.appendingPathComponent("gameplay.json")),assets=root
+        let path=try XCTUnwrap(catalog.items.first { $0.graphID.lowercased()=="drink" }?.imagePath)
+        await MainActor.run {
+            let scene=PetScene(manifest:manifest,assetRoot:assets);scene.setFoodImage(path:path);scene.play(.drink,mood:.normal)
+            let item=scene.children.first { $0.zPosition == 1 } as! SKSpriteNode
+            scene.releaseTextures();XCTAssertNil(item.texture)
+            var visible=false
+            for i in 0...40 { scene.update(Double(i)*0.25);if !item.isHidden { visible=true;XCTAssertNotNil(item.texture) } }
+            XCTAssertTrue(visible)
         }
     }
 }

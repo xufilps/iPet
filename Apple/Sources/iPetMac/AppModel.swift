@@ -279,14 +279,33 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         }
         NSApp.activate(ignoringOtherApps: true); controls?.makeKeyAndOrderFront(nil)
     }
+    private func playTestAction(_ action: PetAction, mood: PetMood, index: Int) {
+        if action == .activity, !catalog.activities.isEmpty {
+            let activity = catalog.activities[(index / PetAction.allCases.count) % catalog.activities.count]
+            petScene.playActivity(graphID: activity.graphID, mood: mood)
+            return
+        }
+        if [.eat, .drink, .gift].contains(action) {
+            let items = catalog.items.filter { $0.graphID.lowercased() == action.rawValue && $0.imagePath != nil }
+            if !items.isEmpty {
+                let item = items[(index / PetAction.allCases.count) % items.count]
+                petScene.setFoodImage(path: item.imagePath)
+                NSLog("IPET_TEST_ITEM action=%@ item=%@", action.rawValue, item.name)
+            } else { petScene.setFoodImage(path: nil) }
+        }
+        petScene.play(action, mood: mood)
+    }
     private func startSmokeTest() {
         // Isolated save path; exercise rendering, interruption, visibility and lifecycle without touching user saves.
         Task { @MainActor in
             for action in PetAction.allCases {
-                petScene.play(action, mood: .normal)
+                playTestAction(action, mood: .normal, index: 0)
                 try? await Task.sleep(for: .milliseconds(350))
             }
-            command(.feed); command(.water); command(.toggleRest)
+            petScene.setFoodImage(path: catalog.items.first { $0.graphID.lowercased() == "eat" }?.imagePath)
+            command(.feed)
+            petScene.setFoodImage(path: catalog.items.first { $0.graphID.lowercased() == "drink" }?.imagePath)
+            command(.water); command(.toggleRest)
             toggleVisibility(); toggleVisibility(); suspend(); resume()
             save(); showControls()
             NSLog("IPET_SMOKE_OK cacheBytes=%d state=%@", petScene.cacheBytes, state.mood.rawValue)
@@ -294,7 +313,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
                 let began = ProcessInfo.processInfo.systemUptime
                 var index = 0
                 while ProcessInfo.processInfo.systemUptime - began < Double(seconds) {
-                    petScene.play(PetAction.allCases[index % PetAction.allCases.count], mood: PetMood.allCases[(index / PetAction.allCases.count) % PetMood.allCases.count])
+                    playTestAction(PetAction.allCases[index % PetAction.allCases.count], mood: PetMood.allCases[(index / PetAction.allCases.count) % PetMood.allCases.count], index: index)
                     if index % 10 == 0 { toggleVisibility(); toggleVisibility() }
                     if index % 20 == 0 { suspend(); resume() }
                     if index % 15 == 0 { NSLog("IPET_SOAK_SAMPLE cacheBytes=%d", petScene.cacheBytes) }

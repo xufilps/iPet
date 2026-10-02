@@ -53,6 +53,7 @@ import PetCore
     private var framePaths: [Int: String] = [:]
     private let item = SKSpriteNode(color: .white, size: .zero)
     private var foodPath: String?
+    private var reportedMissingFood = false
     public var hasFoodImage: Bool { foodPath != nil && item.texture != nil }
     public private(set) var requestedGraphID: String?
     public private(set) var isFinishingActivity = false
@@ -77,6 +78,7 @@ import PetCore
     }
     private func installTimeline() {
         previousTime = nil
+        reportedMissingFood = false
         for node in sprites.values { node.removeFromParent() }
         sprites.removeAll(); masks.removeAll(); framePaths.removeAll(); item.isHidden = true
         render()
@@ -95,7 +97,7 @@ import PetCore
         return true
     }
     public func setFoodImage(path: String?) {
-        foodPath=nil;item.texture=nil
+        foodPath=nil;item.texture=nil;item.isHidden=true;reportedMissingFood=false
         guard let path else { return }
         guard PetCatalog.safePath(path), path.hasPrefix("items/"), path.hasSuffix(".png") else { onDiagnostic?("拒绝不合法食物图片路径。");return }
         if let entry=cache.get(AnimationFrame(path:path,duration:1,width:1,height:1),root:assetRoot) { foodPath=path;item.texture=entry.texture }
@@ -114,7 +116,7 @@ import PetCore
     public func resetTiming() { previousTime = nil }
     public func releaseTextures() {
         for node in sprites.values { node.texture = nil }
-        framePaths.removeAll(); masks.removeAll(); cache.clear();item.texture=nil
+        framePaths.removeAll(); masks.removeAll(); cache.clear();item.texture=nil;item.isHidden=true
     }
     nonisolated public override func update(_ currentTime: TimeInterval) {
         MainActor.assumeIsolated { advance(currentTime) }
@@ -154,7 +156,15 @@ import PetCore
         }
         if let food = stage.food(at: elapsed), food.visible {
             if item.texture == nil, let path=foodPath { setFoodImage(path:path) }
-            let imageSize=item.texture?.size() ?? CGSize(width:1,height:1)
+            guard let texture = item.texture else {
+                item.isHidden = true
+                if !reportedMissingFood {
+                    onDiagnostic?("进食动画未绑定可用物品图片，已隐藏物品层。")
+                    reportedMissingFood = true
+                }
+                return
+            }
+            let imageSize=texture.size()
             item.size=CGSize(width:food.width,height:food.width*imageSize.height/max(1,imageSize.width));item.alpha=food.opacity
             item.position = CGPoint(x: food.x + food.width / 2, y: size.height - food.y - item.size.height / 2)
             item.zRotation = -food.rotation * .pi / 180; item.isHidden = false
