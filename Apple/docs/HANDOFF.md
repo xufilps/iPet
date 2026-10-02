@@ -223,3 +223,11 @@ toolbarEnabled仅新增UserDefaults偏好，smoke不读写，保存v2/动画v3/�
 115项Swift（56核心/59渲染）、15项Python、macOS Release/ad-hoc与iOS共享模块构建/签名通过；工程两次生成一致、原README7775字节后缀/LICENSE完整及diff检查通过。回归先复现缺Ill动作结束回旧状态和新特殊待机误用旧排队状态，再修复验证；另覆盖当前阶段变体、结束标志、按住捏脸和人工休息状态换图。证据在忽略目录Apple/build/verification/playback-*和tests.log；未新增真实观感/输入、多屏/睡眠或压力证据。
 
 原MainDisplay.cs DisplaySleep(force=false)不修改WorkingState，force=true才置Sleep，随机打盹与人工休息的养成区分已核对符合原版。资源147组合/4248PNG/555.1MiB、按需48MiB纹理缓存及保存v2/清单v3/文本v1不变；阶段剩余时间安全夹取不承诺.NET帧级/随机序列一致。继续全部MoveEnd入口和原生操作/设置缺口，最终实机和压力保留。回滚源码重建，正式存档退出备份，不降级保存。
+
+## 阶段3R移动结束后的侧挂衔接 — 2026-10-02
+
+正常移动C完成后回正前检查侧挂，采用原严格50逻辑像素阈值和219/281定位；沿用移动启动屏幕。接管成功保留新Main A/B，不触发通用恢复；拒绝、资源故障按原安全回基础。隐藏/睡眠/输入/关闭自主移动/已取消时拒绝，拖动入口保持。原RePositionActive/CheckPosition自动回正和换屏策略仍缺，非完整窗口行为还原。
+
+117项Swift（56核心/61渲染）、15项Python、macOS Release/ad-hoc与iOS共享模块构建/签名通过；先复现正常结束未接管再修复，覆盖侧挂保持、拒绝回基础和缺帧不能接管。工程重复生成一致、原README7775字节后缀/LICENSE完整、文档链接及diff检查通过，证据Apple/build/verification/moveend-*与tests.log（忽略目录）。未新增真实鼠标/边缘观感、多屏/睡眠或压力证据。
+
+v0.2.0、资源147组合/4248PNG/555.1MiB、保存v2/清单v3/文本v1不变；48MiB按需缓存不是实测内存。继续原生商店/背包、设置与统计缺口，最终实机和压力保留。回滚源码重建，正式存档退出备份，不降级保存。

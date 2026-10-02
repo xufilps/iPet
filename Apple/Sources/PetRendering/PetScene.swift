@@ -49,6 +49,8 @@ import PetCore
     public var onMovementLoop:(()->Bool)?
     private var timelineGeneration=0
     public var onActionFinished: ((PetAction) -> Void)?
+    /// Return true when the owner replaces a successfully completed movement.
+    public var onMovementCompleted: (() -> Bool)?
     public var onDiagnostic: ((String) -> Void)?
     private var timeline: AnimationTimeline?
     private var sideHideMain:AnimationClip?
@@ -389,7 +391,10 @@ import PetCore
             let completed = requestedAction
             if !transitionSteps.isEmpty { installNextTransition();return }
             let settledMood=transitionTarget ?? playbackMood ?? mood
-            play(.idle, mood: settledMood); onActionFinished?(completed)
+            let movementEnded = [.walkLeft,.walkRight,.climb].contains(completed) && timeline?.stage.phase == .end
+            play(.idle, mood: settledMood)
+            if movementEnded,onMovementCompleted?() == true { return }
+            onActionFinished?(completed)
         }
         render()
     }

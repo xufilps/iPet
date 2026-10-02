@@ -140,3 +140,9 @@ pinch配置区域(149,128,56,59)转换为JSON，长按300ms先判断有当前状
 相邻阶段回退沿原非Ill规则，活动/人工休息不因状态变化重开A；单次250ms跨多个短循环只渲染最终结果，余量夹到新阶段时长内，保持效果回调不重复。资源/保存版本不变，不承诺原.NET序列/帧级一致；自动睡眠养成、MoveEnd和最终实机/压力仍待对照。
 
 自动打盹养成核对：基线MainDisplay.cs的DisplaySleep(false)只播A及概率B循环，不设置WorkingState；DisplaySleep(true)才设置Sleep并无限循环。iPet随机playDoze不设置resting，人工休息设置resting，符合该区分；本项为源码与模型核对，未增加实机验收证据。
+
+## 阶段3R：移动C结束后的侧挂检查
+
+原Main.xaml.cs的Event_MoveEnd订阅MoveSideHideCheck，GraphHelper.StopMoving完成C后通知。iPet在正常移动C完成后、可见区域回正前，按移动启动屏幕检查左右严格超过50逻辑像素的越界；成功接入Main A/B并保留动作所有权，避免通用恢复立即取消侧挂。失败或无对应资源恢复可见区域；解码失败不触发该入口。隐藏/睡眠/关闭自主移动/输入或已取消移动时不进入。
+
+当前继续visibleFrame安全回正，原RePositionActive/CheckPosition以及自动换屏未完整还原；本批并不等于完整多显示器一致性。拖动侧挂入口保持，存档位置仍保存安全可见坐标，保存v2不变，真实裁剪/焦点/多屏/睡眠及压力留最后。

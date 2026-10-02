@@ -90,6 +90,11 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
             self.applyPinchEffects();return true
         }
         petScene.onMovementLoop = { [weak self] in self?.movementLoop() ?? false }
+        petScene.onMovementCompleted = { [weak self] in
+            guard let self,self.visible,!self.suspended,self.autoMove,!self.petView.isInteracting,
+                  self.needsEdgeRecovery,let screen=self.edgeScreen else { return false }
+            return self.beginSideHide(screen:screen)
+        }
         petScene.onActionFinished = { [weak self] action in
             guard let self else { return }
             if [.walkLeft,.walkRight,.climb,.sideHide].contains(action) { self.cancelMovement();self.persistPosition() }
@@ -366,12 +371,12 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         walkPlan=nil;climbPlan=nil;sideHidePlan=nil;sideHideHovered=false;climbLocated=false
         if reposition && needsEdgeRecovery { clampPosition();needsEdgeRecovery=false;edgeScreen=nil }
     }
-    private func beginSideHide() -> Bool {
-        guard let screen=NSScreen.screens.max(by:{ intersectionArea($0.visibleFrame)<intersectionArea($1.visibleFrame) }),
-              let plan=PetSideHidePlan.make(pet:petPanel.frame,screen:screen.visibleFrame) else { return false }
+    private func beginSideHide(screen pinnedScreen:CGRect?=nil) -> Bool {
+        guard let screen=pinnedScreen ?? NSScreen.screens.max(by:{ intersectionArea($0.visibleFrame)<intersectionArea($1.visibleFrame) })?.visibleFrame,
+              let plan=PetSideHidePlan.make(pet:petPanel.frame,screen:screen) else { return false }
         walkPlan=nil;climbPlan=nil;climbLocated=false;sideHidePlan=plan;sideHideHovered=false
-        edgeScreen=screen.visibleFrame;needsEdgeRecovery=true;autonomy.reset()
-        petPanel.setFrame(plan.located(pet:petPanel.frame,screen:screen.visibleFrame),display:true)
+        edgeScreen=screen;needsEdgeRecovery=true;autonomy.reset()
+        petPanel.setFrame(plan.located(pet:petPanel.frame,screen:screen),display:true)
         guard petScene.playSideHide(graphID:plan.graphID,mood:engine.state.mood) else { cancelMovement();restoreBaseAnimation(force:true);return false }
         return true
     }

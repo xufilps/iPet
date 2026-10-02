@@ -119,4 +119,40 @@ final class PetSideHideTests:XCTestCase {
         }
     }
 
+    func testMovementEndCanTransferOwnershipToSideHide() async throws {
+        let root=URL(fileURLWithPath:#filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Resources/PetAssets")
+        let manifest=try PetManifest.load(from:root)
+        await MainActor.run {
+            let scene=PetScene(manifest:manifest,assetRoot:root)
+            var ordinary=0,handoffs=0
+            scene.onActionFinished={ _ in ordinary+=1 }
+            scene.onMovementCompleted={ handoffs+=1;return scene.playSideHide(graphID:"sidehide.left",mood:.normal) }
+            scene.playMovement(.climb,graphID:"climb.left",mood:.normal)
+            scene.finishAction();scene.update(0)
+            for step in 1...160 { scene.update(Double(step)*0.1) }
+            XCTAssertEqual(handoffs,1);XCTAssertEqual(ordinary,0)
+            XCTAssertEqual(scene.requestedAction,.sideHide)
+            XCTAssertEqual(scene.currentPhase,.loop)
+        }
+    }
+    func testDeclinedOrBrokenMovementUsesOrdinaryRecovery() async throws {
+        let root=URL(fileURLWithPath:#filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Resources/PetAssets")
+        let manifest=try PetManifest.load(from:root)
+        await MainActor.run {
+            let scene=PetScene(manifest:manifest,assetRoot:root)
+            var ordinary=0,handoffs=0
+            scene.onActionFinished={ _ in ordinary+=1 }
+            scene.onMovementCompleted={ handoffs+=1;return false }
+            scene.playMovement(.walkLeft,graphID:"walk.left",mood:.normal)
+            scene.finishAction();scene.update(0)
+            for step in 1...160 { scene.update(Double(step)*0.1) }
+            XCTAssertEqual(handoffs,1);XCTAssertEqual(ordinary,1)
+            let broken=PetScene(manifest:manifest,assetRoot:root.appendingPathComponent("absent"))
+            broken.onMovementCompleted={ handoffs+=1;return true }
+            broken.onActionFinished={ _ in ordinary+=1 }
+            broken.playMovement(.climb,graphID:"climb.left",mood:.normal)
+            XCTAssertEqual(handoffs,1);XCTAssertEqual(ordinary,2)
+        }
+    }
+
 }
