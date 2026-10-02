@@ -53,6 +53,7 @@ public final class PetEngine {
                 if left <= 0 { stopActivity(.completed); continue }
                 chunk=min(chunk,left)
                 state.activity?.elapsedSeconds += chunk
+                updateProgress { $0.recordTime(kind:work.kind,seconds:chunk) }
             }
             remainder += chunk; remaining -= chunk
             if remainder >= 15 { remainder -= 15; activeSeconds += 15; step() }
@@ -130,6 +131,10 @@ public final class PetEngine {
             if count == 1 { next.inventory.removeValue(forKey:id) } else { next.inventory[id]=count-1 }
         }
         if mode == .useImmediately { PetItemRules.apply(item,to:&next,now:wallClock.now) }
+        var progress=next.progress ?? PetProgress()
+        if purchase { progress.purchased+=1;progress.spent+=item.price }
+        if mode == .useImmediately { progress.used+=1 }
+        next.progress=progress
         do { try next.validate() } catch { return result(false,"操作将产生不合法数据，已拒绝且未扣款。") }
         state=next
         if mode == .useImmediately {
@@ -140,6 +145,9 @@ public final class PetEngine {
         return result(true,mode == .inventory ? "已买入背包：\(item.name)。" : "已使用：\(item.name)。")
     }
     private func result(_ accepted: Bool,_ message: String) -> PetCommandResult { PetCommandResult(accepted:accepted,message:message) }
+    private func updateProgress(_ change:(inout PetProgress)->Void) {
+        var progress=state.progress ?? PetProgress();change(&progress);state.progress=progress
+    }
     private func stopActivity(_ reason: ActivityStopReason) {
         guard let session=state.activity else { return }
         var bonus=0.0
@@ -147,6 +155,7 @@ public final class PetEngine {
             bonus=session.earned*work.finishBonus
             if work.kind == .work { state.money += bonus } else { state.experience += bonus }
         }
+        updateProgress { $0.recordEnd(session:session,work:catalog.activity(session.activityID),reason:reason,bonus:bonus,date:wallClock.now) }
         state.activity=nil
         events.append(.activityStopped(id:session.activityID,reason:reason,earned:session.earned,bonus:bonus))
     }
@@ -189,6 +198,7 @@ public final class PetEngine {
             let freedrop=minutes < 1 ? 0 : min(sqrt(minutes)*t/4,100.0/800)
             let gain=PetActivityRules.advance(state: &state,work:work,t:t,freedrop:freedrop,random:&random)
             state.activity?.earned += gain
+            updateProgress { $0.recordGain(kind:work.kind,amount:gain) }
             if work.kind == .play { lastInteraction=activeSeconds }
         } else {
             var healthBonus = -2

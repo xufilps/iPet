@@ -23,6 +23,7 @@ public struct PetState: Codable, Equatable, Sendable {
     public var inventory: [String: Int] = [:]
     public var itemCooldowns: [String: Date] = [:]
     public var catalogVersion = 1
+    public var progress:PetProgress?
     public var activity: ActivitySession?
     public init() {}
     public var level: Int { Int(sqrt(max(0, min(experience, 1e12))) / 10) + 1 }
@@ -35,6 +36,7 @@ public struct PetState: Codable, Equatable, Sendable {
         return feeling / 100 <= happy / 2 ? .poor : .normal
     }
     public func validate() throws {
+        try progress?.validate()
         let bounded = [strength, food, drink, feeling, health]
         guard !name.isEmpty, name.count <= 100,
               bounded.allSatisfy({ $0.isFinite && (0...100).contains($0) }),

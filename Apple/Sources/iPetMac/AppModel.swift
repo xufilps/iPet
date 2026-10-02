@@ -7,7 +7,7 @@ import SpriteKit
 import PetCore
 import PetRendering
 
-enum ControlPage: String, CaseIterable { case status="状态", activity="活动", shop="商店", inventory="背包", settings="设置" }
+enum ControlPage: String, CaseIterable { case status="状态", activity="活动", shop="商店", inventory="背包", settings="设置", statistics="统计" }
 
 @MainActor final class AppModel: ObservableObject {
     @Published var state = PetState()
@@ -204,6 +204,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         menu.addItem(item("状态与设置…", #selector(showControls)))
         menu.addItem(item("活动…", #selector(showActivities))); menu.addItem(item("商店…", #selector(showShop)))
         menu.addItem(item("背包…", #selector(showInventory)))
+        menu.addItem(item("统计与历史…", #selector(showStatistics)))
         menu.addItem(item("聊一句", #selector(sayClick)))
         menuToolbar=item("随宠工具栏",#selector(toggleToolbar));menuToolbar.state=toolbarEnabled ? .on : .off;menu.addItem(menuToolbar)
         menu.addItem(item("休息 / 起床", #selector(rest)))
@@ -321,6 +322,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     }
     @objc private func showActivities() { selectedPage = .activity; showControls() }
     @objc private func showShop() { selectedPage = .shop; showControls() }
+    @objc private func showStatistics() { selectedPage = .statistics;showControls() }
     @objc private func showInventory() { selectedPage = .inventory; showControls() }
     @objc func sayClick() {
         guard visible, !suspended else { message="请先显示桌宠，再聊一句。";return }

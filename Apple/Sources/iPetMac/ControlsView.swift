@@ -18,6 +18,7 @@ struct ControlsView: View {
                 ActivityView(model:model).tabItem { Text("活动") }.tag(ControlPage.activity)
                 ShopView(model:model).tabItem { Text("商店") }.tag(ControlPage.shop)
                 InventoryView(model:model).tabItem { Text("背包") }.tag(ControlPage.inventory)
+                StatisticsView(model:model).tabItem { Text("统计") }.tag(ControlPage.statistics)
                 settings.tabItem { Text("设置") }.tag(ControlPage.settings)
             }
             if !model.message.isEmpty {

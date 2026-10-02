@@ -174,3 +174,9 @@ MainLogic.EventTimer的EnableFunction控制FunctionSpend，关闭使用NoFunctio
 原TopMost/HitThrough以及Opacity范围0.05...1适配为NSPanel floating/normal、全部角色ignoresMouseEvents和角色alphaValue。默认保持置顶、非透明角色可操作/透明区穿透、不透明度1；全部穿透优先于alpha/交互，切换先取消手势和边缘移动恢复可见基础，避免计时自动alpha覆盖配置。穿透时不触发侧挂悬停探头，菜单栏恢复默认不依赖角色点击。
 
 独立说话/工具栏层级跟随置顶，但保持不透明度与工具栏可操作，为原生可读性适配；设置本机持久化，测试模式默认隔离，保存v2不变。原OpacityMain/OpacityHitThrough动态组合和全屏策略未迁移；规则测试不能证明真实AppKit焦点/物理穿透/遮挡，最终实机与压力仍待验。
+
+## 阶段5A：本地统计、活动历史与保存v3
+
+基线StatisticsCalHandle累计运行/活动/睡眠时间，TakeItem和ActivityLogs记录使用/工作事件。iPet首批记录成功购买数量和实际扣款、成功使用数量、有效工作/学习/娱乐秒数、收益及完成奖金，结束历史含时间/名称/原因/时长/收益，累计结束次数并保留最近200条。失败和关闭养成的即用预览不计数；活动暂停、退出/睡眠不补时间，完成沿原严格超过时长边界，手动停止无完成奖金。入包花费和食用次数分别统计，不混称原消费标价stat_betterbuy。
+
+progress是PetState可选字段，旧档无统计显示空白，不估算。JSON升级v3，v1/v2首次写前保存pet.vN-before-upgrade-UUID.json原字节，统计与养成同一原子主档/备份，未来v4阻写；统计/历史数据也校验。旧v2程序拒绝新v3，回滚须退出备份目录，移开v3主/previous后复制独立v2原件；原v1回滚仍使用v1原件。原完整统计键、触摸/总运行/睡眠/疾病、调试/网络日志与图表未迁移，真实UI待验，动画清单v3/文本v1不变。

@@ -16,7 +16,7 @@ public enum PetSaveError: Error, LocalizedError {
 public struct PetSaveDocument: Codable, Equatable, Sendable {
     public let version: Int
     public var state: PetState
-    public init(state: PetState) { version = 2; self.state = state }
+    public init(state: PetState) { version = 3; self.state = state }
 }
 public protocol PetPersistence {
     func load() throws -> PetState?
@@ -39,9 +39,9 @@ public final class PetSaveStore: PetPersistence {
     }
     private func decode(_ data: Data) throws -> PetState {
         let version=try headerVersion(data)
-        guard version <= 2 else { throw PetSaveError.unsupportedVersion(version) }
+        guard version <= 3 else { throw PetSaveError.unsupportedVersion(version) }
         if version == 1 { return try PetSaveMigration.decodeLegacy(data) }
-        guard version == 2 else { throw PetSaveError.invalidDocument }
+        guard version == 2 || version == 3 else { throw PetSaveError.invalidDocument }
         let document=try JSONDecoder().decode(PetSaveDocument.self,from:data)
         guard document.state.catalogVersion <= 1 else { throw PetSaveError.unsupportedCatalogVersion(document.state.catalogVersion) }
         try document.state.validate();return document.state
@@ -51,13 +51,14 @@ public final class PetSaveStore: PetPersistence {
     }
     private func prepareLoaded(_ data: Data) throws -> PetState {
         var state=try decode(data)
-        if try headerVersion(data) == 1 { pendingLegacy=data; recoveryMessage=(recoveryMessage ?? "") + "旧存档将升级，写入前会独立备份原件。" }
+        if try headerVersion(data) < 3 { pendingLegacy=data; recoveryMessage=(recoveryMessage ?? "") + "旧存档将升级，写入前会独立备份原件。" }
         if state.activity != nil { state.activity?.isPaused=true }
         return state
     }
     private func preserveLegacy(_ data: Data) throws {
         guard !preservedLegacy.contains(data) else { return }
-        let path=directory.appendingPathComponent("pet.v1-before-upgrade-\(UUID().uuidString).json")
+        let version=try headerVersion(data)
+        let path=directory.appendingPathComponent("pet.v\(version)-before-upgrade-\(UUID().uuidString).json")
         try data.write(to:path,options:.withoutOverwriting)
         guard try Data(contentsOf:path) == data else { throw PetSaveError.invalidDocument }
         migrationBackupURL=path;preservedLegacy.insert(data)
@@ -98,7 +99,7 @@ public final class PetSaveStore: PetPersistence {
             let existing = try Data(contentsOf: primary)
             do {
                 _ = try decode(existing)
-                if try headerVersion(existing) == 1 { try preserveLegacy(existing) }
+                if try headerVersion(existing) < 3 { try preserveLegacy(existing) }
                 if let data=pendingLegacy { try preserveLegacy(data) }
                 try existing.write(to: backup, options: .atomic)
             }
