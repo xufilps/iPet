@@ -7,9 +7,11 @@ public struct PetClimbPlan:Sendable {
     public let kind:Kind
     public let left,up:Bool
     public var graphID:String { (kind == .wall ? "climb." : kind == .top ? "climb.top." : "fall.")+(left ? "left" : "right") }
+    public var speedX:Double { kind == .wall ? 0:(left ? -1:1)*(kind == .top ? 8:14) }
+    public var speedY:Double { kind == .wall ? (up ? 10:-10):kind == .fall ? -10:0 }
     public var distance:Int { kind == .top ? 10:7 }
     public static func make(left:Bool,up:Bool,mood:PetMood,pet:CGRect,screen:CGRect) -> Self? {
-        guard mood != .ill,pet.width.isFinite,pet.width>0,!screen.isEmpty,screen.intersects(pet),pet.minY>=screen.minY,pet.maxY<=screen.maxY else { return nil }
+        guard valid(mood:mood,pet:pet,screen:screen) else { return nil }
         let scale=pet.width/500,side=left ? pet.minX-screen.minX : screen.maxX-pet.maxX
         let vertical=up ? screen.maxY-pet.maxY : pet.minY-screen.minY
         guard side<=100*scale,vertical>=200*scale else { return nil }
@@ -62,7 +64,6 @@ public struct PetClimbPlan:Sendable {
             if kind == .fall { frame.origin.y-=dy*fraction }
             return frame
         }
-        guard pet.minY>=screen.minY,pet.maxY<=screen.maxY else { return nil }
         let scale=pet.width/500,boundary=up ? screen.maxY-pet.height-100*scale : screen.minY+100*scale
         guard up ? pet.minY<boundary : pet.minY>boundary else { return nil }
         var frame=pet;let y=pet.minY+(up ? 10 : -10)*scale*seconds/0.125

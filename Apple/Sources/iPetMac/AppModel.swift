@@ -306,11 +306,10 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
             }
             if let plan=walkPlan {
                 if !autoMove || petView.isInteracting || !petScene.isMovementAnimation { endWalking() }
-                else if petScene.currentPhase == .loop,let screen=petPanel.screen {
-                    if let frame=plan.advance(pet:petPanel.frame,screen:screen.visibleFrame,seconds:delta) { petPanel.setFrame(frame,display:true) }
+                else if petScene.currentPhase == .loop,let screen=edgeScreen {
+                    if let frame=plan.advance(pet:petPanel.frame,screen:screen,seconds:delta) { petPanel.setFrame(frame,display:true) }
                     else {
-                        if moveCycles.triesCompatibility(),!tryTraversal() { endWalking() }
-                        else if climbPlan == nil { endWalking() }
+                        if !moveCycles.triesCompatibility() || !chooseMovement(previous:.walk(plan)) { endWalking() }
                     }
                 }
             }
@@ -319,7 +318,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
                 else if petScene.currentPhase == .loop,let screen=edgeScreen {
                     if !climbLocated { petPanel.setFrame(plan.located(pet:petPanel.frame,screen:screen),display:true);climbLocated=true }
                     if let frame=plan.advance(pet:petPanel.frame,screen:screen,seconds:delta) { petPanel.setFrame(frame,display:true) }
-                    else { endWalking() }
+                    else if !moveCycles.triesCompatibility() || !chooseMovement(previous:.traversal(plan)) { endWalking() }
                 }
             }
         }
@@ -331,10 +330,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         if let behavior = autonomy.poll(eligible:eligible,allowsMovement:autoMove,mood:engine.state.mood) {
             switch behavior {
             case .walkLeft, .walkRight:
-                if moveRandom.unit()<0.5,tryTraversal() { break }
-                if let screen=petPanel.screen,let plan=PetWalkPlan.make(left:behavior == .walkLeft,crawl:moveRandom.unit()<0.5,mood:engine.state.mood,pet:petPanel.frame,screen:screen.visibleFrame) {
-                    beginWalking(plan)
-                }
+                _ = chooseMovement()
             case .fidget:
                 petScene.playFidget(graphID:autonomy.fidgetGraphID,mood:engine.state.mood)
             case .doze:
@@ -367,14 +363,21 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         moveCycles.begin(distance:plan.distance)
         petScene.playMovement(.climb,graphID:plan.graphID,mood:engine.state.mood)
     }
-    private func tryTraversal() -> Bool {
-        guard let screen=petPanel.screen else { return false }
-        let candidates=PetClimbPlan.traversalCandidates(mood:engine.state.mood,pet:petPanel.frame,screen:screen.visibleFrame)
+    @discardableResult private func chooseMovement(previous:PetMovementChoice?=nil) -> Bool {
+        guard let screen=edgeScreen ?? petPanel.screen?.visibleFrame else { return false }
+        let candidates=previous?.compatible(mood:engine.state.mood,pet:petPanel.frame,screen:screen)
+            ?? PetMovementChoice.candidates(mood:engine.state.mood,pet:petPanel.frame,screen:screen)
         guard !candidates.isEmpty else { return false }
-        beginClimbing(candidates[min(candidates.count-1,Int(moveRandom.unit()*Double(candidates.count)))]);return true
+        let value=moveRandom.unit(),unit=value.isFinite ? min(1.0.nextDown,max(0,value)):0
+        edgeScreen=screen
+        switch candidates[Int(unit*Double(candidates.count))] {
+        case .walk(let plan):beginWalking(plan)
+        case .traversal(let plan):beginClimbing(plan)
+        }
+        return true
     }
     private func beginWalking(_ plan:PetWalkPlan) {
-        cancelMovement();walkPlan=plan;moveCycles.begin(distance:plan.distance)
+        cancelMovement(reposition:false);walkPlan=plan;needsEdgeRecovery=true;moveCycles.begin(distance:plan.distance)
         petScene.playMovement(plan.action,graphID:plan.graphID,mood:engine.state.mood)
     }
     private func endWalking() {
@@ -386,20 +389,9 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     private func movementLoop() -> Bool {
         guard (walkPlan != nil || climbPlan != nil),visible,!suspended,autoMove,!petView.isInteracting,engine.state.mood != .ill else { walkPlan=nil;climbPlan=nil;return false }
         if moveCycles.continueAfterLoop() { return true }
-        if let climb=climbPlan {
-            if moveCycles.triesCompatibility(),let screen=edgeScreen,let next=climb.continued(mood:engine.state.mood,pet:petPanel.frame,screen:screen) { beginClimbing(next);return true }
-            climbPlan=nil;return false
-        }
-        guard let plan=walkPlan else { return false }
-        if moveCycles.triesCompatibility(),let screen=petPanel.screen {
-            let candidates=plan.compatible(mood:engine.state.mood,pet:petPanel.frame,screen:screen.visibleFrame)
-            if candidates.isEmpty,tryTraversal() { return true }
-            if !candidates.isEmpty {
-                let index=min(candidates.count-1,Int(moveRandom.unit()*Double(candidates.count)))
-                beginWalking(candidates[index]);return true
-            }
-        }
-        walkPlan=nil;persistPosition();return false
+        let previous:PetMovementChoice?=climbPlan.map(PetMovementChoice.traversal) ?? walkPlan.map(PetMovementChoice.walk)
+        if let previous,moveCycles.triesCompatibility(),chooseMovement(previous:previous) { return true }
+        walkPlan=nil;climbPlan=nil;persistPosition();return false
     }
     @objc func toggleVisibility() {
         petView.cancelInteraction()
