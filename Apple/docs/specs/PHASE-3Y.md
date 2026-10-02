@@ -7,3 +7,7 @@
 ## 同批Windows存档审计结果
 
 GameSave_VPet.cs 48—75、125及133—273行：原Exp为当前等级内余量，升级需求200*Level-100，LevelMax扩展等级机制；当前iPet累计经验sqrt(exp)/10+1仅普通无扩展等级可用100*(Level-1)^2+Exp转换，不能直接复制Exp。原体力/饱腹/饮水上限StrengthMax和FeelingMax随等级增长，iPet当前上限100；原LikabilityMax独立存储，iPet推导上限。原GameSave_v2.load含哈希/版本和Data根字段，不能把资源转换器正则当完整存档解析器。本仓库无实存档样例，未验证转义和类型序列化，不接入猜测型LPS导入。后续4B须先形成实际导出样例和明确拒绝/转换/损失报告，再开放确认导入；原件始终保留。当前JSON恢复保持现状。
+
+## 实施与验证记录
+
+查询测试先RED（PetActivityQuery不存在），随后3/3GREEN。完整81核心+64渲染、15Python检查通过；macOS Release/ad-hoc及严格签名、iOS Simulator共享模块构建通过。工程重生成字节一致，原README尾部7775字节及LICENSE原字节保持，文档链接和git diff --check通过。验证日志位于Apple/build/verification/phase3y-{red,green,final-verify}.log（可再生，不入Git）。独立审查未发现阻止提交的问题；轻微验证缺口留最终验收：收藏跨启动与smoke偏好隔离仅有源码检查，查询测试名称提及会话但实际只断言目录不变，会话入口独立于过滤由界面结构确认，未声称UI自动验收。Windows导入的暂缓裁决基于实档/解析及损失策略缺失，若判断不足可在取得样例后修订规格，不影响当前JSON恢复与其它原生迁移。

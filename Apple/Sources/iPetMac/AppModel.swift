@@ -30,6 +30,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     @Published var visible = true
     @Published var toolbarEnabled=false
     @Published private(set) var favoriteItems:Set<String>=[]
+    @Published private(set) var favoriteActivities:Set<String>=[]
     @Published private(set) var inventoryUseProgress:String?
     private var inventoryUseTask:Task<Void,Never>?
     private(set) var engine: PetEngine!
@@ -75,6 +76,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         autoMove = defaults.object(forKey: "autoMove") as? Bool ?? true
         toolbarEnabled = !smokeMode && defaults.bool(forKey:"toolbarEnabled")
         favoriteItems = smokeMode ? []:Set(defaults.stringArray(forKey:"favoriteItems") ?? [])
+        favoriteActivities = smokeMode ? []:Set(defaults.stringArray(forKey:"favoriteActivities") ?? [])
         topMost=smokeMode ? true:(defaults.object(forKey:"topMost") as? Bool ?? true)
         passThrough = !smokeMode && defaults.bool(forKey:"passThrough")
         opacity=smokeMode ? 1:PetWindowBehavior(opacity:defaults.object(forKey:"opacity") as? Double ?? 1).opacity
@@ -282,6 +284,11 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     func toggleFavorite(id:String) {
         if favoriteItems.contains(id) { favoriteItems.remove(id) } else { favoriteItems.insert(id) }
         if !smokeMode { UserDefaults.standard.set(favoriteItems.sorted(),forKey:"favoriteItems") }
+    }
+    func toggleFavoriteActivity(id:String) {
+        guard catalog.activity(id) != nil else { return }
+        if favoriteActivities.contains(id) { favoriteActivities.remove(id) } else { favoriteActivities.insert(id) }
+        if !smokeMode { UserDefaults.standard.set(favoriteActivities.sorted(),forKey:"favoriteActivities") }
     }
     func itemMultiplier(id: String) -> Double {
         guard let item=catalog.item(id) else { return 0 }
