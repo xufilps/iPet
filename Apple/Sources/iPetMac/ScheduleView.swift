@@ -25,6 +25,9 @@ struct ScheduleView:View {
         ScrollView {
             LazyVStack(alignment:.leading,spacing:14) {
                 Text("日程 · \(status)").font(.headline)
+                if let summary=try? PetScheduleSummary(queue:schedule.queue,catalog:model.catalog) {
+                    ScheduleCompositionView(summary:summary)
+                } else { Text("日程汇总数据不可用，请检查玩法目录与队列。").font(.caption).foregroundStyle(.orange) }
                 if let current=schedule.queue.entries.first(where:{ $0.id==schedule.currentEntryID }) {
                     Text("当前：\(title(current))")
                     if schedule.phase == .waiting || schedule.phase == .handoff {
@@ -94,5 +97,39 @@ struct ScheduleView:View {
         if let minutes=entry.waitMinutes { return "等待\(minutes)分钟" }
         let id=entry.activityID ?? "未知活动"
         return "\(model.catalog.activity(id)?.name ?? id) · \(entry.multiplier)倍"
+    }
+}
+
+private struct ScheduleCompositionView:View {
+    let summary:PetScheduleSummary
+    private var tint:Color { summary.isWorkHeavy ? .orange:.accentColor }
+    private var ratio:String { summary.workFraction?.formatted(.percent.precision(.fractionLength(0))) ?? "—" }
+    var body:some View {
+        VStack(alignment:.leading,spacing:8) {
+            HStack(spacing:16) {
+                ZStack {
+                    Circle().stroke(.quaternary,lineWidth:8)
+                    Circle().trim(from:0,to:summary.workFraction ?? 0).stroke(tint,style:StrokeStyle(lineWidth:8,lineCap:.butt)).rotationEffect(.degrees(-90))
+                    VStack(spacing:3) {
+                        Text(ratio).font(.title3.bold()).foregroundStyle(tint).monospacedDigit()
+                        Text("工作比例").font(.caption)
+                    }
+                }.frame(width:100,height:100)
+                    .accessibilityElement(children:.ignore).accessibilityLabel("配置工作比例：\(ratio)")
+                VStack(alignment:.leading,spacing:6) {
+                    Text("\(summary.unresolvedEntryIDs.isEmpty ? "配置合计":"已识别部分合计")").font(.headline)
+                    Text("工作/学习 \(summary.workMinutes.formatted(.number.precision(.fractionLength(0)))) 分钟")
+                    Text("休息 \(summary.restMinutes.formatted(.number.precision(.fractionLength(0)))) 分钟")
+                    if summary.isWorkHeavy { Text("工作比例超过71%，可增加等待或娱乐。").font(.caption).foregroundStyle(.orange) }
+                }
+            }
+            if !summary.unresolvedEntryIDs.isEmpty {
+                Text("\(summary.unresolvedEntryIDs.count)项无法完整解析，比例和整轮估计暂不提供；项目仍保留在队列。").font(.caption).foregroundStyle(.orange)
+            }
+            Text("沿原版配置比例：娱乐的整数分钟均分为工作和休息，奇数分钟截断；不计倍率后的时长与30秒衔接。此图不表示当前执行进度。").font(.caption).foregroundStyle(.secondary)
+            if let seconds=summary.cycleSeconds {
+                Text("自然完成时一轮参考：\((seconds/60).formatted(.number.precision(.fractionLength(0...1))))分钟（含有效倍率时长与30秒衔接）。暂停、提前结束、状态中止或降倍率会改变实际时间。").font(.caption).foregroundStyle(.secondary)
+            }
+        }.padding(12).frame(maxWidth:.infinity,alignment:.leading).background(.quaternary,in:RoundedRectangle(cornerRadius:8))
     }
 }
