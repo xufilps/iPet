@@ -50,8 +50,9 @@ final class PetCoreTests: XCTestCase {
     }
     func testNoOfflineCatchUpOrClockReversal() {
         let clock = FakeClock(); let engine = PetEngine(clock: clock)
-        clock.now = 7200; engine.tick(); XCTAssertEqual(engine.state, PetState())
-        clock.now = 10; engine.tick(); XCTAssertEqual(engine.state, PetState())
+        let initial=engine.state
+        clock.now = 7200; engine.tick(); XCTAssertEqual(engine.state, initial)
+        clock.now = 10; engine.tick(); XCTAssertEqual(engine.state, initial)
         clock.now = 25; engine.tick(); XCTAssertEqual(engine.state.food, 99.9, accuracy: 1e-8)
     }
     func testDeterministicTwoHourSimulation() throws {

@@ -35,7 +35,7 @@ final class PetPackageTests:XCTestCase {
         var old=try XCTUnwrap(definition().quote(level:15,now:wall.now));old.autoRenew=true
         wall.now=old.endTime
         var saved=state(money:2300);saved.workPackage=old
-        let equal=PetEngine(state:saved,catalog:catalog,wallClock:wall)
+        let equal=PetEngine(state:saved,catalog:catalog,wallClock:wall);saved=equal.state
         _=equal.perform(.renewPackages);XCTAssertEqual(equal.state,saved)
         saved.money=2300.01
         let enough=PetEngine(state:saved,catalog:catalog,wallClock:wall)
@@ -61,7 +61,7 @@ final class PetPackageTests:XCTestCase {
         let wall=FixedWallClock(),clock=FakeClock();var saved=state()
         saved.workPackage=try definition().quote(level:15,now:wall.now);saved.workPackage?.autoRenew=true
         wall.now=saved.workPackage!.endTime.addingTimeInterval(100)
-        let engine=PetEngine(state:saved,clock:clock,catalog:PetCatalog(),wallClock:wall)
+        let engine=PetEngine(state:saved,clock:clock,catalog:PetCatalog(),wallClock:wall);saved=engine.state
         clock.now=7200;engine.tick();XCTAssertEqual(engine.state,saved)
         _=engine.perform(.renewPackages);XCTAssertEqual(engine.state,saved)
         XCTAssertFalse(engine.perform(.setPackageAutoRenew(.play,enabled:true)).accepted)
@@ -80,7 +80,7 @@ final class PetPackageTests:XCTestCase {
         let wall=FixedWallClock();var saved=state()
         saved.workPackage=try XCTUnwrap(definition().quote(level:1,now:wall.now));saved.workPackage?.autoRenew=true
         XCTAssertEqual(saved.workPackage?.level,0);wall.now=saved.workPackage!.endTime
-        let engine=PetEngine(state:saved,catalog:PetCatalog(packages:[definition()]),wallClock:wall)
+        let engine=PetEngine(state:saved,catalog:PetCatalog(packages:[definition()]),wallClock:wall);saved=engine.state
         _=engine.perform(.renewPackages);XCTAssertEqual(engine.state,saved)
     }
     func testInvalidContractRejectedAndOldCatalogDecode() throws {

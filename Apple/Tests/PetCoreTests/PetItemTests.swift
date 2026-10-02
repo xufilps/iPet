@@ -35,7 +35,7 @@ final class PetItemTests: XCTestCase {
         XCTAssertEqual(engine.drainEvents().count,1)
         XCTAssertFalse(engine.perform(.buyItem("missing",mode:.inventory)).accepted)
         var full=PetState();full.inventory["item"]=1000000
-        let blocked=PetEngine(state:full,catalog:PetCatalog(items:[item]));XCTAssertFalse(blocked.perform(.buyItem("item",mode:.inventory)).accepted);XCTAssertEqual(blocked.state,full)
+        let blocked=PetEngine(state:full,catalog:PetCatalog(items:[item]));full=blocked.state;XCTAssertFalse(blocked.perform(.buyItem("item",mode:.inventory)).accepted);XCTAssertEqual(blocked.state,full)
     }
     func testAllRealItemsCanApplyAndValidate() throws {
         let apple=URL(fileURLWithPath:#filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()

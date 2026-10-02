@@ -20,6 +20,7 @@ final class PetSimulationSettingTests:XCTestCase {
         var state=PetState();state.inventory["item"]=1;state.feeling=20;state.money=0
         let item=ItemDefinition(id:"item",name:"物品",price:1000,feeling:10)
         let engine=PetEngine(state:state,catalog:PetCatalog(items:[item]),wallClock:FixedWallClock())
+        state=engine.state
         engine.configureSimulation(enabled:false,fixedMood:.normal)
         XCTAssertTrue(engine.perform(.buyItem("item",mode:.useImmediately)).accepted)
         XCTAssertEqual(engine.state,state);XCTAssertEqual(engine.drainEvents().count,1)

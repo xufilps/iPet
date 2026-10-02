@@ -4,8 +4,9 @@ final class PetProgressTests:XCTestCase {
     func testPurchasesAndInventoryUseCountOnlySuccessfulOperations() throws {
         let item=ItemDefinition(id:"item",name:"食物",price:8)
         let engine=PetEngine(catalog:PetCatalog(items:[item,ItemDefinition(id:"expensive",name:"昂贵物品",price:1000)]),wallClock:FixedWallClock())
+        let initial=engine.state.progress
         XCTAssertFalse(engine.perform(.useItem("item")).accepted)
-        XCTAssertFalse(engine.perform(.buyItem("expensive",mode:.inventory)).accepted);XCTAssertNil(engine.state.progress)
+        XCTAssertFalse(engine.perform(.buyItem("expensive",mode:.inventory)).accepted);XCTAssertEqual(engine.state.progress,initial)
         _=engine.perform(.buyItem("item",mode:.inventory));_=engine.perform(.useItem("item"))
         let progress=try XCTUnwrap(engine.state.progress)
         XCTAssertEqual(progress.purchased,1);XCTAssertEqual(progress.spent,8);XCTAssertEqual(progress.used,1)

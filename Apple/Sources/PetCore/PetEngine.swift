@@ -32,10 +32,12 @@ public final class PetEngine {
     private var previous: TimeInterval
     private var remainder = 0.0
     private var activeSeconds = 0.0
+    private var evaluation=PetEvaluation()
     private var lastInteraction = 0.0
     public init(state: PetState = PetState(), clock: any PetClock = SystemPetClock(), random: any PetRandom = SeededPetRandom(seed: UInt64.random(in: 0...UInt64.max)), catalog: PetCatalog = PetCatalog(), wallClock: any PetWallClock = SystemPetWallClock()) {
         self.catalog=catalog; self.wallClock=wallClock
         self.state = state; self.clock = clock; self.random = random; previous = clock.now
+        var progress=state.progress ?? PetProgress();evaluation.begin(progress:&progress,now:wallClock.now);self.state.progress=progress
     }
     public func recordPinchStart() { updateProgress { $0.increment("stat_touch_head");$0.increment("stat_touch_body") } }
     public func recordInteraction() { lastInteraction = activeSeconds }
@@ -128,6 +130,7 @@ public final class PetEngine {
         if scheduleEntryID==nil { stopSchedule("已切换手动活动，日程已停止。") }
         if state.activity?.activityID == id { stopActivity(.manual);return result(true,"活动已停止。") }
         stopActivity(.manual);state.resting=false;state.activity=ActivitySession(activityID:id,multiplier:multiplier);state.activity?.scheduleEntryID=scheduleEntryID;lastInteraction=activeSeconds
+        updateProgress { PetEvaluation.started(progress:&$0,work:work) }
         return result(true,"开始\(work.name)（\(multiplier)倍）。")
     }
     /// Applies each unit through the same rule path as a single inventory use.
@@ -187,6 +190,7 @@ public final class PetEngine {
             if work.kind == .work { state.money += bonus } else { state.experience += bonus }
         }
         updateProgress { $0.recordEnd(session:session,work:catalog.activity(for:session),reason:reason,bonus:bonus,date:wallClock.now) }
+        if let work=catalog.activity(for:session) { updateProgress { PetEvaluation.ended(progress:&$0,kind:work.kind,reason:reason,earned:session.earned,bonus:bonus) } }
         state.activity=nil
         events.append(.activityStopped(id:session.activityID,reason:reason,earned:session.earned,bonus:bonus))
         if let owner=session.scheduleEntryID,let schedule=state.schedule,schedule.phase == .activity,schedule.currentEntryID==owner {
@@ -262,6 +266,7 @@ public final class PetEngine {
         // Random.Next(0,1) is always zero in C#; do not add random health loss.
         if state.drink <= 25 { state.experience -= t }
         updateProgress { $0.recordSample(state:state,catalog:catalog,mood:sampledMood) }
+        var progress=state.progress ?? PetProgress();evaluation.advance(progress:&progress,now:wallClock.now,seconds:15);state.progress=progress
         if state.mood == .ill, let session=state.activity, catalog.activity(for:session) != nil { stopActivity(.stateFailed) }
     }
 }

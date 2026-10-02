@@ -15,6 +15,7 @@ final class PetBulkItemTests:XCTestCase {
     func testClampAndRejectPreserveInventory() {
         var state=PetState();state.inventory=["item":2,"unknown":3]
         let engine=PetEngine(state:state,catalog:PetCatalog(items:[ItemDefinition(id:"item",name:"物品",price:0)]))
+        state=engine.state // Startup registers the active day before these rejected commands.
         XCTAssertEqual(engine.useItems(id:"item",count:0).used,0)
         XCTAssertEqual(engine.useItems(id:"item",count:-1).used,0)
         XCTAssertEqual(engine.useItems(id:"unknown",count:1).used,0);XCTAssertEqual(engine.state,state)

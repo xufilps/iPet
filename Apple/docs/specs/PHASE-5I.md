@@ -10,4 +10,6 @@
 
 验证：固定时钟、日期、时区，跨月/跨年/DST、同日与断日、修剪边界、启动暂停恢复计数、自然/手动结束收益、Play归Study、保存往返及旧记录不推算；RED→GREEN完整Swift/Python、macOS/iOS/严格签名。工程再生成一致、README原7775字节/LICENSE、文档/diff、自查/6.1-sol审查限额明确。计划先提交，完成分批提交推送。最终实机和压力留最后；第五阶段完成后停止，不进入第六阶段。
 
-进度：计划检查点，待测试与实现。
+进度：核心及统计页面实现；自动验证见下，真实页面与系统日期操作待最终验收。
+
+实现依据：PetEvaluation.swift、PetEngine启动/15秒采样/活动开始结束、StatisticsView；7项固定输入回归，RED phase5i-red.log类型缺失→GREEN。全套phase5i-full-suite.log/phase5i-suite-green.log定位启动登记使旧快照失效，8项原测试保留业务不变断言、改以初始化后状态为基准；新测试单独断言启动登记、恢复不重复和没有离线采样。最终phase5i-final.log；独立6.1-sol审查受线程限额无法启动，作者按计数、日期窗口与收益来源自查，不能替代实机。

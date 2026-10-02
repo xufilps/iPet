@@ -8,6 +8,36 @@ struct StatisticsView:View {
             VStack(alignment:.leading,spacing:12) {
                 Text("统计从本版本实际操作开始；未导入或估算旧历史。仅记录已实现的经济与活动入口。").font(.caption).foregroundStyle(.secondary)
                 if let progress=model.state.progress {
+                    let evaluation=PetEvaluation().summary(progress:progress,now:Date())
+                    Text("本地陪伴统计（升级后开始记录）").font(.headline)
+                    Text("活跃 \(number(evaluation.activeDays)) 天 · 最近记录连续 \(number(evaluation.streak)) 天 · 最长连续 \(number(evaluation.longestStreak)) 天")
+                    Text("本日 \(number(evaluation.todaySeconds/60)) 分钟 · 本月 \(number(evaluation.monthSeconds/60)) 分钟")
+                    Text("含今天最近7天 \(number(evaluation.recent7Seconds/60)) 分钟 · 最近30天 \(number(evaluation.recent30Seconds/60)) 分钟")
+                    Text("最长单次会话 \(number(evaluation.longestSessionSeconds/60)) 分钟（只计养成采样时间，睡眠/退出不补算）").font(.caption)
+                    Text("打开应用即登记活跃日；每15秒养成计算累计时长，关闭养成不累计。日期按本地公历；修改日期/时区可改变连续记录，旧历史不回填。").font(.caption).foregroundStyle(.secondary)
+                    if let counters=progress.counters {
+                        ForEach(["work","study"],id:\.self) { type in
+                            let started=counters["eval_"+type+"_started",default:0]
+                            let completed=counters["eval_"+type+"_completed",default:0]
+                            let rate=started>0 ? completed/started:0
+                            Text("\(type == "work" ? "工作":"学习（含娱乐）")：启动 \(number(started)) 次 · 完成 \(number(completed)) 次 · 完成/启动 \(number(rate*100))% · 结束收益 \(number(counters[type == "work" ? "eval_work_total_money":"eval_study_total_exp",default:0])) \(type == "work" ? "金币":"经验")").font(.caption)
+                        }
+                        Text("原版评价口径：娱乐归入学习；进行中项目已算启动，结束收益完成时含奖金，其它结束只含已获基础收益。此统计不上传Steam，也不构成人格评分。").font(.caption).foregroundStyle(.secondary)
+                        let projects=counters.keys.filter { $0.hasPrefix("eval_work_project_") || $0.hasPrefix("eval_study_project_") }.sorted()
+                        ForEach(projects,id:\.self) { key in
+                            if key.hasSuffix("_project_name_untracked") {
+                                Text("超长项目名称未逐项记录：\(number(counters[key,default:0])) 次，仍包含在分类汇总。").font(.caption)
+                            } else {
+                                let work=key.hasPrefix("eval_work_project_")
+                                let encoded=String(key.dropFirst(work ? "eval_work_project_".count:"eval_study_project_".count))
+                                Text("\(work ? "工作":"学习/娱乐") · \(encoded.removingPercentEncoding ?? encoded)：启动 \(number(counters[key,default:0])) 次").font(.caption)
+                            }
+                        }
+                        let months=Array(counters.keys.filter { $0.hasPrefix("eval_month_") }.sorted().suffix(12))
+                        if !months.isEmpty { Text("最近12个有记录月份（更早记录仍保存在存档）").font(.caption.bold()) }
+                        ForEach(months,id:\.self) { key in Text("\(String(key.dropFirst("eval_month_".count)))：\(number(counters[key,default:0]/60)) 分钟").font(.caption) }
+                    }
+                    Divider()
                     Text("购买 \(progress.purchased) 件 · 使用 \(progress.used) 件 · 实际支出 \(number(progress.spent)) 金币")
                     Text("活动金币收入 \(number(progress.moneyEarned)) · 活动经验收入 \(number(progress.experienceEarned))（含完成奖金）")
                     Text("工作 \(number(progress.workSeconds/60)) 分钟 · 学习 \(number(progress.studySeconds/60)) 分钟 · 娱乐 \(number(progress.playSeconds/60)) 分钟")
