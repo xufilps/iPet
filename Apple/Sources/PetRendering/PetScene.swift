@@ -52,6 +52,7 @@ import PetCore
     private var timeline: AnimationTimeline?
     private var sideHideMain:AnimationClip?
     private var sideHideReturning=false
+    private(set) var raisedCycles:Int?
     private var random: any PetRandom
     private var transitionSteps: [PetMoodTransition] = []
     private var transitionTarget: PetMood?
@@ -79,6 +80,32 @@ import PetCore
     public func canRaise(at point: CGPoint, mood: PetMood) -> Bool {
         manifest.regions["raised:"+mood.rawValue]?.contains(x:Double(point.x),y:Double(size.height-point.y)) == true
     }
+    public func beginRaise(mood:PetMood) {
+        play(.raised,mood:mood)
+        guard let clip=manifest.clips.first(where: { $0.action == .raised && $0.graphID == "raised.dynamic" && $0.mood == mood })
+            ?? manifest.clips.first(where: { $0.action == .raised && $0.graphID == "raised.dynamic" && $0.mood == .normal }) else {
+            onDiagnostic?("动态提起动画缺失，回静态提起。");return
+        }
+        raisedCycles=0;requestedGraphID="raised.dynamic"
+        if clip.mood != mood { onDiagnostic?("动态提起状态回退：\(mood.rawValue)") }
+        timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:false);installTimeline()
+    }
+    public func updateRaiseMotion(distance:Double) {
+        guard requestedAction == .raised,distance.isFinite,distance>20 else { return }
+        if let cycle=raisedCycles { if cycle>=1 { raisedCycles=0 } }
+        else if currentPhase != .end { beginRaise(mood:mood) }
+    }
+    public func finishRaise() {
+        guard requestedAction == .raised else { return }
+        raisedCycles=nil
+        let clip=manifest.clips.first { $0.action == .raised && $0.graphID == "raised.static" && $0.mood == mood }
+            ?? manifest.clips.first { $0.action == .raised && $0.graphID == "raised.static" && $0.mood == .normal }
+            ?? manifest.resolve(action:.raised,mood:mood)
+        let end=clip.stages.filter { $0.phase == .end }
+        guard !end.isEmpty else { play(.idle,mood:mood);onActionFinished?(.raised);return }
+        requestedGraphID="raised.static"
+        timeline=AnimationTimeline(clip:AnimationClip(graphID:clip.graphID,action:clip.action,mood:clip.mood,stages:end),looping:false);installTimeline()
+    }
     public func playTouch(_ action: PetAction, mood: PetMood) {
         if [.head,.body].contains(action), requestedAction == action, let current=timeline, current.clip.action == action {
             if current.stage.phase == .start { return }
@@ -87,7 +114,7 @@ import PetCore
         play(action,mood:mood)
     }
     public func play(_ action: PetAction, mood: PetMood) {
-        sideHideMain=nil;sideHideReturning=false
+        sideHideMain=nil;sideHideReturning=false;raisedCycles=nil
         transitionSteps=[];transitionTarget=nil
         isFinishingActivity=false; requestedGraphID=nil
         requestedAction = action; self.mood = mood
@@ -131,7 +158,7 @@ import PetCore
     public var isMovementAnimation:Bool { timeline.map { [.walkLeft,.walkRight,.climb].contains($0.clip.action) } ?? false }
     public var currentPhase:AnimationPhase? { timeline?.stage.phase }
     public func playMovement(_ action:PetAction,graphID:String,mood:PetMood) {
-        sideHideMain=nil;sideHideReturning=false
+        sideHideMain=nil;sideHideReturning=false;raisedCycles=nil
         transitionSteps=[];transitionTarget=nil;isFinishingActivity=false
         requestedAction=action;requestedGraphID=graphID;self.mood=mood
         let clip=manifest.clips.first { $0.action==action && $0.graphID==graphID && $0.mood==mood }
@@ -146,7 +173,7 @@ import PetCore
             ?? manifest.clips.first(where: { $0.action == .sideHide && $0.graphID == graphID && $0.mood == .normal }) else {
             onDiagnostic?("侧挂动画缺失：\(graphID)/\(mood.rawValue)");play(.idle,mood:mood);return false
         }
-        transitionSteps=[];transitionTarget=nil;isFinishingActivity=false
+        transitionSteps=[];transitionTarget=nil;isFinishingActivity=false;raisedCycles=nil
         requestedAction = .sideHide;requestedGraphID=graphID;self.mood=mood
         if clip.mood != mood { onDiagnostic?("侧挂状态回退：\(graphID)/\(mood.rawValue)") }
         sideHideMain=clip;sideHideReturning=false
@@ -191,10 +218,10 @@ import PetCore
     public func finishSideHide() {
         guard requestedAction == .sideHide,let main=sideHideMain else { return }
         // Recovery from Main or Rise always plays Main C directly.
-        sideHideMain=nil;sideHideReturning=false;installSideHideEnd(main)
+        sideHideMain=nil;sideHideReturning=false;raisedCycles=nil;installSideHideEnd(main)
     }
     public func playFidget(graphID: String, mood: PetMood) {
-        sideHideMain=nil;sideHideReturning=false
+        sideHideMain=nil;sideHideReturning=false;raisedCycles=nil
         transitionSteps=[];transitionTarget=nil
         isFinishingActivity=false;requestedAction = .fidget;requestedGraphID=graphID;self.mood=mood
         let clip=manifest.clips.first { $0.action == .fidget && $0.graphID == graphID && $0.mood == mood }
@@ -204,7 +231,7 @@ import PetCore
         timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:false);installTimeline()
     }
     public func playActivity(graphID: String, mood: PetMood) {
-        sideHideMain=nil;sideHideReturning=false
+        sideHideMain=nil;sideHideReturning=false;raisedCycles=nil
         transitionSteps=[];transitionTarget=nil
         isFinishingActivity=false;requestedAction = .activity;requestedGraphID=graphID;self.mood=mood
         let clip=manifest.resolveActivity(graphID:graphID,mood:mood)
@@ -263,6 +290,12 @@ import PetCore
             timeline?.advance(delta)
         }
         if timeline?.finished == true {
+            if requestedAction == .raised,let cycle=raisedCycles,let clip=timeline?.clip {
+                if cycle<2 {
+                    raisedCycles=cycle+1;timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:false);installTimeline()
+                } else { play(.raised,mood:mood) }
+                return
+            }
             if sideHideReturning,sideHideMain != nil { restoreSideHideLoop();return }
             let completed = requestedAction
             if !transitionSteps.isEmpty { installNextTransition();return }
@@ -294,7 +327,7 @@ import PetCore
                     if requestedAction != .idle {
                         let completed=requestedAction, target=transitionTarget
                         play(.idle,mood:target ?? mood)
-                        if target != nil || [.walkLeft,.walkRight,.climb,.sideHide].contains(completed) { onActionFinished?(completed) }
+                        if target != nil || [.walkLeft,.walkRight,.climb,.sideHide,.raised].contains(completed) { onActionFinished?(completed) }
                         return
                     }
                 }

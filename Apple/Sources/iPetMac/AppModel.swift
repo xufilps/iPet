@@ -120,12 +120,13 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
             self.toolbar?.hide()
             self.recordAcceptanceInput("drag-start")
             self.engine.recordInteraction(); self.autonomy.reset(); self.autonomousUntil = 0
-            self.cancelMovement(reposition:false); self.petScene.play(.raised, mood: self.state.mood)
+            self.cancelMovement(reposition:false); self.petScene.beginRaise(mood:self.engine.state.mood)
         }
+        petView.onDragMotion = { [weak self] distance in self?.petScene.updateRaiseMotion(distance:distance) }
         petView.onDragEnd = { [weak self] in
             guard let self else { return }
             self.needsEdgeRecovery=false;self.edgeScreen=nil
-            if !self.beginSideHide() { self.petScene.finishAction();self.clampPosition() };self.persistPosition()
+            if !self.beginSideHide() { self.petScene.finishRaise();self.clampPosition() };self.persistPosition()
             self.recordAcceptanceInput("drag-end")
         }
         if let x = UserDefaults.standard.object(forKey: "petX") as? Double, let y = UserDefaults.standard.object(forKey: "petY") as? Double {

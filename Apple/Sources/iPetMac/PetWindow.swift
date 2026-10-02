@@ -16,6 +16,8 @@ final class PetPanel: NSPanel {
     var onTouch: ((String?) -> Void)?
     var onDragStart: (() -> Void)?
     var onDragEnd: (() -> Void)?
+    var onDragMotion: ((Double) -> Void)?
+    private var lastDragPoint:NSPoint?
     private var origin: NSPoint?
     private var mouseOrigin: NSPoint?
     private var gesture = PetPointerGesture()
@@ -42,7 +44,7 @@ final class PetPanel: NSPanel {
     func cancelInteraction() {
         pressTask?.cancel();pressTask=nil
         let lifted=gesture.isLifted
-        gesture.cancel();origin=nil;mouseOrigin=nil;lastViewPoint=nil
+        gesture.cancel();origin=nil;mouseOrigin=nil;lastViewPoint=nil;lastDragPoint=nil
         if lifted { onDragEnd?() }
     }
     override func viewDidMoveToWindow() {
@@ -52,7 +54,7 @@ final class PetPanel: NSPanel {
     override func mouseDown(with event: NSEvent) {
         logInput(event);cancelInteraction()
         guard let window else { return }
-        origin=window.frame.origin;mouseOrigin=window.convertPoint(toScreen:event.locationInWindow)
+        origin=window.frame.origin;mouseOrigin=window.convertPoint(toScreen:event.locationInWindow);lastDragPoint=mouseOrigin
         lastViewPoint=convert(event.locationInWindow,from:nil)
         gesture.begin(x:Double(mouseOrigin!.x),y:Double(mouseOrigin!.y),time:ProcessInfo.processInfo.systemUptime)
         onPressBegin?()
@@ -68,6 +70,10 @@ final class PetPanel: NSPanel {
         lastViewPoint=convert(event.locationInWindow,from:nil)
         let current=window.convertPoint(toScreen:event.locationInWindow)
         if gesture.move(x:Double(current.x),y:Double(current.y)) { pressTask?.cancel();onDragStart?() }
+        if gesture.isLifted,let previous=lastDragPoint {
+            onDragMotion?((abs(current.x-previous.x)+abs(current.y-previous.y))*500/max(1,window.frame.width))
+        }
+        lastDragPoint=current
         if gesture.isLifted { window.setFrameOrigin(NSPoint(x:origin.x+current.x-mouseOrigin.x,y:origin.y+current.y-mouseOrigin.y)) }
     }
     override func mouseUp(with event: NSEvent) {
@@ -75,7 +81,7 @@ final class PetPanel: NSPanel {
         lastViewPoint=convert(event.locationInWindow,from:nil)
         checkLongPress();pressTask?.cancel();pressTask=nil
         let released=gesture.release()
-        origin=nil;mouseOrigin=nil;lastViewPoint=nil
+        origin=nil;mouseOrigin=nil;lastViewPoint=nil;lastDragPoint=nil
         switch released {
         case .drop: onDragEnd?()
         case .tap: onTouch?(petScene?.region(at:scenePoint(convert(event.locationInWindow,from:nil))))

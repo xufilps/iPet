@@ -55,7 +55,8 @@ def convert(source, destination):
         return {'z': z, 'frames': frames}
     clips = []
     diagnostics = []
-    roots = [(action,subtree,subtree.split("/")[-1] if action in ("walkLeft","walkRight") else None) for action,subtree in ACTIONS.items()]
+    roots = [(action,subtree,subtree.split("/")[-1] if action in ("walkLeft","walkRight") else "raised.static" if action=="raised" else None) for action,subtree in ACTIONS.items()]
+    roots += [('raised','Raise/Raised_Dynamic','raised.dynamic')]
     roots += [(action,'MOVE/'+graph,graph) for action,side in [('walkLeft','left'),('walkRight','right')] for graph in ['walk.'+side+'.faster','walk.'+side+'.slow','crawl.'+side]]
     roots += [('sideHide','SideHide_'+side+'_'+kind,'sidehide.'+side.lower()+('' if kind=='Main' else '.rise')) for side in ['Left','Right'] for kind in ['Main','Rise']]
     roots += [('climb','MOVE/'+graph,graph) for graph in ['climb.left','climb.right','climb.top.left','climb.top.right','fall.left','fall.right']]
@@ -77,9 +78,9 @@ def convert(source, destination):
             if not matching:
                 continue  # Renderer explicitly falls back to Nomal/idle.
             stages = []
-            if action in ('idle','stateUp','stateDown'):
+            if action in ('idle','stateUp','stateDown') or graph=='raised.dynamic':
                 stage = {'phase': 'loop', 'layers': [layer(matching[0], 0)], 'foodTrack': []}
-                if action == 'idle' and len(matching)>1:
+                if (action == 'idle' or graph=='raised.dynamic') and len(matching)>1:
                     stage['variants'] = [[layer(path,0)] for path in matching[1:]]
                 stages = [stage]
             else:
@@ -92,7 +93,7 @@ def convert(source, destination):
                         stages.append(stage)
             if stages:
                 clips.append({'action': action, 'mood': mode, 'stages': stages, **({'graphID': graph} if graph else {})})
-                if graph and len(stages)<3: diagnostics.append(f'{graph}/{mode}: available phases '+','.join(x['phase'] for x in stages))
+                if graph and graph!='raised.dynamic' and len(stages)<3: diagnostics.append(f'{graph}/{mode}: available phases '+','.join(x['phase'] for x in stages))
     # FoodAnimation is a sandwich of synchronized back/front frames and an item track.
     for action, subtree in [('eat', 'Eat'), ('drink', 'Drink'), ('gift', 'Gift')]:
         root = pet / subtree
