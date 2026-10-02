@@ -260,6 +260,10 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     }
     func perform(_ command: PetEconomyCommand) {
         switch command {
+        case .schedule(.start),.schedule(.resume):
+            guard packageOperationsEnabled else { message="请先恢复存档写入，再启动或继续日程。";return }
+        case .resumeActivity where engine.state.activity?.scheduleEntryID != nil:
+            guard packageOperationsEnabled else { message="请先恢复存档写入，再继续日程活动。";return }
         case .signPackage,.setPackageAutoRenew,.renewPackages:
             guard packageOperationsEnabled else { message="套餐操作已暂停，请检查存档写入和背包使用状态。";return }
             let response=engine.perform(command);state=engine.state;message=response.message
@@ -319,7 +323,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         return PetItemRules.multiplier(category:item.category,expiry:state.itemCooldowns[id],now:Date())
     }
     @discardableResult private func consumeEvents() -> Bool {
-        var usedItem = false, stopped = false
+        var usedItem = false, stopped = false, scheduleChanged=false
         let events=engine.drainEvents()
         let lastUsed=events.compactMap { event -> String? in if case let .itemUsed(id)=event { return id };return nil }.last
         for event in events {
@@ -330,6 +334,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
                 let unit=catalog.activity(id)?.kind == .work ? "金币" : "经验"
                 let reasonText=reason == .completed ? "完成" : reason == .manual ? "结束" : "因状态不佳停止"
                 message="\(title)\(reasonText)，已获\(earned.formatted(.number.precision(.fractionLength(2))))\(unit)，完成奖励\(bonus.formatted(.number.precision(.fractionLength(2))))。"
+            case .scheduleChanged(let notice): scheduleChanged=true;message=notice
             case .itemUsed: break
             }
         }
@@ -341,9 +346,11 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
                     petScene.play(action,mood:engine.presentationMood)
                 }
         }
-        if stopped {
+        if stopped || scheduleChanged {
             state = engine.state
-            if !usedItem && !petScene.finishActivity() { restoreBaseAnimation() }
+            if stopped {
+                if !usedItem && !petScene.finishActivity() { restoreBaseAnimation() }
+            } else if !usedItem { cancelMovement();autonomy.reset();restoreBaseAnimation(force:true) }
             save()
         }
         return usedItem
@@ -412,6 +419,9 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
             else if let screen=companionScreen { speech.updatePosition(petFrame:speechAnchor,screen:screen) }
         }
         let oldMood = engine.presentationMood
+        if (!writable || packageWriteFailed),engine.state.schedule?.isRunning == true,engine.state.schedule?.isPaused == false {
+            _=engine.perform(.schedule(.pause))
+        }
         engine.tick()
         petScene.setPlaybackMood(engine.presentationMood)
         consumeEvents()
@@ -595,7 +605,11 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     @discardableResult func save() -> Bool {
         guard writable else { return false }
         do { try store.save(engine.state);packageWriteFailed=false;return true }
-        catch { message = "保存失败：\(error.localizedDescription)"; NSLog("%@", message);return false }
+        catch {
+            packageWriteFailed=true
+            if engine.state.schedule?.isRunning == true,engine.state.schedule?.isPaused == false { _=engine.perform(.schedule(.pause));state=engine.state }
+            message = "保存失败：\(error.localizedDescription)";NSLog("%@",message);return false
+        }
     }
     func stop() { cancelInventoryUse();cancelMovement();speech.hide();toolbar?.hide();petView?.cancelInteraction();timer?.cancel(); if engine != nil { save() }; persistPositionIfReady() }
     private func persistPositionIfReady() { if petPanel != nil { persistPosition() } }

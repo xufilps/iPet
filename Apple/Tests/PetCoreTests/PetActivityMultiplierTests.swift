@@ -91,8 +91,8 @@ final class PetActivityMultiplierTests:XCTestCase {
         let loaded=try XCTUnwrap(store.load());XCTAssertEqual(loaded.activity?.effectiveMultiplier,1)
         try store.save(loaded)
         XCTAssertEqual(try Data(contentsOf:XCTUnwrap(store.migrationBackupURL)),legacy)
-        let header=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:store.primary)) as? [String:Any]);XCTAssertEqual(header["version"] as? Int,6)
+        let header=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:store.primary)) as? [String:Any]);XCTAssertEqual(header["version"] as? Int,7)
         state.activity?.multiplier=401;XCTAssertThrowsError(try state.validate())
-        try Data("{\"version\":7}".utf8).write(to:store.primary);XCTAssertThrowsError(try store.save(loaded))
+        try Data("{\"version\":8}".utf8).write(to:store.primary);XCTAssertThrowsError(try store.save(loaded))
     }
 }

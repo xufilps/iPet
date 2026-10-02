@@ -23,7 +23,7 @@ public enum PetScheduleEdit: Sendable {
     case remove(Int)
     case move(Int, offset:Int)
 }
-/// Queue only: execution and user-save integration are added by the schedule engine.
+/// Queue editor; PetEngine owns execution and versioned user-save integration.
 /// IDs survive reorder/removal; unknown activity IDs survive decoding for explicit diagnostics.
 public struct PetScheduleQueue: Codable, Equatable, Sendable {
     public private(set) var entries: [PetScheduleEntry] = []
@@ -87,6 +87,10 @@ public struct PetScheduleQueue: Codable, Equatable, Sendable {
         } catch { return response(false,"日程数量、等待时长或编号达到上限，未修改队列。") }
         self=next
         return response(true,"日程队列已更新。")
+    }
+    mutating func setMultiplier(_ multiplier:Int,for id:Int) throws {
+        guard (1...400).contains(multiplier),let index=entries.firstIndex(where: { $0.id==id }),entries[index].activityID != nil else { throw PetSaveError.invalidState }
+        entries[index].multiplier=multiplier
     }
     private mutating func insert(_ entry:PetScheduleEntry,at index:Int) throws {
         guard entries.count<1000,nextID<=1_000_000_000_000 else { throw PetSaveError.invalidState }

@@ -99,8 +99,8 @@ final class PetPackageTests:XCTestCase {
         let legacy=try JSONSerialization.data(withJSONObject:object);try FileManager.default.createDirectory(at:dir,withIntermediateDirectories:true);try legacy.write(to:store.primary)
         let loaded=try XCTUnwrap(store.load());XCTAssertNil(loaded.workPackage)
         try store.save(loaded);XCTAssertEqual(try Data(contentsOf:XCTUnwrap(store.migrationBackupURL)),legacy)
-        let header=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:store.primary)) as? [String:Any]);XCTAssertEqual(header["version"] as? Int,6)
-        let future=Data("{\"version\":7}".utf8);try future.write(to:store.primary)
+        let header=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:store.primary)) as? [String:Any]);XCTAssertEqual(header["version"] as? Int,7)
+        let future=Data("{\"version\":8}".utf8);try future.write(to:store.primary)
         XCTAssertThrowsError(try store.save(saved));XCTAssertEqual(try Data(contentsOf:store.primary),future)
     }
 }
