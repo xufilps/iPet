@@ -2,6 +2,14 @@ import XCTest
 import PetCore
 @testable import PetRendering
 final class PetWalkTests:XCTestCase {
+    func testCompatibleSubsetNeverReversesAtTheEdge() throws {
+        let screen=CGRect(x:0,y:0,width:1000,height:800),pet=CGRect(x:400,y:50,width:250,height:250)
+        let plan=try XCTUnwrap(PetWalkPlan.make(left:true,crawl:false,mood:.normal,pet:pet,screen:screen))
+        let pool=plan.compatible(mood:.normal,pet:pet,screen:screen)
+        XCTAssertEqual(Set(pool.map(\.graphID)),Set(["walk.left","crawl.left"]))
+        XCTAssertTrue(pool.allSatisfy { $0.action == .walkLeft })
+        XCTAssertTrue(plan.compatible(mood:.normal,pet:CGRect(x:50,y:50,width:250,height:250),screen:screen).isEmpty)
+    }
     func testBlockedDirectionReversesOrRejectsNarrowScreen() throws {
         let screen=CGRect(x:-1000,y:50,width:1000,height:800),pet=CGRect(x:-950,y:100,width:250,height:250)
         let plan=try XCTUnwrap(PetWalkPlan.make(left:true,crawl:false,mood:.normal,pet:pet,screen:screen))

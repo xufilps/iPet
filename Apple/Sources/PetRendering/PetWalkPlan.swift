@@ -7,6 +7,7 @@ import PetCore
 public struct PetWalkPlan:Sendable {
     public let action:PetAction
     public let graphID:String
+    public var distance:Int { graphID.hasPrefix("crawl.") ? 8 : graphID.hasSuffix(".faster") || graphID.hasSuffix(".slow") ? 5 : 7 }
     private let speed:Double
     public static func make(left:Bool,crawl:Bool,mood:PetMood,pet:CGRect,screen:CGRect) -> Self? {
         guard mood != .ill,pet.width.isFinite,pet.width>0,!screen.isEmpty,screen.contains(pet) else { return nil }
@@ -18,6 +19,12 @@ public struct PetWalkPlan:Sendable {
         let graph=crawl ? "crawl."+suffix : "walk."+suffix+(mood == .happy ? ".faster" : mood == .poor ? ".slow" : "")
         let speed=crawl ? 10.0 : mood == .happy ? 20 : mood == .poor ? 10 : 14
         return Self(action:direction ? .walkLeft : .walkRight,graphID:graph,speed:direction ? -speed : speed)
+    }
+    public func compatible(mood:PetMood,pet:CGRect,screen:CGRect) -> [Self] {
+        [false,true].compactMap { crawl in
+            guard let plan=Self.make(left:action == .walkLeft,crawl:crawl,mood:mood,pet:pet,screen:screen),plan.action==action else { return nil }
+            return plan
+        }
     }
     /// Nil ends movement. Does not accumulate suspended time or move outside the screen.
     public func advance(pet:CGRect,screen:CGRect,seconds:Double) -> CGRect? {

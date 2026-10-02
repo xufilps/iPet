@@ -19,6 +19,40 @@ final class ActivityRenderingTests: XCTestCase {
             XCTAssertNil(scene.requestedGraphID);XCTAssertEqual(scene.currentPhase,.start)
         }
     }
+    func testMovementBoundaryEndsWithoutExtraLoopAndReplacementKeepsStart() async throws {
+        let manifest=try PetManifest.load(from:root),assets=root
+        await MainActor.run {
+            let scene=PetScene(manifest:manifest,assetRoot:assets)
+            scene.playMovement(.walkRight,graphID:"crawl.right",mood:.normal)
+            var calls=0
+            scene.onMovementLoop={ calls+=1;return false }
+            scene.update(0)
+            var time=0.0
+            while calls==0 && time<10 { time+=0.25;scene.update(time) }
+            XCTAssertEqual(calls,1);XCTAssertEqual(scene.currentPhase,.end)
+            calls=0
+            scene.playMovement(.walkRight,graphID:"crawl.right",mood:.normal)
+            scene.onMovementLoop={ calls+=1;scene.playMovement(.walkLeft,graphID:"walk.left.faster",mood:.happy);return true }
+            scene.update(time)
+            let limit=time+10
+            while calls==0 && time<limit { time+=0.25;scene.update(time) }
+            XCTAssertEqual(calls,1);XCTAssertEqual(scene.requestedGraphID,"walk.left.faster")
+            XCTAssertEqual(scene.currentPhase,.start)
+            scene.onMovementLoop=nil
+        }
+    }
+    func testMissingAllMovementClipsReturnsToIdleSelection() async throws {
+        var object=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:root.appendingPathComponent("manifest.json"))) as? [String:Any])
+        let clips=try XCTUnwrap(object["clips"] as? [[String:Any]])
+        object["clips"]=clips.filter { !["walkLeft","walkRight"].contains($0["action"] as? String ?? "") }
+        let manifest=try JSONDecoder().decode(PetManifest.self,from:JSONSerialization.data(withJSONObject:object)),assets=root
+        await MainActor.run {
+            let scene=PetScene(manifest:manifest,assetRoot:assets)
+            scene.playMovement(.walkRight,graphID:"crawl.right",mood:.normal)
+            XCTAssertEqual(scene.requestedAction,.idle)
+            XCTAssertFalse(scene.isMovementAnimation)
+        }
+    }
     var root: URL { URL(fileURLWithPath:#filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Resources/PetAssets") }
     func testRepeatTouchPreservesStartAndContinuesOnlyOneLoop() throws {
         let manifest=try PetManifest.load(from:root)

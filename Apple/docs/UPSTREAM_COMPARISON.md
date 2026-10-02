@@ -37,7 +37,7 @@
 | 联机/对话生态 | MutiPlayer接口；TalkBox及插件可扩展对话 | 无联机、AI服务或网络对话 | 不将插件能力视为内置AI已移植 | 尚未迁移 | U9、U12、U14 → A1 | 5研究 |
 | iOS | 本基线Windows工程，无原生iOS产品 | PetCore/PetRendering Simulator编译通过，无iOS界面/真机证据 | 移动应用内养宠另做前后台适配 | 待验证 | U1 → A6 | 6 |
 | 发行与许可证 | 原README渠道及Apache代码/独立素材授权 | GitHub源码、自用ad-hoc构建；原署名/许可随包，无签名公证发行包 | 发行准备未完成；素材授权独立 | 部分实现 | 原README、LICENSE → A5、A7 | 0、6 |
-| 性能和稳定性 | 原版实现不能单凭源码推断性能 | 缓存估算48MiB、按帧加载；v0.1历史120秒观察；当前共70个Swift测试，短时实机记录不替代长期观察；两小时留到功能完善后 | 无同条件Windows对照，不能声称更省资源/稳定 | 待验证 | U8 → A3、A7 | 1 |
+| 性能和稳定性 | 原版实现不能单凭源码推断性能 | 缓存估算48MiB、按帧加载；v0.1历史120秒观察；当前共75个Swift测试，短时实机记录不替代长期观察；两小时留到功能完善后 | 无同条件Windows对照，不能声称更省资源/稳定 | 待验证 | U8 → A3、A7 | 1 |
 
 ## 2026-10-02 逐功能复核补充
 
@@ -110,3 +110,9 @@
 新增快走、慢走、左右爬行与阶段变体，共87组合/2672唯一PNG/338.7MiB。依据vup.lps水平move与GraphHelper.Move：普通14、快走20、慢走/爬行10逻辑像素每125ms；本版按size/500换算并平滑到帧间隔。起步方向距离不足200逻辑像素时尝试反方向，均不足不启动；继续接近100逻辑像素边界停止，位移仅循环阶段，Ill仍禁自主移动。几何和Graph阶段验证通过，不等于全部随机场景实机确认。源码见[PetWalkPlan](../Sources/PetRendering/PetWalkPlan.swift)、[PetScene](../Sources/PetRendering/PetScene.swift)、[转换器](../scripts/convert_assets.py)，详见[规格](specs/PHASE-3F.md)。
 
 状态“部分实现”：步行/爬行各半选择为适配，未还原原全部ModeType候选抽池、Distance随机循环退出、兼容动作衔接；仍为五秒上限并可因边界提前停止。爬墙、侧边隐藏、跨屏与自定移动范围尚缺，不能据水平边缘检查宣称完整边缘行为。保存v2/清单v3/文本v1不变，压力测试未启动。
+
+## 阶段3G移动循环与水平衔接
+
+已移除阶段3F五秒上限，按实际B循环次数执行原Next(walklength++)<Distance：首轮已接受，Distance7普通走、5快/慢走、8爬行；失败时40%尝试兼容子集。子集保持水平同方向、按200触发距离筛选，包含当前动作；无法衔接则走结束阶段，不追加一轮循环。动作替换使旧动画回调/帧时间失效。源码见[PetMoveCycles](../Sources/PetCore/PetMoveCycles.swift)、[PetWalkPlan](../Sources/PetRendering/PetWalkPlan.swift)及PetScene/AppModel，详见[规格](specs/PHASE-3G.md)。
+
+仍为“部分实现”：原完整候选池含垂直/斜向动作，本版只有状态步行/爬行；Poor普通走候选及StopMoving自动回正尚缺。100安全边缘即时停止时水平子集均不满足200触发距离，不做无意义反转；不保证.NET相同随机种子序列。初始步行/爬行各半仍是适配，爬墙、侧边隐藏/跨屏和最终实机/长期门槛继续保留。

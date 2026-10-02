@@ -45,6 +45,8 @@ import PetCore
     public private(set) var requestedAction = PetAction.idle
     public private(set) var mood = PetMood.normal
     public var onIdleCycle: (() -> Void)?
+    public var onMovementLoop:(()->Bool)?
+    private var timelineGeneration=0
     public var onActionFinished: ((PetAction) -> Void)?
     public var onDiagnostic: ((String) -> Void)?
     private var timeline: AnimationTimeline?
@@ -92,6 +94,7 @@ import PetCore
         installTimeline()
     }
     private func installTimeline() {
+        timelineGeneration &+= 1
         previousTime = nil
         reportedMissingFood = false
         for node in sprites.values { node.removeFromParent() }
@@ -122,6 +125,7 @@ import PetCore
         timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:false)
         installTimeline()
     }
+    public var isMovementAnimation:Bool { timeline.map { [.walkLeft,.walkRight].contains($0.clip.action) } ?? false }
     public var currentPhase:AnimationPhase? { timeline?.stage.phase }
     public func playMovement(_ action:PetAction,graphID:String,mood:PetMood) {
         transitionSteps=[];transitionTarget=nil;isFinishingActivity=false
@@ -130,6 +134,7 @@ import PetCore
             ?? manifest.clips.first { $0.action==action && $0.graphID==graphID && $0.mood == .normal }
             ?? manifest.resolve(action:action,mood:mood)
         if clip.graphID != graphID || clip.mood != mood { onDiagnostic?("移动动画回退：\(graphID)/\(mood.rawValue)") }
+        guard [.walkLeft,.walkRight].contains(clip.action) else { play(.idle,mood:mood);return }
         timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:true);installTimeline()
     }
     public func playFidget(graphID: String, mood: PetMood) {
@@ -187,6 +192,15 @@ import PetCore
             if requestedAction == .idle, let timeline, timeline.stage.phase == .loop {
                 let cycles=Int((timeline.elapsed+delta)/timeline.stage.duration)
                 for _ in 0..<cycles { onIdleCycle?() }
+            }
+            if isMovementAnimation,let current=timeline,current.stage.phase == .loop {
+                let generation=timelineGeneration
+                let cycles=Int((current.elapsed+delta)/current.stage.duration)
+                for _ in 0..<cycles {
+                    let keepGoing=onMovementLoop?() ?? true
+                    if generation != timelineGeneration { return }
+                    if !keepGoing { timeline?.requestFinish();break }
+                }
             }
             timeline?.advance(delta)
         }
