@@ -11,7 +11,7 @@
 | 缺口 | 当前实际行为 | 原版依据 | 建议顺序 |
 | --- | --- | --- | --- |
 | 自主随机行为 | 已实现15秒抽选、两种待机与打盹；特殊待机/扩展池、活动中互动与随机循环退出仍缺 | MainLogic.EventTimer_Elapsed，MainDisplay.DisplayToIdel/StateONE/StateTWO | 1：先建立可测调度，分别考虑空闲、活动、休息、生病和人工互动 |
-| 动画变体与状态过渡 | 71组合并非全部动作；每阶段取首个变体，状态改变直接切基础动画 | PlaySwitchAnimat、Graph/PetLoader；convert_assets.py choices[0] | 2：建立完整资源差距清单，再接入变体和Switch_Up/Down |
+| 动画变体与状态过渡 | 77组合并非全部动作；Default/抚摸/Boring/Squat变体和逐级状态过渡已接入，其余动画变体仍缺 | PlaySwitchAnimat、Graph/PetLoader；convert_assets.py choices[0] | 2：建立完整资源差距清单，再接入变体和Switch_Up/Down |
 | 抚摸/按压细节 | 松开鼠标才触发一次抚摸；没有长按匹配及连续抚摸延长循环 | Main.xaml.cs按压流程、MainDisplay.DisplayToTouchHead/Body | 3：完善输入状态机，与提起/拖动清楚区分 |
 | 说话栏与原文案 | 只有控制面板消息；没有桌宠气泡、低状态文本或选项式聊天 | MessageBar、ClickText/LowText/SelectText、TalkBox | 4：先本地文本与状态提醒，再研究网络对话；不依赖AI服务 |
 | 随宠工具栏 | 功能集中在菜单栏和独立面板，缺贴近桌宠的快捷操作 | ToolBar.xaml/.cs、WorkTimer | 5：原生快捷入口和活动反馈，不复制WPF布局 |
@@ -45,3 +45,5 @@ Steam、工坊、云存档、联机、联网聊天和C#插件需要独立接口/
 真实睡眠/多屏、最低系统/Intel、自然完成及完整动画输入场景仍为待验项目，不是缺少代码的功能。后续依上述顺序形成阶段3具体规格，先推进自主行为；压力测试放在该批功能及修复完成后。此次只更新清单/路线，存档版本、养成规则、资源和应用功能不变，回滚文档提交即可。
 
 阶段3A首批已实现自主抽选、Boring/Squat待机与有限打盹（见规格），仍未完成整项随机行为。下一批继续动画变体与状态过渡，再推进连续抚摸与本地文本。
+
+阶段3B已完成基础变体与状态过渡首批，下一批按顺序推进长按/连续抚摸；活动、移动、进食变体全集与随机循环退出仍待迁移。

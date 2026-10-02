@@ -56,7 +56,7 @@ def convert(source, destination):
     clips = []
     diagnostics = []
     roots = [(action,subtree,None) for action,subtree in ACTIONS.items()]
-    roots += [('fidget', 'IDEL/Boring', 'boring'), ('fidget', 'IDEL/Squat', 'squat')]
+    roots += [('fidget', 'IDEL/Boring', 'boring'), ('fidget', 'IDEL/Squat', 'squat'), ('stateUp','Switch/Up',None),('stateDown','Switch/Down',None)]
     for line in (source/'pet/vup.lps').read_text(encoding='utf-8-sig').splitlines():
         if not line.startswith('work:'): continue
         graph=fields(line)['Graph'].lower()
@@ -74,13 +74,19 @@ def convert(source, destination):
             if not matching:
                 continue  # Renderer explicitly falls back to Nomal/idle.
             stages = []
-            if action == 'idle':
-                stages = [{'phase': 'loop', 'layers': [layer(matching[0], 0)], 'foodTrack': []}]
+            if action in ('idle','stateUp','stateDown'):
+                stage = {'phase': 'loop', 'layers': [layer(matching[0], 0)], 'foodTrack': []}
+                if action == 'idle' and len(matching)>1:
+                    stage['variants'] = [[layer(path,0)] for path in matching[1:]]
+                stages = [stage]
             else:
                 for phase, prefix in [('start', 'a'), ('loop', 'b'), ('end', 'c')]:
                     choices = [p for p in matching if any(part.lower().split('_')[0] == prefix or part.lower().split('_')[-1] == prefix for part in p.relative_to(root).parts)]
                     if choices:
-                        stages.append({'phase': phase, 'layers': [layer(choices[0], 0)], 'foodTrack': []})
+                        stage = {'phase': phase, 'layers': [layer(choices[0], 0)], 'foodTrack': []}
+                        if action in ('head','body','fidget') and len(choices)>1:
+                            stage['variants'] = [[layer(path,0)] for path in choices[1:]]
+                        stages.append(stage)
             if stages:
                 clips.append({'action': action, 'mood': mode, 'stages': stages, **({'graphID': graph} if graph else {})})
                 if graph and len(stages)<3: diagnostics.append(f'{graph}/{mode}: available phases '+','.join(x['phase'] for x in stages))
@@ -119,7 +125,7 @@ def convert(source, destination):
         if line.startswith(('touchhead:', 'touchbody:')):
             f = fields(line)
             regions['head' if line.startswith('touchhead') else 'body'] = {'x': float(f['px']), 'y': float(f['py']), 'width': float(f['sw']), 'height': float(f['sh'])}
-    manifest = {'version': 2, 'diagnostics': diagnostics, 'canvasWidth': 500, 'canvasHeight': 500, 'regions': regions, 'clips': clips}
+    manifest = {'version': 3, 'diagnostics': diagnostics, 'canvasWidth': 500, 'canvasHeight': 500, 'regions': regions, 'clips': clips}
     write_if_changed(destination / 'manifest.json', (json.dumps(manifest, ensure_ascii=False, indent=2) + '\n').encode('utf-8'))
     write_if_changed(destination / 'sources.sha256.json', (json.dumps(records, indent=2, sort_keys=True) + '\n').encode('utf-8'))
     if not any(c['action'] == 'idle' and c['mood'] == 'Nomal' for c in clips):

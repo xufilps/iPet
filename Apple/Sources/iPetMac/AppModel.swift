@@ -212,7 +212,9 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         engine.tick()
         consumeEvents()
         if now - lastUIRefresh >= 0.25 { state = engine.state; lastUIRefresh = now }
-        if oldMood != engine.state.mood && [.idle, .sleep, .activity].contains(petScene.requestedAction) { restoreBaseAnimation() }
+        if oldMood != engine.state.mood {
+            if !petScene.playMoodTransition(from:oldMood,to:engine.state.mood) && [.idle,.sleep,.activity].contains(petScene.requestedAction) { restoreBaseAnimation() }
+        }
         if visible {
             petPanel.ignoresMouseEvents = !petView.isInteracting && !petView.opaqueUnderMouse()
             if !petView.isInteracting && walkingUntil > now && autoMove {

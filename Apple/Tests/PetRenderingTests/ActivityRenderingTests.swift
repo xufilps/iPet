@@ -2,8 +2,77 @@ import XCTest
 @preconcurrency import SpriteKit
 import PetCore
 @testable import PetRendering
+private struct VariantRandom: PetRandom { var value: Double; mutating func unit() -> Double { value } }
 final class ActivityRenderingTests: XCTestCase {
     var root: URL { URL(fileURLWithPath:#filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Resources/PetAssets") }
+    func testUndecodableTransitionFallsBackToTargetMood() async throws {
+        let manifest=try PetManifest.load(from:root)
+        let missing=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        await MainActor.run {
+            let scene=PetScene(manifest:manifest,assetRoot:missing)
+            var finished=0;scene.onActionFinished = { _ in finished += 1 }
+            XCTAssertTrue(scene.playMoodTransition(from:.normal,to:.ill))
+            XCTAssertEqual(scene.requestedAction,.idle)
+            XCTAssertEqual(scene.mood,.ill)
+            XCTAssertEqual(finished,1)
+        }
+    }
+    func testVariantValidationRejectsBadFramesAndLoadsLegacyManifest() throws {
+        let data=try Data(contentsOf:root.appendingPathComponent("manifest.json"))
+        var json=try XCTUnwrap(JSONSerialization.jsonObject(with:data) as? [String:Any])
+        var clips=try XCTUnwrap(json["clips"] as? [[String:Any]])
+        let index=try XCTUnwrap(clips.firstIndex { $0["action"] as? String == "idle" })
+        var stages=try XCTUnwrap(clips[index]["stages"] as? [[String:Any]])
+        stages[0]["variants"]=[[ ["z":0,"frames":[["path":"../escape.png","duration":0.1,"width":1,"height":1]]] ]]
+        clips[index]["stages"]=stages;json["clips"]=clips
+        let invalid=try JSONDecoder().decode(PetManifest.self,from:JSONSerialization.data(withJSONObject:json))
+        XCTAssertThrowsError(try invalid.validate(root:root,checkFiles:false))
+        json["version"]=2
+        for i in clips.indices {
+            var legacy=clips[i]["stages"] as! [[String:Any]]
+            for j in legacy.indices { legacy[j].removeValue(forKey:"variants") }
+            clips[i]["stages"]=legacy
+        }
+        json["clips"]=clips
+        let valid=try JSONDecoder().decode(PetManifest.self,from:JSONSerialization.data(withJSONObject:json))
+        try valid.validate(root:root,checkFiles:true)
+    }
+    func testVariantsChooseOnceAndKeepValidFrames() throws {
+        let manifest=try PetManifest.load(from:root)
+        let clip=manifest.resolve(action:.idle,mood:.normal)
+        var first:any PetRandom=VariantRandom(value:0),last:any PetRandom=VariantRandom(value:0.999)
+        let a=clip.selectingVariants(random:&first), b=clip.selectingVariants(random:&last)
+        XCTAssertNotEqual(a.stages[0].layers[0].frames[0].path,b.stages[0].layers[0].frames[0].path)
+        var timeline=AnimationTimeline(clip:b,looping:true)
+        timeline.advance(100)
+        XCTAssertEqual(timeline.clip.stages[0].layers[0].frames[0].path,b.stages[0].layers[0].frames[0].path)
+    }
+    func testMoodTransitionsSettleRetargetAndCancelOnInteraction() async throws {
+        let manifest=try PetManifest.load(from:root),assets=root
+        await MainActor.run {
+            let scene=PetScene(manifest:manifest,assetRoot:assets)
+            var completions=0;scene.onActionFinished = { _ in completions += 1 }
+            scene.play(.idle,mood:.happy)
+            XCTAssertTrue(scene.playMoodTransition(from:.happy,to:.ill))
+            XCTAssertEqual(scene.requestedAction,.stateDown);XCTAssertEqual(scene.mood,.happy)
+            var visited=Set<PetMood>()
+            for i in 0...600 { visited.insert(scene.mood);scene.update(Double(i)*0.25) }
+            XCTAssertTrue(visited.isSuperset(of:[.happy,.normal,.poor,.ill]))
+            XCTAssertEqual(scene.mood,.ill);XCTAssertEqual(scene.requestedAction,.idle);XCTAssertEqual(completions,1)
+            scene.play(.idle,mood:.normal)
+            XCTAssertTrue(scene.playMoodTransition(from:.normal,to:.ill))
+            XCTAssertTrue(scene.playMoodTransition(from:.poor,to:.happy))
+            for i in 0...600 { scene.update(Double(i)*0.25) }
+            XCTAssertEqual(scene.mood,.happy);XCTAssertEqual(completions,2)
+            XCTAssertTrue(scene.playMoodTransition(from:.happy,to:.ill))
+            scene.play(.head,mood:.normal)
+            for i in 0...600 { scene.update(Double(i)*0.25) }
+            XCTAssertEqual(scene.mood,.normal);XCTAssertEqual(completions,3)
+            scene.play(.eat,mood:.normal)
+            XCTAssertFalse(scene.playMoodTransition(from:.normal,to:.ill))
+            XCTAssertEqual(scene.requestedAction,.eat)
+        }
+    }
     func testAutonomousClipsFinishAndRestoreWithoutChangingRestState() async throws {
         let manifest=try PetManifest.load(from:root), assets=root
         for graph in ["boring","squat"] {

@@ -48,6 +48,9 @@ import PetCore
     public var onActionFinished: ((PetAction) -> Void)?
     public var onDiagnostic: ((String) -> Void)?
     private var timeline: AnimationTimeline?
+    private var random: any PetRandom
+    private var transitionSteps: [PetMoodTransition] = []
+    private var transitionTarget: PetMood?
     private let cache = TextureCache()
     private var sprites: [Int: SKSpriteNode] = [:]
     private var masks: [Int: [UInt8]] = [:]
@@ -60,8 +63,8 @@ import PetCore
     public private(set) var isFinishingActivity = false
     private var previousTime: TimeInterval?
     public var cacheBytes: Int { cache.bytes }
-    public init(manifest: PetManifest, assetRoot: URL) {
-        self.manifest = manifest; self.assetRoot = assetRoot
+    public init(manifest: PetManifest, assetRoot: URL, random: any PetRandom = SeededPetRandom(seed: UInt64.random(in: 0...UInt64.max))) {
+        self.manifest = manifest; self.assetRoot = assetRoot; self.random = random
         super.init(size: CGSize(width: manifest.canvasWidth, height: manifest.canvasHeight))
         scaleMode = .aspectFit; backgroundColor = .clear
         item.zPosition = 1
@@ -70,11 +73,12 @@ import PetCore
     }
     required init?(coder: NSCoder) { fatalError("Use manifest initializer") }
     public func play(_ action: PetAction, mood: PetMood) {
+        transitionSteps=[];transitionTarget=nil
         isFinishingActivity=false; requestedGraphID=nil
         requestedAction = action; self.mood = mood
         let clip = manifest.resolve(action: action, mood: mood)
         if clip.action != action || clip.mood != mood { onDiagnostic?("动画回退：\(action.rawValue)/\(mood.rawValue) → \(clip.action.rawValue)/\(clip.mood.rawValue)") }
-        timeline = AnimationTimeline(clip: clip, looping: [.idle, .sleep, .raised, .walkLeft, .walkRight].contains(action))
+        timeline = AnimationTimeline(clip: clip.selectingVariants(random:&random), looping: [.idle, .sleep, .raised, .walkLeft, .walkRight].contains(action))
         installTimeline()
     }
     private func installTimeline() {
@@ -84,19 +88,45 @@ import PetCore
         sprites.removeAll(); masks.removeAll(); framePaths.removeAll(); item.isHidden = true
         render()
     }
+    @discardableResult public func playMoodTransition(from: PetMood, to: PetMood) -> Bool {
+        guard [.idle,.stateUp,.stateDown].contains(requestedAction) else { return false }
+        let source=transitionTarget == nil ? from : mood
+        guard source != to else {
+            if transitionTarget != nil { play(.idle,mood:to) }
+            return false
+        }
+        transitionSteps=PetMoodTransition.steps(from:source,to:to).filter { step in
+            let available=manifest.clips.contains { $0.action == step.action && $0.mood == step.mood }
+            if !available { onDiagnostic?("状态过渡缺失，跳过：\(step.action.rawValue)/\(step.mood.rawValue)") }
+            return available
+        }
+        transitionTarget=to
+        guard !transitionSteps.isEmpty else { transitionTarget=nil;return false }
+        installNextTransition()
+        return true
+    }
+    private func installNextTransition() {
+        let step=transitionSteps.removeFirst()
+        requestedAction=step.action;mood=step.mood;requestedGraphID=nil;isFinishingActivity=false
+        let clip=manifest.clips.first { $0.action == step.action && $0.mood == step.mood }!
+        timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:false)
+        installTimeline()
+    }
     public func playFidget(graphID: String, mood: PetMood) {
+        transitionSteps=[];transitionTarget=nil
         isFinishingActivity=false;requestedAction = .fidget;requestedGraphID=graphID;self.mood=mood
         let clip=manifest.clips.first { $0.action == .fidget && $0.graphID == graphID && $0.mood == mood }
             ?? manifest.clips.first { $0.action == .fidget && $0.graphID == graphID && $0.mood == .normal }
             ?? manifest.resolve(action:.idle,mood:mood)
         if clip.graphID != graphID || clip.mood != mood { onDiagnostic?("自主待机回退：\(graphID)/\(mood.rawValue)") }
-        timeline=AnimationTimeline(clip:clip,looping:false);installTimeline()
+        timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:false);installTimeline()
     }
     public func playActivity(graphID: String, mood: PetMood) {
+        transitionSteps=[];transitionTarget=nil
         isFinishingActivity=false;requestedAction = .activity;requestedGraphID=graphID;self.mood=mood
         let clip=manifest.resolveActivity(graphID:graphID,mood:mood)
         if clip.graphID != graphID || clip.mood != mood { onDiagnostic?("活动动画回退：\(graphID)/\(mood.rawValue)") }
-        timeline=AnimationTimeline(clip:clip,looping:true);installTimeline()
+        timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:true);installTimeline()
     }
     @discardableResult public func restoreBase(state: PetState, catalog: PetCatalog, force: Bool = false) -> Bool {
         guard force || !isFinishingActivity else { return false }
@@ -142,7 +172,9 @@ import PetCore
         }
         if timeline?.finished == true {
             let completed = requestedAction
-            play(.idle, mood: mood); onActionFinished?(completed)
+            if !transitionSteps.isEmpty { installNextTransition();return }
+            let settledMood=transitionTarget ?? mood
+            play(.idle, mood: settledMood); onActionFinished?(completed)
         }
         render()
     }
@@ -166,7 +198,12 @@ import PetCore
                 } else {
                     sprite.texture = nil; masks.removeValue(forKey: layer.z)
                     onDiagnostic?("无法解码动画帧：\(frame.path)")
-                    if requestedAction != .idle { play(.idle, mood: mood); return }
+                    if requestedAction != .idle {
+                        let completed=requestedAction, target=transitionTarget
+                        play(.idle,mood:target ?? mood)
+                        if target != nil { onActionFinished?(completed) }
+                        return
+                    }
                 }
             }
         }

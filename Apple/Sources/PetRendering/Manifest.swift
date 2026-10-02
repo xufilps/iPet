@@ -34,6 +34,7 @@ public struct AnimationStage: Codable, Sendable {
     public let phase: AnimationPhase
     public let layers: [AnimationLayer]
     public let foodTrack: [FoodTrackFrame]
+    public var variants: [[AnimationLayer]]? = nil
     public var duration: Double { max(layers.map(\.duration).max() ?? 0, foodTrack.reduce(0) { $0 + $1.duration }) }
     public func food(at time: Double) -> FoodTrackFrame? {
         var cursor = 0.0
@@ -45,7 +46,17 @@ public struct AnimationClip: Codable, Sendable {
     public var graphID: String? = nil
     public let action: PetAction
     public let mood: PetMood
-    public let stages: [AnimationStage]
+    public var stages: [AnimationStage]
+    public func selectingVariants(random: inout any PetRandom) -> Self {
+        var result=self
+        result.stages=stages.map { stage in
+            let choices=[stage.layers]+(stage.variants ?? [])
+            let value=choices.count > 1 ? random.unit() : 0
+            let unit=value.isFinite ? min(1.0.nextDown,max(0,value)) : 0
+            return AnimationStage(phase:stage.phase,layers:choices[Int(unit*Double(choices.count))],foodTrack:stage.foodTrack)
+        }
+        return result
+    }
 }
 public struct PetManifest: Codable, Sendable {
     public let version: Int
@@ -59,7 +70,7 @@ public struct PetManifest: Codable, Sendable {
     }
     public func validate(root: URL, checkFiles: Bool) throws {
         func fail(_ message: String) -> NSError { NSError(domain: "VPetAssets", code: 1, userInfo: [NSLocalizedDescriptionKey: message]) }
-        guard (1...2).contains(version), canvasWidth.isFinite, canvasHeight.isFinite, canvasWidth > 0, canvasHeight > 0,
+        guard (1...3).contains(version), canvasWidth.isFinite, canvasHeight.isFinite, canvasWidth > 0, canvasHeight > 0,
               clips.contains(where: { $0.action == .idle && $0.mood == .normal }),
               regions["head"] != nil, regions["body"] != nil else { throw fail("资源清单缺少基础配置。") }
         for region in regions.values {
@@ -71,12 +82,15 @@ public struct PetManifest: Codable, Sendable {
                   Set(clip.stages.map(\.phase)).count == clip.stages.count else { throw fail("动画重复或缺少阶段。") }
             for stage in clip.stages {
                 guard !stage.layers.isEmpty, Set(stage.layers.map(\.z)).count == stage.layers.count else { throw fail("动画图层无效。") }
-                for layer in stage.layers {
-                    guard !layer.frames.isEmpty else { throw fail("动画没有帧。") }
-                    for frame in layer.frames {
-                        guard frame.duration.isFinite, frame.duration > 0, frame.width > 0, frame.height > 0,
-                              PetCatalog.safePath(frame.path) else { throw fail("动画帧配置无效。") }
-                        if checkFiles && !FileManager.default.fileExists(atPath: root.appendingPathComponent(frame.path).path) { throw fail("缺少动画帧：\(frame.path)") }
+                for layers in [stage.layers]+(stage.variants ?? []) {
+                    guard !layers.isEmpty, Set(layers.map(\.z)).count == layers.count else { throw fail("动画变体图层无效。") }
+                    for layer in layers {
+                        guard !layer.frames.isEmpty else { throw fail("动画没有帧。") }
+                        for frame in layer.frames {
+                            guard frame.duration.isFinite, frame.duration > 0, frame.width > 0, frame.height > 0,
+                                  PetCatalog.safePath(frame.path) else { throw fail("动画帧配置无效。") }
+                            if checkFiles && !FileManager.default.fileExists(atPath: root.appendingPathComponent(frame.path).path) { throw fail("缺少动画帧：\(frame.path)") }
+                        }
                     }
                 }
                 for frame in stage.foodTrack {

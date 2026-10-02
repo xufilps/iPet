@@ -56,6 +56,17 @@ class ConversionTests(unittest.TestCase):
         self.assertEqual([f['duration'] for f in frames],[0.001,0.002])
         self.assertTrue(frames[0]['path'].endswith('0001.png'))
 
+    def test_default_alternatives_are_exported_and_validated(self):
+        directory=self.source/'pet/vup/Default/Nomal/2'
+        directory.mkdir(parents=True)
+        (directory/'idle_0_200.png').write_bytes(png(20))
+        self.run_conversion()
+        manifest=json.loads((self.output/'manifest.json').read_text())
+        stage=next(c for c in manifest['clips'] if c['action']=='idle')['stages'][0]
+        self.assertEqual(len(stage['variants']),1)
+        self.assertEqual(stage['variants'][0][0]['frames'][0]['duration'],0.2)
+        self.assertTrue((self.output/'frames/Default/Nomal/2/idle_0_200.png').exists())
+
     def test_unchanged_conversion_preserves_all_output_content_and_mtimes(self):
         before = self.stamp_outputs()
         self.run_conversion()
