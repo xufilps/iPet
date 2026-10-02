@@ -1,6 +1,6 @@
 # Windows 原版与 iPet 的持续差异矩阵
 
-原版基线：`1a06c5981330564bab05a098d2d7969a4b119dd3`；iPet 当前基线：v0.2.0，已推进至阶段3X（活动中随机动作）；部分实机验收已记录，压力测试按用户要求留到功能完善后。原版功能依据上游固定基线源码，不将第三方插件功能算作内置功能；当前行为依据 Apple 源码和已记录验证。后续每次迁移更新本表、行为说明和交接记录。源码入口编号在文末，阶段对应 [ROADMAP.md](ROADMAP.md)。
+原版基线：`1a06c5981330564bab05a098d2d7969a4b119dd3`；iPet 当前基线：v0.2.0，已推进至阶段4A（原生JSON存档管理）；部分实机验收已记录，压力测试按用户要求留到功能完善后。原版功能依据上游固定基线源码，不将第三方插件功能算作内置功能；当前行为依据 Apple 源码和已记录验证。后续每次迁移更新本表、行为说明和交接记录。源码入口编号在文末，阶段对应 [ROADMAP.md](ROADMAP.md)。
 
 状态定义：**已保留**为纳入范围的原规则已移植；**已适配**为平台或产品行为有明确变化；**部分实现**为有可用子集；**尚未迁移**为没有原生实现；**需要平台替代**为原机制不能直接复用；**待验证**为代码或构建证据不足以完成验收。状态指本行能力，不代表整个类别完成。
 
@@ -196,3 +196,5 @@ PetIdleCycles、PetManifest.fidgetCandidates/resolveFidget、PetScene和AppModel
 阶段5B补StatisticsCalHandle的养成时间/强制睡眠/工作与非工作采样、当前金币/等级/好感及低状态经历键，触摸事件与pinch首轮计数、每物品/分类消费标价和原始药品经验/礼品好感。来源MainWindow.cs、MainWindow.xaml.cs → PetProgress.recordSample/recordUse和PetEngine/StatisticsView；原生物品ID前缀映射、结构化娱乐独立及有界字典为适配，不兼容原LPS统计导入。保存v4升级保留v1/v2/v3原件，未来v5保护；Steam上传、调试/联网全日志、原评价仍缺，部分实现，真实页面/输入待验。
 
 阶段3X接入活动基础动画期间随机池资格及原2*rnd+20范围，工作/学习/娱乐的逻辑进度和收益不因显示动作暂停；打盹不转养成休息，动作结束恢复最新会话或默认，不复活已结束活动。依据MainLogic.IsIdel/EventTimer和MainDisplay.DisplayToNomal → PetAutonomy.canStart/poll、AppModel调度及既有PetScene.restoreBase。扩展插件池、旅行和真实活动移动/侧挂仍未完成，保存v4/素材不变，不能以组合回归替代实机体验。
+
+阶段4A增加原生JSON导出、只读摘要预览和确认恢复，当前最新checkpoint与导入源独立保留，源文件不改，活动暂停/当前养成开关规则明确提示。依据winSaveManager本地恢复 → PetSaveStore.exportSnapshot/previewImport/restore、AppModel和ControlsView。支持原生JSON v1...v4而非Windows LPS，16MiB上限；原多档枚举、Steam/云、新建和多实例仍缺，部分实现，未来版本阻写与真实UI待验。本轮未恢复用户正式数据。

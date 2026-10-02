@@ -4,6 +4,7 @@ import AppKit
 import SwiftUI
 import Combine
 import SpriteKit
+import UniformTypeIdentifiers
 import PetCore
 import PetRendering
 
@@ -567,6 +568,50 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     }
     func stop() { cancelInventoryUse();cancelMovement();speech.hide();toolbar?.hide();petView?.cancelInteraction();timer?.cancel(); if engine != nil { save() }; persistPositionIfReady() }
     private func persistPositionIfReady() { if petPanel != nil { persistPosition() } }
+    private func canManageSave() -> Bool {
+        guard writable else { message="存档写入已暂停，先处理原文件后再导出或恢复。";return false }
+        guard inventoryUseTask == nil else { message="请先完成或停止批量使用，再管理存档。";return false }
+        return true
+    }
+    func exportSave() {
+        guard canManageSave() else { return }
+        do {
+            let data=try store.exportSnapshot(engine.state)
+            let panel=NSSavePanel();panel.allowedContentTypes=[.json];panel.nameFieldStringValue="iPet-backup.json"
+            guard panel.runModal() == .OK,let url=panel.url else { return }
+            guard url.resolvingSymlinksInPath().deletingLastPathComponent() != store.directory.resolvingSymlinksInPath() else {
+                message="请导出到存档目录以外的位置，保留应用管理的原件与备份。";return
+            }
+            try data.write(to:url,options:.atomic)
+            message="已导出点击时的存档快照：\(url.lastPathComponent)。"
+        } catch { message="导出失败：\(error.localizedDescription)" }
+    }
+    func restoreSave() {
+        guard canManageSave() else { return }
+        let panel=NSOpenPanel();panel.allowedContentTypes=[.json];panel.allowsMultipleSelection=false;panel.canChooseDirectories=false
+        guard panel.runModal() == .OK,let url=panel.url else { return }
+        do {
+            let size=try url.resourceValues(forKeys:[.fileSizeKey]).fileSize ?? 0
+            guard size<=PetSaveStore.snapshotSizeLimit else { throw PetSaveError.snapshotTooLarge }
+            let data=try Data(contentsOf:url),preview=try store.previewImport(data)
+            let alert=NSAlert();alert.messageText="恢复此存档？"
+            let quantity=preview.inventory.values.reduce(0,+)
+            let unknown=preview.inventory.keys.filter { catalog.item($0) == nil }.count
+            alert.informativeText="\(preview.name) · 等级 \(preview.level) · 金币 \(preview.money.formatted(.number.precision(.fractionLength(2))))\n库存 \(quantity) 件，未知物品 \(unknown) 种；导入活动保持暂停。\n当前最新状态和导入原件会独立保留在存档目录。Windows LPS不支持。"
+            if !simulationEnabled,preview.activity != nil { alert.informativeText += "\n养成当前关闭，导入活动会按该设置结束；原始会话仍保留在导入原件。" }
+            alert.addButton(withTitle:"恢复并保留原件");alert.addButton(withTitle:"取消")
+            guard alert.runModal() == .alertFirstButtonReturn,canManageSave() else { return }
+            let restored=try store.restore(data,currentState:engine.state)
+            petView.cancelInteraction();cancelMovement();speech.hide();dialogue.resetTiming();autonomy.reset()
+            engine=PetEngine(state:restored,catalog:catalog)
+            engine.configureSimulation(enabled:simulationEnabled,fixedMood:fixedMood)
+            state=engine.state;lastTick=nil;lastSave=ProcessInfo.processInfo.systemUptime
+            restoreBaseAnimation(force:true)
+            _=engine.drainEvents()
+            guard save() else { message += " 新存档已恢复，但当前设置状态未能再次保存。";return }
+            message="已恢复存档，活动状态遵循导入预览与当前养成设置。恢复前原件：\(store.lastRestoreBackupURL?.lastPathComponent ?? "存档目录")。"
+        } catch { message="恢复失败，运行中的宠物保留：\(error.localizedDescription)" }
+    }
     @objc func showControls() {
         if controls == nil {
             let hosting = NSHostingController(rootView: ControlsView(model: self))

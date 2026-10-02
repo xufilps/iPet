@@ -3,13 +3,14 @@
 import Foundation
 
 public enum PetSaveError: Error, LocalizedError {
-    case unsupportedVersion(Int), unsupportedCatalogVersion(Int), invalidState, invalidDocument
+    case unsupportedVersion(Int), unsupportedCatalogVersion(Int), invalidState, invalidDocument, snapshotTooLarge
     public var errorDescription: String? {
         switch self {
         case .unsupportedVersion(let version): "存档版本 \(version) 高于本程序支持范围，已停止写入以保护原文件。"
         case .unsupportedCatalogVersion(let version): "玩法目录版本 \(version) 无法识别，已停止写入以保护原文件。"
         case .invalidState: "存档状态数据不合法。"
         case .invalidDocument: "存档格式不正确。"
+        case .snapshotTooLarge: "存档超过16MiB，此版本无法导入或导出。"
         }
     }
 }
@@ -29,6 +30,8 @@ public final class PetSaveStore: PetPersistence {
     public var backup: URL { directory.appendingPathComponent("pet.previous.json") }
     public private(set) var recoveryMessage: String?
     public private(set) var migrationBackupURL: URL?
+    public private(set) var lastRestoreBackupURL:URL?
+    public static let snapshotSizeLimit=16*1024*1024
     private var pendingLegacy: Data?
     private var preservedLegacy: Set<Data> = []
     private let fm = FileManager.default
@@ -82,6 +85,36 @@ public final class PetSaveStore: PetPersistence {
             return state
         }
         return nil
+    }
+    public func exportSnapshot(_ state:PetState) throws -> Data {
+        try state.validate()
+        let encoder=JSONEncoder();encoder.outputFormatting=[.prettyPrinted,.sortedKeys]
+        let data=try encoder.encode(PetSaveDocument(state:state))
+        guard data.count<=Self.snapshotSizeLimit else { throw PetSaveError.snapshotTooLarge }
+        return data
+    }
+    public func previewImport(_ data:Data) throws -> PetState {
+        guard data.count<=Self.snapshotSizeLimit else { throw PetSaveError.snapshotTooLarge }
+        var state=try decode(data)
+        if state.activity != nil { state.activity?.isPaused=true }
+        return state
+    }
+    /// The caller obtains explicit confirmation after preview; no running model is changed here.
+    public func restore(_ data:Data,currentState:PetState) throws -> PetState {
+        let imported=try previewImport(data)
+        _=try exportSnapshot(currentState)
+        try save(currentState) // Protect future primary/backup versions and checkpoint latest memory first.
+        let checkpoint=try Data(contentsOf:primary)
+        let previous=directory.appendingPathComponent("pet.before-restore-\(UUID().uuidString).json")
+        try checkpoint.write(to:previous,options:.withoutOverwriting)
+        guard try Data(contentsOf:previous)==checkpoint else { throw PetSaveError.invalidDocument }
+        lastRestoreBackupURL=previous
+        let source=directory.appendingPathComponent("pet.import-source-\(UUID().uuidString).json")
+        try data.write(to:source,options:.withoutOverwriting)
+        guard try Data(contentsOf:source)==data else { throw PetSaveError.invalidDocument }
+        if try headerVersion(data)<4 { try preserveLegacy(data) }
+        try save(imported)
+        return imported
     }
     public func save(_ state: PetState) throws {
         try state.validate()

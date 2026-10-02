@@ -82,6 +82,8 @@ struct ControlsView: View {
             HStack {
                 Link("原项目与授权",destination:URL(string:"https://github.com/LorisYounger/VPet#动画版权声明与授权")!)
                 Button("打开存档目录") { NSWorkspace.shared.open(model.store.directory) }
+                Button("导出JSON备份") { model.exportSave() }
+                Button("从JSON恢复…") { model.restoreSave() }
             }
             Spacer()
         }.padding(16)
