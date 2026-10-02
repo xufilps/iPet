@@ -32,7 +32,8 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     private var lastTick: Double?
     private var walkingUntil = 0.0
     private var walkingDirection = 1.0
-    private var nextActivity = 0.0
+    private let autonomy = PetAutonomy()
+    private var autonomousUntil = 0.0
     private var suspended = false
     private var observers: [NSObjectProtocol] = []
     private var menuVisibility: NSMenuItem!
@@ -67,6 +68,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         engine = PetEngine(state: state, catalog: catalog)
         petScene = PetScene(manifest: try PetManifest.load(from: root), assetRoot: root)
         petScene.play(state.resting ? .sleep : .idle, mood: state.mood)
+        petScene.onIdleCycle = { [weak self] in self?.autonomy.recordIdleCycle() }
         petScene.onDiagnostic = { text in NSLog("%@", text) }
         petScene.onActionFinished = { [weak self] _ in
             guard let self else { return }
@@ -91,7 +93,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         petView.onDragStart = { [weak self] in
             guard let self else { return }
             self.recordAcceptanceInput("drag-start")
-            self.engine.recordInteraction()
+            self.engine.recordInteraction(); self.autonomy.reset(); self.autonomousUntil = 0
             self.walkingUntil = 0; self.petScene.play(.raised, mood: self.state.mood)
         }
         petView.onDragEnd = { [weak self] in
@@ -109,7 +111,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         observers.append(workspace.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in MainActor.assumeIsolated { self?.suspend() } })
         observers.append(workspace.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in MainActor.assumeIsolated { self?.resume() } })
         observers.append(NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in MainActor.assumeIsolated { self?.clampPosition(); self?.updateTextureResolution() } })
-        lastSave = ProcessInfo.processInfo.systemUptime; nextActivity = lastSave + 20
+        lastSave = ProcessInfo.processInfo.systemUptime; autonomy.reset()
         timer = Timer.publish(every: 1.0 / 30, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.tick() }
         if !message.isEmpty { showControls() }
         if smokeMode && !manualTest { startSmokeTest() }
@@ -145,7 +147,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         NSApp.mainMenu = main
     }
     func command(_ command: PetCommand) {
-        walkingUntil = 0
+        walkingUntil = 0; autonomousUntil = 0; autonomy.reset()
         let action = engine.send(command); state = engine.state
         consumeEvents()
         if !petScene.isFinishingActivity || ![.idle,.sleep].contains(action) { petScene.play(action,mood:state.mood) }
@@ -155,7 +157,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         let result = engine.perform(command)
         state = engine.state; message = result.message
         if result.accepted {
-            walkingUntil = 0
+            walkingUntil = 0; autonomousUntil = 0; autonomy.reset()
             let usedItem = consumeEvents()
             if !usedItem { restoreBaseAnimation() }
             save()
@@ -193,7 +195,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     }
     private func restoreBaseAnimation(force: Bool = false) {
         guard petScene != nil, petView?.isInteracting != true else { return }
-        petScene.restoreBase(state:engine.state,catalog:catalog,force:force)
+        if petScene.restoreBase(state:engine.state,catalog:catalog,force:force) { autonomousUntil = 0 }
     }
     @objc private func showActivities() { selectedPage = .activity; showControls() }
     @objc private func showShop() { selectedPage = .shop; showControls() }
@@ -217,19 +219,27 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
                 var origin = petPanel.frame.origin; origin.x += walkingDirection * 18 * delta
                 petPanel.setFrameOrigin(origin); clampPosition()
             } else if walkingUntil > 0 { walkingUntil = 0; petScene.finishAction(); persistPosition() }
-            if now >= nextActivity && !petView.isInteracting && petScene.requestedAction == .idle && !engine.state.resting && engine.state.activity == nil {
-                nextActivity = now + Double.random(in: 25...50)
-                if autoMove && state.mood != .ill {
-                    walkingDirection = Bool.random() ? 1 : -1; walkingUntil = now + 5
-                    petScene.play(walkingDirection > 0 ? .walkRight : .walkLeft, mood: state.mood)
-                } else if state.strength < 70 { command(.toggleRest) }
+        }
+        if autonomousUntil > 0 && now >= autonomousUntil {
+            autonomousUntil = 0; petScene.finishAction()
+        }
+        let eligible = !manualTest && PetAutonomy.canStart(state:engine.state,action:petScene.requestedAction,visible:visible,interacting:petView.isInteracting,finishing:petScene.isFinishingActivity)
+        if let behavior = autonomy.poll(eligible:eligible,allowsMovement:autoMove,mood:engine.state.mood) {
+            switch behavior {
+            case .walkLeft, .walkRight:
+                walkingDirection = behavior == .walkRight ? 1 : -1;walkingUntil=now+5
+                petScene.play(behavior == .walkRight ? .walkRight : .walkLeft,mood:engine.state.mood)
+            case .fidget:
+                petScene.playFidget(graphID:autonomy.fidgetGraphID,mood:engine.state.mood)
+            case .doze:
+                autonomousUntil=now+20;petScene.play(.sleep,mood:engine.state.mood)
             }
         }
         if now - lastSave >= 60 { save(); lastSave = now }
     }
     @objc func toggleVisibility() {
         visible.toggle(); menuVisibility.title = visible ? "隐藏桌宠" : "显示桌宠"
-        walkingUntil = 0
+        walkingUntil = 0; autonomousUntil = 0; autonomy.reset()
         if visible { restoreBaseAnimation(force:true); petView.isPaused = false; petPanel.orderFrontRegardless() }
         else { petPanel.orderOut(nil); petView.isPaused = true; petScene.releaseTextures() }
     }
@@ -258,10 +268,10 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         guard !smokeMode else { return }
         UserDefaults.standard.set(petPanel.frame.minX, forKey: "petX"); UserDefaults.standard.set(petPanel.frame.minY, forKey: "petY")
     }
-    private func suspend() { save(); suspended = true; walkingUntil = 0; petView.isPaused = true; petScene.releaseTextures() }
+    private func suspend() { save(); suspended = true; walkingUntil = 0; autonomousUntil = 0; autonomy.reset(); petView.isPaused = true; petScene.releaseTextures() }
     private func resume() {
         engine.resetClock(); lastTick = nil; lastSave = ProcessInfo.processInfo.systemUptime
-        nextActivity = lastSave + 20; suspended = false
+        autonomousUntil = 0; autonomy.reset(); suspended = false
         restoreBaseAnimation(force:true); petView.isPaused = !visible; clampPosition()
     }
     func save() {

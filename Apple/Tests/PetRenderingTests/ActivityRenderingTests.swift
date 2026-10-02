@@ -4,6 +4,29 @@ import PetCore
 @testable import PetRendering
 final class ActivityRenderingTests: XCTestCase {
     var root: URL { URL(fileURLWithPath:#filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Resources/PetAssets") }
+    func testAutonomousClipsFinishAndRestoreWithoutChangingRestState() async throws {
+        let manifest=try PetManifest.load(from:root), assets=root
+        for graph in ["boring","squat"] {
+            XCTAssertTrue(manifest.clips.contains { $0.action == .fidget && $0.graphID == graph })
+        }
+        await MainActor.run {
+            let scene=PetScene(manifest:manifest,assetRoot:assets)
+            var cycles=0;scene.onIdleCycle = { cycles += 1 }
+            for i in 0...100 { scene.update(Double(i)*0.25) }
+            XCTAssertGreaterThan(cycles,0)
+            var finished=0;scene.onActionFinished = { _ in finished += 1 }
+            scene.playFidget(graphID:"squat",mood:.normal)
+            for i in 0...400 { scene.update(Double(i)*0.25) }
+            XCTAssertEqual(finished,1);XCTAssertEqual(scene.requestedAction,.idle)
+            scene.play(.sleep,mood:.normal);scene.finishAction()
+            for i in 0...400 { scene.update(Double(i)*0.25) }
+            XCTAssertEqual(finished,2)
+            scene.playFidget(graphID:"boring",mood:.normal)
+            scene.play(.head,mood:.normal)
+            for i in 0...400 { scene.update(Double(i)*0.25) }
+            XCTAssertEqual(finished,3) // Interrupted fidget never fires its old callback.
+        }
+    }
     func testAllGraphsFallbackAndInterruption() throws {
         let manifest=try PetManifest.load(from:root)
         let catalog=try PetCatalog.load(from:root.appendingPathComponent("gameplay.json"))

@@ -40,8 +40,8 @@ def convert(source, destination):
     def layer(directory, z):
         frames = []
         for path in sorted(directory.glob('*.png'), key=natural):
-            match = re.search(r'_(\d+)_(\d+)\.png$', path.name, re.I)
-            if not match or int(match[2]) <= 0:
+            match = re.search(r'(?:^|_)(\d+)\.png$', path.name, re.I)
+            if not match or int(match[1]) <= 0:
                 raise ValueError(f"Invalid frame name: {path}")
             relative = path.relative_to(pet).as_posix()
             target = destination / 'frames' / relative
@@ -49,13 +49,14 @@ def convert(source, destination):
             width, height = png_size(path)
             write_if_changed(target, path.read_bytes())
             records[relative] = {'sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'bytes': path.stat().st_size}
-            frames.append({'path': 'frames/' + relative, 'duration': int(match[2]) / 1000, 'width': width, 'height': height})
+            frames.append({'path': 'frames/' + relative, 'duration': int(match[1]) / 1000, 'width': width, 'height': height})
         if not frames:
             raise ValueError(f"Empty animation: {directory}")
         return {'z': z, 'frames': frames}
     clips = []
     diagnostics = []
     roots = [(action,subtree,None) for action,subtree in ACTIONS.items()]
+    roots += [('fidget', 'IDEL/Boring', 'boring'), ('fidget', 'IDEL/Squat', 'squat')]
     for line in (source/'pet/vup.lps').read_text(encoding='utf-8-sig').splitlines():
         if not line.startswith('work:'): continue
         graph=fields(line)['Graph'].lower()

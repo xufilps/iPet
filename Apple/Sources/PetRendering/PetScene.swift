@@ -44,6 +44,7 @@ import PetCore
     public let assetRoot: URL
     public private(set) var requestedAction = PetAction.idle
     public private(set) var mood = PetMood.normal
+    public var onIdleCycle: (() -> Void)?
     public var onActionFinished: ((PetAction) -> Void)?
     public var onDiagnostic: ((String) -> Void)?
     private var timeline: AnimationTimeline?
@@ -82,6 +83,14 @@ import PetCore
         for node in sprites.values { node.removeFromParent() }
         sprites.removeAll(); masks.removeAll(); framePaths.removeAll(); item.isHidden = true
         render()
+    }
+    public func playFidget(graphID: String, mood: PetMood) {
+        isFinishingActivity=false;requestedAction = .fidget;requestedGraphID=graphID;self.mood=mood
+        let clip=manifest.clips.first { $0.action == .fidget && $0.graphID == graphID && $0.mood == mood }
+            ?? manifest.clips.first { $0.action == .fidget && $0.graphID == graphID && $0.mood == .normal }
+            ?? manifest.resolve(action:.idle,mood:mood)
+        if clip.graphID != graphID || clip.mood != mood { onDiagnostic?("自主待机回退：\(graphID)/\(mood.rawValue)") }
+        timeline=AnimationTimeline(clip:clip,looping:false);installTimeline()
     }
     public func playActivity(graphID: String, mood: PetMood) {
         isFinishingActivity=false;requestedAction = .activity;requestedGraphID=graphID;self.mood=mood
@@ -123,7 +132,14 @@ import PetCore
     }
     private func advance(_ currentTime: TimeInterval) {
         defer { previousTime = currentTime }
-        if let previousTime { timeline?.advance(min(max(currentTime - previousTime, 0), 0.25)) }
+        if let previousTime {
+            let delta=min(max(currentTime-previousTime,0),0.25)
+            if requestedAction == .idle, let timeline, timeline.stage.phase == .loop {
+                let cycles=Int((timeline.elapsed+delta)/timeline.stage.duration)
+                for _ in 0..<cycles { onIdleCycle?() }
+            }
+            timeline?.advance(delta)
+        }
         if timeline?.finished == true {
             let completed = requestedAction
             play(.idle, mood: mood); onActionFinished?(completed)
