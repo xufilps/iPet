@@ -605,6 +605,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
             let quantity=preview.inventory.values.reduce(0,+)
             let unknown=preview.inventory.keys.filter { catalog.item($0) == nil }.count
             alert.informativeText="\(preview.name) · 等级 \(preview.level) · 金币 \(preview.money.formatted(.number.precision(.fractionLength(2))))\n库存 \(quantity) 件，未知物品 \(unknown) 种；导入活动保持暂停。\n当前最新状态和导入原件会独立保留在存档目录。Windows LPS不支持。"
+            if let session=preview.activity { alert.informativeText += "\n导入活动倍率：\(session.effectiveMultiplier)倍。" }
             if !simulationEnabled,preview.activity != nil { alert.informativeText += "\n养成当前关闭，导入活动会按该设置结束；原始会话仍保留在导入原件。" }
             alert.addButton(withTitle:"恢复并保留原件");alert.addButton(withTitle:"取消")
             guard alert.runModal() == .alertFirstButtonReturn,canManageSave() else { return }

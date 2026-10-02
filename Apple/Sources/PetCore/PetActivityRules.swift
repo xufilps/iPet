@@ -2,14 +2,16 @@
 import Foundation
 public struct ActivitySession: Codable, Equatable, Sendable {
     public var activityID: String
+    public var multiplier:Int?
+    public var effectiveMultiplier:Int { multiplier ?? 1 }
     public var elapsedSeconds = 0.0
     public var earned = 0.0
     public var isPaused = false
-    public init(activityID: String) { self.activityID=activityID }
+    public init(activityID: String,multiplier:Int=1) { self.activityID=activityID;self.multiplier=multiplier == 1 ? nil:multiplier }
 }
 public enum ActivityStopReason: String, Codable, Sendable { case completed, manual, stateFailed }
 public enum PurchaseMode: Sendable { case useImmediately, inventory }
-public enum PetEconomyCommand: Sendable { case startActivity(String), stopActivity, resumeActivity, pauseActivity, buyItem(String, mode: PurchaseMode), useItem(String) }
+public enum PetEconomyCommand: Sendable { case startActivity(String), startMultipliedActivity(String,multiplier:Int), stopActivity, resumeActivity, pauseActivity, buyItem(String, mode: PurchaseMode), useItem(String) }
 public struct PetCommandResult: Sendable { public let accepted: Bool; public let message: String }
 public enum PetEvent: Sendable { case activityStopped(id: String, reason: ActivityStopReason, earned: Double, bonus: Double), itemUsed(id: String) }
 public protocol PetWallClock { var now: Date { get } }

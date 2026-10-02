@@ -48,7 +48,7 @@ public struct PetState: Codable, Equatable, Sendable {
               itemCooldowns.allSatisfy({ !$0.key.isEmpty && $0.key.count <= 300 && $0.value.timeIntervalSince1970.isFinite && abs($0.value.timeIntervalSince1970) <= 1e12 })
         else { throw PetSaveError.invalidState }
         if let a=activity {
-            guard !a.activityID.isEmpty, a.activityID.count <= 300, a.elapsedSeconds.isFinite, (0...1e12).contains(a.elapsedSeconds), a.earned.isFinite, (0...1e12).contains(a.earned), !resting else { throw PetSaveError.invalidState }
+            guard (1...400).contains(a.effectiveMultiplier), !a.activityID.isEmpty, a.activityID.count <= 300, a.elapsedSeconds.isFinite, (0...1e12).contains(a.elapsedSeconds), a.earned.isFinite, (0...1e12).contains(a.earned), !resting else { throw PetSaveError.invalidState }
         }
     }
     mutating func changeStrength(_ delta: Double) { strength = Self.clamp(strength + delta) }

@@ -16,9 +16,10 @@ struct ActivityView: View {
         ScrollView {
             VStack(alignment:.leading,spacing:14) {
                 if let session=model.state.activity {
-                    let activity=model.catalog.activity(session.activityID)
-                    let feedback=ActivityFeedback(session:session,activity:activity,mood:model.state.mood)
-                    Text(feedback.title).font(.headline)
+                    let base=model.catalog.activity(session.activityID)
+                    let activity=model.catalog.activity(for:session)
+                    let feedback=ActivityFeedback(session:session,activity:base,mood:model.state.mood)
+                    Text("\(feedback.title) · \(session.effectiveMultiplier) 倍").font(.headline)
                     if let activity,let progress=feedback.progress {
                         ProgressView(value:progress)
                         Text("\(Int(session.elapsedSeconds/60)) / \(Int(activity.durationSeconds/60)) 分钟 · 已获 \(session.earned.formatted(.number.precision(.fractionLength(2)))) \(activity.kind == .work ? "金币" : "经验")")
@@ -47,22 +48,36 @@ struct ActivityView: View {
                 }
                 if !model.simulationEnabled { Text("养成已关闭，开启后可开始活动。").font(.caption).foregroundStyle(.secondary) }
                 if activities.isEmpty { Text("没有符合条件的活动，可以调整搜索或筛选条件。").foregroundStyle(.secondary) }
-                ForEach(activities) { activity in
-                    HStack {
-                        Button { model.toggleFavoriteActivity(id:activity.id) } label: {
-                            Image(systemName:model.favoriteActivities.contains(activity.id) ? "star.fill":"star")
-                        }.accessibilityLabel(model.favoriteActivities.contains(activity.id) ? "取消收藏活动":"收藏活动")
-                        VStack(alignment:.leading,spacing:4) {
-                            Text("\(activity.kind.title) · \(activity.name)")
-                            Text(activity.decisionDescription).font(.caption).foregroundStyle(.secondary)
-                            Text("\(Int(activity.durationSeconds/60)) 分钟 · 完成奖励 \(Int(activity.finishBonus*100))% · 等级 \(activity.levelLimit)+").font(.caption).foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Button(!model.simulationEnabled ? "养成已关闭":model.state.level < activity.levelLimit ? "等级不足" : model.state.mood == .ill ? "生病中" : "开始") { model.perform(.startActivity(activity.id)) }
-                            .disabled(!model.simulationEnabled || model.state.level < activity.levelLimit || model.state.mood == .ill)
-                    }.padding(10).background(.quaternary,in:RoundedRectangle(cornerRadius:8))
-                }
+                Text("倍率调整需求和等级门槛，收益按原版平衡公式重算，并非等比例增长；更改选择不影响已开始的会话。").font(.caption).foregroundStyle(.secondary)
+                ForEach(activities) { activity in ActivityMultiplierRow(model:model,base:activity) }
             }.padding(16)
         }
+    }
+}
+
+private struct ActivityMultiplierRow:View {
+    @ObservedObject var model:AppModel
+    let base:ActivityDefinition
+    @State private var multiplier=1
+    private var maximum:Int { base.maximumMultiplier(level:model.state.level) }
+    private var selected:Int { min(maximum,max(1,multiplier)) }
+    private var work:ActivityDefinition { base.multiplied(by:selected) ?? base }
+    var body:some View {
+        HStack {
+            Button { model.toggleFavoriteActivity(id:base.id) } label: {
+                Image(systemName:model.favoriteActivities.contains(base.id) ? "star.fill":"star")
+            }.accessibilityLabel(model.favoriteActivities.contains(base.id) ? "取消收藏活动":"收藏活动")
+            VStack(alignment:.leading,spacing:4) {
+                Text("\(base.kind.title) · \(base.name)")
+                if maximum>1 { Stepper("倍率 \(selected)",value:$multiplier,in:1...maximum) }
+                Text(work.decisionDescription).font(.caption).foregroundStyle(.secondary)
+                Text("\(Int(work.durationSeconds/60)) 分钟 · 完成奖励 \(Int(work.finishBonus*100))% · 等级 \(work.levelLimit)+").font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button(!model.simulationEnabled ? "养成已关闭":model.state.level < work.levelLimit ? "等级不足" : model.state.mood == .ill ? "生病中" : model.state.activity?.activityID == base.id ? "停止":"开始") {
+                model.perform(.startMultipliedActivity(base.id,multiplier:selected))
+            }.disabled(!model.simulationEnabled || model.state.level < work.levelLimit || model.state.mood == .ill)
+        }.padding(10).background(.quaternary,in:RoundedRectangle(cornerRadius:8))
+            .onChange(of:maximum) { _,value in multiplier=min(value,max(1,multiplier)) }
     }
 }

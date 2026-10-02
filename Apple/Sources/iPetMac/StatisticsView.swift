@@ -30,7 +30,7 @@ struct StatisticsView:View {
                     if progress.history.isEmpty { Text("尚无结束记录，正在进行的活动仍在活动页显示。").foregroundStyle(.secondary) }
                     ForEach(progress.history.reversed()) { record in
                         VStack(alignment:.leading,spacing:4) {
-                            Text("\(record.name) · \(reason(record.reason))").font(.headline)
+                            Text("\(record.name) · \(record.multiplier ?? 1) 倍 · \(reason(record.reason))").font(.headline)
                             Text(record.date.formatted(date:.abbreviated,time:.shortened)).font(.caption).foregroundStyle(.secondary)
                             Text("有效时间 \(number(record.seconds/60)) 分钟 · 收益 \(number(record.earned)) · 奖金 \(number(record.bonus)) \(record.kind == .work ? "金币":record.kind == nil ? "（类型未知）":"经验")").font(.caption).monospacedDigit()
                         }.padding(10).frame(maxWidth:.infinity,alignment:.leading).background(.quaternary,in:RoundedRectangle(cornerRadius:8))

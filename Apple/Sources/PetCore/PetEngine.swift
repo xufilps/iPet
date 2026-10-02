@@ -49,7 +49,7 @@ public final class PetEngine {
         var remaining=delta
         while remaining > 0 {
             var chunk=min(remaining,15-remainder)
-            if let session=state.activity, !session.isPaused, let work=catalog.activity(session.activityID) {
+            if let session=state.activity, !session.isPaused, let work=catalog.activity(for:session) {
                 let left=work.durationSeconds-session.elapsedSeconds
                 if left <= 0 { stopActivity(.completed); continue }
                 chunk=min(chunk,left)
@@ -80,26 +80,31 @@ public final class PetEngine {
     @discardableResult public func perform(_ command: PetEconomyCommand) -> PetCommandResult {
         do { try catalog.validate(); try state.validate() } catch { return PetCommandResult(accepted:false,message:"数据不合法，操作已拒绝。") }
         switch command {
-        case .startActivity(let id):
-            guard simulationEnabled else { return result(false,"请先启用养成，再开始活动。") }
-            guard let work=catalog.activity(id) else { return result(false,"未知活动。") }
-            guard state.mood != .ill else { return result(false,"生病时不能开始活动，请休息或使用药品。") }
-            guard state.level >= work.levelLimit else { return result(false,"等级不足，需要等级 \(work.levelLimit)。") }
-            if state.activity?.activityID == id { stopActivity(.manual); return result(true,"活动已停止。") }
-            stopActivity(.manual); state.resting=false; state.activity=ActivitySession(activityID:id); lastInteraction=activeSeconds
-            return result(true,"开始\(work.name)。")
+        case .startActivity(let id): return startActivity(id,multiplier:1)
+        case .startMultipliedActivity(let id,let multiplier): return startActivity(id,multiplier:multiplier)
         case .stopActivity: stopActivity(.manual); return result(true,"活动已停止。")
         case .pauseActivity: state.activity?.isPaused=true; return result(true,"活动已暂停。")
         case .resumeActivity:
             guard simulationEnabled else { return result(false,"请先启用养成，再继续活动。") }
-            guard let session=state.activity, let work=catalog.activity(session.activityID) else { return result(false,"原活动不可用，可停止保留的会话。") }
-            guard state.mood != .ill, state.level >= work.levelLimit else { return result(false,"当前状态或等级不能继续活动。") }
+            guard let session=state.activity, let work=catalog.activity(for:session) else { return result(false,"原活动不可用，可停止保留的会话。") }
+            guard state.mood != .ill, state.level >= work.levelLimit,
+                  let base=catalog.activity(session.activityID),session.effectiveMultiplier<=base.maximumMultiplier(level:state.level) else { return result(false,"当前状态或等级不能继续活动。") }
             state.activity?.isPaused=false; resetClock(); lastInteraction=activeSeconds
             return result(true,"活动已继续。")
         case .buyItem(let id,let mode):
             return transactItem(id:id,purchase:true,mode:mode)
         case .useItem(let id): return transactItem(id:id,purchase:false,mode:.useImmediately)
         }
+    }
+    private func startActivity(_ id:String,multiplier:Int) -> PetCommandResult {
+        guard simulationEnabled else { return result(false,"请先启用养成，再开始活动。") }
+        guard let base=catalog.activity(id) else { return result(false,"未知活动。") }
+        guard let work=base.multiplied(by:multiplier) else { return result(false,"活动倍率或定义不合法。") }
+        guard state.mood != .ill else { return result(false,"生病时不能开始活动，请休息或使用药品。") }
+        guard multiplier<=base.maximumMultiplier(level:state.level),state.level>=work.levelLimit else { return result(false,"等级不足，需要等级 \(work.levelLimit)。") }
+        if state.activity?.activityID == id { stopActivity(.manual);return result(true,"活动已停止。") }
+        stopActivity(.manual);state.resting=false;state.activity=ActivitySession(activityID:id,multiplier:multiplier);lastInteraction=activeSeconds
+        return result(true,"开始\(work.name)（\(multiplier)倍）。")
     }
     /// Applies each unit through the same rule path as a single inventory use.
     public func useItems(id:String,count:Int) -> (used:Int,message:String) {
@@ -141,7 +146,7 @@ public final class PetEngine {
         state=next
         if mode == .useImmediately {
             lastInteraction=activeSeconds
-            if state.mood == .ill, let session=state.activity, catalog.activity(session.activityID) != nil { stopActivity(.stateFailed) }
+            if state.mood == .ill, let session=state.activity, catalog.activity(for:session) != nil { stopActivity(.stateFailed) }
             events.append(.itemUsed(id:id))
         }
         return result(true,mode == .inventory ? "已买入背包：\(item.name)。" : "已使用：\(item.name)。")
@@ -153,11 +158,11 @@ public final class PetEngine {
     private func stopActivity(_ reason: ActivityStopReason) {
         guard let session=state.activity else { return }
         var bonus=0.0
-        if reason == .completed, let work=catalog.activity(session.activityID) {
+        if reason == .completed, let work=catalog.activity(for:session) {
             bonus=session.earned*work.finishBonus
             if work.kind == .work { state.money += bonus } else { state.experience += bonus }
         }
-        updateProgress { $0.recordEnd(session:session,work:catalog.activity(session.activityID),reason:reason,bonus:bonus,date:wallClock.now) }
+        updateProgress { $0.recordEnd(session:session,work:catalog.activity(for:session),reason:reason,bonus:bonus,date:wallClock.now) }
         state.activity=nil
         events.append(.activityStopped(id:session.activityID,reason:reason,earned:session.earned,bonus:bonus))
     }
@@ -196,7 +201,7 @@ public final class PetEngine {
             // Original uses >=25; its subsequent >=75 branch is unreachable.
             if state.drink >= 25 { state.changeDrink(t) } else if state.drink >= 75 { state.changeHealth(t * 2) }
             lastInteraction = activeSeconds
-        } else if let session=state.activity, !session.isPaused, let work=catalog.activity(session.activityID) {
+        } else if let session=state.activity, !session.isPaused, let work=catalog.activity(for:session) {
             let minutes=(activeSeconds-lastInteraction)/60
             let freedrop=minutes < 1 ? 0 : min(sqrt(minutes)*t/4,100.0/800)
             let gain=PetActivityRules.advance(state: &state,work:work,t:t,freedrop:freedrop,random:&random)
@@ -226,7 +231,7 @@ public final class PetEngine {
         // Random.Next(0,1) is always zero in C#; do not add random health loss.
         if state.drink <= 25 { state.experience -= t }
         updateProgress { $0.recordSample(state:state,catalog:catalog,mood:sampledMood) }
-        if state.mood == .ill, let session=state.activity, catalog.activity(session.activityID) != nil { stopActivity(.stateFailed) }
+        if state.mood == .ill, let session=state.activity, catalog.activity(for:session) != nil { stopActivity(.stateFailed) }
     }
 }
 private extension PetCommand { var isHead: Bool { if case .touchHead = self { true } else { false } } }

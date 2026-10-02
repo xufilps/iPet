@@ -17,7 +17,7 @@ public enum PetSaveError: Error, LocalizedError {
 public struct PetSaveDocument: Codable, Equatable, Sendable {
     public let version: Int
     public var state: PetState
-    public init(state: PetState) { version = 4; self.state = state }
+    public init(state: PetState) { version = 5; self.state = state }
 }
 public protocol PetPersistence {
     func load() throws -> PetState?
@@ -42,9 +42,9 @@ public final class PetSaveStore: PetPersistence {
     }
     private func decode(_ data: Data) throws -> PetState {
         let version=try headerVersion(data)
-        guard version <= 4 else { throw PetSaveError.unsupportedVersion(version) }
+        guard version <= 5 else { throw PetSaveError.unsupportedVersion(version) }
         if version == 1 { return try PetSaveMigration.decodeLegacy(data) }
-        guard (2...4).contains(version) else { throw PetSaveError.invalidDocument }
+        guard (2...5).contains(version) else { throw PetSaveError.invalidDocument }
         let document=try JSONDecoder().decode(PetSaveDocument.self,from:data)
         guard document.state.catalogVersion <= 1 else { throw PetSaveError.unsupportedCatalogVersion(document.state.catalogVersion) }
         try document.state.validate();return document.state
@@ -54,7 +54,7 @@ public final class PetSaveStore: PetPersistence {
     }
     private func prepareLoaded(_ data: Data) throws -> PetState {
         var state=try decode(data)
-        if try headerVersion(data) < 4 { pendingLegacy=data; recoveryMessage=(recoveryMessage ?? "") + "旧存档将升级，写入前会独立备份原件。" }
+        if try headerVersion(data) < 5 { pendingLegacy=data; recoveryMessage=(recoveryMessage ?? "") + "旧存档将升级，写入前会独立备份原件。" }
         if state.activity != nil { state.activity?.isPaused=true }
         return state
     }
@@ -112,7 +112,7 @@ public final class PetSaveStore: PetPersistence {
         let source=directory.appendingPathComponent("pet.import-source-\(UUID().uuidString).json")
         try data.write(to:source,options:.withoutOverwriting)
         guard try Data(contentsOf:source)==data else { throw PetSaveError.invalidDocument }
-        if try headerVersion(data)<4 { try preserveLegacy(data) }
+        if try headerVersion(data)<5 { try preserveLegacy(data) }
         try save(imported)
         return imported
     }
@@ -132,7 +132,7 @@ public final class PetSaveStore: PetPersistence {
             let existing = try Data(contentsOf: primary)
             do {
                 _ = try decode(existing)
-                if try headerVersion(existing) < 4 { try preserveLegacy(existing) }
+                if try headerVersion(existing) < 5 { try preserveLegacy(existing) }
                 if let data=pendingLegacy { try preserveLegacy(data) }
                 try existing.write(to: backup, options: .atomic)
             }
