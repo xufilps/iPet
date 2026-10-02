@@ -14,12 +14,16 @@ struct ShopView: View {
                 ForEach(ItemCategory.allCases,id:\.self) { Text($0.title).tag(Optional($0)) }
             }
             Text("早期低价物品可赊账；昂贵物品或经验增量达到 1000 的物品，余额须高于价格。重复食用会衰减，下面显示当前效果倍率。").font(.caption).foregroundStyle(.secondary)
+            if !model.simulationEnabled {
+                Text("养成已关闭：购买即用入口只播放进食动画，不扣款或加属性；买入背包仍按正常价格购买，已有库存使用仍会生效。")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             ScrollView {
                 LazyVStack(spacing:12) {
                     ForEach(model.catalog.items.filter { (category == nil || $0.category == category) && (search.isEmpty || ($0.name+$0.effectDescription+$0.description).localizedCaseInsensitiveContains(search)) }) { item in
                         ItemRow(model:model,item:item) {
                             Button("买入背包") { model.perform(.buyItem(item.id,mode:.inventory)) }
-                            Button("购买并使用") { model.perform(.buyItem(item.id,mode:.useImmediately)) }
+                            Button(model.simulationEnabled ? "购买并使用":"播放进食动画") { model.perform(.buyItem(item.id,mode:.useImmediately)) }
                         }
                     }
                 }

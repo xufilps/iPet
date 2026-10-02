@@ -11,7 +11,7 @@ struct ControlsView: View {
                 Text(model.state.name).font(.title2.bold())
                 Spacer()
                 Text("金币 \(model.state.money.formatted(.number.precision(.fractionLength(2))))").monospacedDigit()
-                Text(model.state.resting ? "休息中" : model.state.mood.title).foregroundStyle(.secondary)
+                Text(model.simulationEnabled ? (model.state.resting ? "休息中":model.state.mood.title):"固定显示：\(model.presentationMood.title)").foregroundStyle(.secondary)
             }
             TabView(selection:$model.selectedPage) {
                 status.tabItem { Text("状态") }.tag(ControlPage.status)
@@ -43,6 +43,14 @@ struct ControlsView: View {
         ScrollView {
         VStack(alignment:.leading,spacing:16) {
             HStack { Text("桌宠大小"); Slider(value:$model.size,in:150...500,step:10).onChange(of:model.size) { model.updateSize() }; Text("\(Int(model.size))").monospacedDigit() }
+            Toggle("启用养成计算",isOn:$model.simulationEnabled).onChange(of:model.simulationEnabled) { model.updateSimulationSettings() }
+            if !model.simulationEnabled {
+                Picker("固定显示状态",selection:$model.fixedMood) {
+                    ForEach(PetMood.allCases,id:\.self) { Text($0.title).tag($0) }
+                }.onChange(of:model.fixedMood) { model.updateSimulationSettings() }
+                Text("停止定时养成与当前活动；抚摸只反馈，购买即用只预览。已有库存使用仍消耗并生效，买入背包仍扣款。实际属性保留，开启后恢复判断且不补算。")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Toggle("随宠工具栏",isOn:$model.toolbarEnabled).onChange(of:model.toolbarEnabled) { model.updateToolbarPreference() }
             Toggle("自主移动",isOn:$model.autoMove).onChange(of:model.autoMove) { model.updateAutoMove() }
             HStack {

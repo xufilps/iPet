@@ -18,9 +18,9 @@ public struct PetTextEntry:Codable,Sendable {
     public var effects:PetDialogueEffects
     public var lowMode,severity:String?
     public var like:Int
-    public func matchesClick(state:PetState,activityName:String?,hour:Int) -> Bool {
+    public func matchesClick(state:PetState,activityName:String?,hour:Int,mood:PetMood?=nil) -> Bool {
         let hourMask=hour<6 ? 8 : hour<12 ? 1 : hour<18 ? 2 : 4
-        let moodMask=1 << (PetMood.allCases.firstIndex(of:state.mood) ?? 1)
+        let moodMask=1 << (PetMood.allCases.firstIndex(of:mood ?? state.mood) ?? 1)
         guard kind=="click",(0..<24).contains(hour),dayTime & hourMask != 0,mode & moodMask != 0 else { return false }
         let active=state.activity != nil && state.activity?.isPaused == false
         if let working, !working.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty {
@@ -32,9 +32,9 @@ public struct PetTextEntry:Codable,Sendable {
         let values=["like":state.affection,"health":state.health,"level":Double(state.level),"money":state.money,"food":state.food,"drink":state.drink,"feel":state.feeling,"strength":state.strength]
         return values.allSatisfy { key,value in value >= bounds[key+"min",default:key=="money" ? -2147483648 : 0] && value <= bounds[key+"max",default:2147483647] }
     }
-    public func matchesLow(state:PetState,kind:String) -> Bool {
+    public func matchesLow(state:PetState,kind:String,mood:PetMood?=nil) -> Bool {
         let value=kind=="food" ? state.food : state.drink
-        let high=state.mood == .happy || state.mood == .normal
+        let high=(mood ?? state.mood) == .happy || (mood ?? state.mood) == .normal
         let tier=state.affection<40 ? 0 : state.affection<70 ? 1 : state.affection<100 ? 2 : 3
         let strength=high ? (value>60 ? "L" : value>40 ? "M" : "S") : (value>40 ? "L" : value>20 ? "M" : "S")
         return self.kind==kind && value < (high ? 70 : 60) && lowMode==(high ? "H" : "L") && severity==strength && (high ? like<=tier : like<tier)
@@ -81,28 +81,28 @@ public final class PetDialogue {
     }
     private func tagged(_ entry:PetTextEntry) -> Bool { !Set(entry.tags).isDisjoint(with:catalog.tags) }
     private func choose(_ entries:[PetTextEntry]) -> PetTextEntry? { entries.isEmpty ? nil : entries[index(entries.count)] }
-    public func click(state:PetState,gameplay:PetCatalog,hour:Int) -> PetTextEntry? {
+    public func click(state:PetState,gameplay:PetCatalog,hour:Int,mood:PetMood?=nil) -> PetTextEntry? {
         let now=clock.now
         guard now.isFinite else { return nil }
         if let lastClick, now >= lastClick, now-lastClick<=20 { return nil }
         lastClick=now
         let activityName=state.activity.flatMap { gameplay.activity($0.activityID)?.name }
-        return choose(catalog.entries.filter { tagged($0) && $0.matchesClick(state:state,activityName:activityName,hour:hour) })
+        return choose(catalog.entries.filter { tagged($0) && $0.matchesClick(state:state,activityName:activityName,hour:hour,mood:mood) })
     }
-    public func automatic(state:PetState,eligible:Bool) -> PetTextEntry? {
+    public func automatic(state:PetState,eligible:Bool,mood:PetMood?=nil) -> PetTextEntry? {
         let now=clock.now,delta=now-previous
         guard now.isFinite,delta>=0,delta<=30 else { resetTiming();return nil }
         previous=now
         guard now>=nextLow else { return nil };nextLow=now+15
         guard eligible else { return nil }
-        let high=state.mood == .happy || state.mood == .normal
+        let high=(mood ?? state.mood) == .happy || (mood ?? state.mood) == .normal
         for kind in ["food","drink"] {
             guard (kind=="food" ? state.food : state.drink) < (high ? 70 : 60) else { continue }
             let count=kind=="food" ? foodCount : drinkCount
             let trigger=index(max(1,count))==0
             if kind=="food" { foodCount=trigger ? 200 : max(1,foodCount-1) }
             else { drinkCount=trigger ? 200 : max(1,drinkCount-1) }
-            if trigger { return choose(catalog.entries.filter { tagged($0) && $0.matchesLow(state:state,kind:kind) }) }
+            if trigger { return choose(catalog.entries.filter { tagged($0) && $0.matchesLow(state:state,kind:kind,mood:mood) }) }
         }
         return nil
     }

@@ -16,6 +16,14 @@ public struct SeededPetRandom: PetRandom {
 /// Serial simulation owner. Call from a single executor (the app uses MainActor).
 public final class PetEngine {
     public private(set) var state: PetState
+    public private(set) var simulationEnabled=true
+    public private(set) var fixedMood:PetMood = .normal
+    public var presentationMood:PetMood { simulationEnabled ? state.mood:fixedMood }
+    public func configureSimulation(enabled:Bool,fixedMood:PetMood) {
+        if simulationEnabled && !enabled { stopActivity(.manual);state.resting=false }
+        if simulationEnabled != enabled { resetClock();lastInteraction=activeSeconds }
+        simulationEnabled=enabled;self.fixedMood=fixedMood
+    }
     private let clock: any PetClock
     private var random: any PetRandom
     public let catalog: PetCatalog
@@ -34,6 +42,7 @@ public final class PetEngine {
     public func tick() {
         let current = clock.now, delta = current - previous
         previous = current
+        guard simulationEnabled else { remainder=0;return }
         // Never catch up a long suspension, sleep, or a backwards clock jump.
         guard delta.isFinite, delta >= 0, delta <= 30 else { remainder = 0; return }
         var remaining=delta
@@ -53,11 +62,11 @@ public final class PetEngine {
         lastInteraction = activeSeconds
         switch command {
         case .touchHead, .touchBody:
-            if state.strength >= 10 && state.feeling < 100 { state.changeStrength(-2); state.changeFeeling(1) }
+            if simulationEnabled && state.strength >= 10 && state.feeling < 100 { state.changeStrength(-2); state.changeFeeling(1) }
             state.resting = false
             return command.isHead ? .head : .body
         case .touchPinch:
-            if state.strength >= 10 && state.feeling < 100 { state.changeStrength(-2);state.changeFeeling(1) }
+            if simulationEnabled && state.strength >= 10 && state.feeling < 100 { state.changeStrength(-2);state.changeFeeling(1) }
             return .pinch
         case .feed: eat(.meal); return .eat
         case .water: eat(.water); return .drink
@@ -69,6 +78,7 @@ public final class PetEngine {
         do { try catalog.validate(); try state.validate() } catch { return PetCommandResult(accepted:false,message:"数据不合法，操作已拒绝。") }
         switch command {
         case .startActivity(let id):
+            guard simulationEnabled else { return result(false,"请先启用养成，再开始活动。") }
             guard let work=catalog.activity(id) else { return result(false,"未知活动。") }
             guard state.mood != .ill else { return result(false,"生病时不能开始活动，请休息或使用药品。") }
             guard state.level >= work.levelLimit else { return result(false,"等级不足，需要等级 \(work.levelLimit)。") }
@@ -78,6 +88,7 @@ public final class PetEngine {
         case .stopActivity: stopActivity(.manual); return result(true,"活动已停止。")
         case .pauseActivity: state.activity?.isPaused=true; return result(true,"活动已暂停。")
         case .resumeActivity:
+            guard simulationEnabled else { return result(false,"请先启用养成，再继续活动。") }
             guard let session=state.activity, let work=catalog.activity(session.activityID) else { return result(false,"原活动不可用，可停止保留的会话。") }
             guard state.mood != .ill, state.level >= work.levelLimit else { return result(false,"当前状态或等级不能继续活动。") }
             state.activity?.isPaused=false; resetClock(); lastInteraction=activeSeconds
@@ -103,6 +114,9 @@ public final class PetEngine {
     }
     private func transactItem(id: String, purchase: Bool, mode: PurchaseMode) -> PetCommandResult {
         guard let item=catalog.item(id) else { return result(false,"未知物品，操作已拒绝。") }
+        if purchase,mode == .useImmediately,!simulationEnabled {
+            events.append(.itemUsed(id:id));return result(true,"养成已关闭，仅预览：\(item.name)。")
+        }
         var next=state
         if purchase {
             if (item.price >= 1000 || item.experience >= 1000) && item.price >= next.money { return result(false,"此物品需要余额高于售价；低价物品可赊账。") }

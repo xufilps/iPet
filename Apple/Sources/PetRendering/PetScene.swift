@@ -290,11 +290,11 @@ import PetCore
         if clip.graphID != graphID || clip.mood != mood { onDiagnostic?("活动动画回退：\(graphID)/\(mood.rawValue)") }
         timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:true);installTimeline()
     }
-    @discardableResult public func restoreBase(state: PetState, catalog: PetCatalog, force: Bool = false) -> Bool {
+    @discardableResult public func restoreBase(state: PetState, catalog: PetCatalog, force: Bool = false, mood:PetMood?=nil) -> Bool {
         guard force || !isFinishingActivity else { return false }
         let base=PetPresentation(state:state,catalog:catalog)
-        if let graph=base.graphID { playActivity(graphID:graph,mood:state.mood) }
-        else { play(base.action,mood:state.mood) }
+        if let graph=base.graphID { playActivity(graphID:graph,mood:mood ?? state.mood) }
+        else { play(base.action,mood:mood ?? state.mood) }
         return true
     }
     public func setFoodImage(path: String?) {
