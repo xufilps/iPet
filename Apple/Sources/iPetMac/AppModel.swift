@@ -19,6 +19,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     @Published var size = UserDefaults.standard.object(forKey: "petSize") as? Double ?? 280
     @Published var autoMove = UserDefaults.standard.object(forKey: "autoMove") as? Bool ?? true
     @Published var visible = true
+    @Published var toolbarEnabled=false
     private(set) var engine: PetEngine!
     private(set) var store: PetSaveStore!
     private var writable = true
@@ -36,6 +37,9 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     private var dialogue:PetDialogue!
     private let speech=PetSpeechWindow()
     private var speechUntil=0.0
+    private var toolbar:PetToolbarWindow?
+    private var lastToolbarRefresh=0.0
+    private var menuToolbar:NSMenuItem!
     private var autonomousUntil = 0.0
     private var suspended = false
     private var observers: [NSObjectProtocol] = []
@@ -51,6 +55,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         }
         size = defaults.object(forKey: "petSize") as? Double ?? 280
         autoMove = defaults.object(forKey: "autoMove") as? Bool ?? true
+        toolbarEnabled = !smokeMode && defaults.bool(forKey:"toolbarEnabled")
     }
     func start() throws {
         size = size.isFinite ? min(500, max(150, size)) : 280
@@ -102,6 +107,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         }
         petView.onDragStart = { [weak self] in
             guard let self else { return }
+            self.toolbar?.hide()
             self.recordAcceptanceInput("drag-start")
             self.engine.recordInteraction(); self.autonomy.reset(); self.autonomousUntil = 0
             self.walkingUntil = 0; self.petScene.play(.raised, mood: self.state.mood)
@@ -115,6 +121,8 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
             petPanel.setFrameOrigin(NSPoint(x: x, y: y)); clampPosition()
         } else { resetPosition() }
         petPanel.orderFrontRegardless()
+        toolbar=PetToolbarWindow { [weak self] action in self?.toolbarAction(action) }
+        refreshToolbar()
         updateTextureResolution()
         buildMenu()
         let workspace = NSWorkspace.shared.notificationCenter
@@ -140,6 +148,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         menu.addItem(item("活动…", #selector(showActivities))); menu.addItem(item("商店…", #selector(showShop)))
         menu.addItem(item("背包…", #selector(showInventory)))
         menu.addItem(item("聊一句", #selector(sayClick)))
+        menuToolbar=item("随宠工具栏",#selector(toggleToolbar));menuToolbar.state=toolbarEnabled ? .on : .off;menu.addItem(menuToolbar)
         menu.addItem(item("休息 / 起床", #selector(rest)))
         menuVisibility = item("隐藏桌宠", #selector(toggleVisibility)); menu.addItem(menuVisibility)
         menu.addItem(item("重置位置", #selector(resetPosition))); menu.addItem(.separator())
@@ -229,8 +238,33 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     }
     private func showSpeech(_ text:String) {
         guard visible, !suspended, let screen=petPanel.screen ?? NSScreen.main else { return }
-        speech.show(text:text,petFrame:petPanel.frame,screen:screen.visibleFrame)
+        speech.show(text:text,petFrame:speechAnchor,screen:screen.visibleFrame)
         speechUntil=ProcessInfo.processInfo.systemUptime+max(5,min(14,Double(text.count)*0.08))
+    }
+    private var speechAnchor:CGRect { toolbar?.visibleFrame.map { petPanel.frame.union($0) } ?? petPanel.frame }
+    @objc func toggleToolbar() { toolbarEnabled.toggle();updateToolbarPreference() }
+    func updateToolbarPreference() {
+        if !smokeMode { UserDefaults.standard.set(toolbarEnabled,forKey:"toolbarEnabled") }
+        menuToolbar?.state=toolbarEnabled ? .on : .off
+        refreshToolbar()
+    }
+    private func refreshToolbar() {
+        guard toolbarEnabled,visible,!suspended,petView?.isInteracting != true,let screen=petPanel?.screen ?? NSScreen.main,engine != nil else { toolbar?.hide();return }
+        toolbar?.update(state:engine.state,catalog:catalog,message:message,petFrame:petPanel.frame,screen:screen.visibleFrame)
+    }
+    private func toolbarAction(_ action:ToolbarAction) {
+        switch action {
+        case .status: selectedPage = .status;showControls()
+        case .activity: showActivities()
+        case .shop: showShop()
+        case .inventory: showInventory()
+        case .rest: command(.toggleRest)
+        case .talk: sayClick()
+        case .pauseOrResume: perform(state.activity?.isPaused == true ? .resumeActivity : .pauseActivity)
+        case .stop: perform(.stopActivity)
+        case .close: toolbarEnabled=false;updateToolbarPreference()
+        }
+        refreshToolbar()
     }
     @objc private func feed() { command(.feed) }
     @objc private func water() { command(.water) }
@@ -242,12 +276,13 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         let delta = min(max(now - (lastTick ?? now), 0), 0.1); lastTick = now
         if speech.isVisible {
             if now>=speechUntil { speech.hide() }
-            else if let screen=petPanel.screen ?? NSScreen.main { speech.updatePosition(petFrame:petPanel.frame,screen:screen.visibleFrame) }
+            else if let screen=petPanel.screen ?? NSScreen.main { speech.updatePosition(petFrame:speechAnchor,screen:screen.visibleFrame) }
         }
         let oldMood = engine.state.mood
         engine.tick()
         consumeEvents()
         if now - lastUIRefresh >= 0.25 { state = engine.state; lastUIRefresh = now }
+        if now-lastToolbarRefresh>=0.25 { refreshToolbar();lastToolbarRefresh=now }
         if oldMood != engine.state.mood {
             if !petScene.playMoodTransition(from:oldMood,to:engine.state.mood) && [.idle,.sleep,.activity].contains(petScene.requestedAction) { restoreBaseAnimation() }
         }
@@ -278,7 +313,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     }
     @objc func toggleVisibility() {
         petView.cancelInteraction()
-        speech.hide();dialogue.resetTiming()
+        speech.hide();toolbar?.hide();dialogue.resetTiming()
         visible.toggle(); menuVisibility.title = visible ? "隐藏桌宠" : "显示桌宠"
         walkingUntil = 0; autonomousUntil = 0; autonomy.reset()
         if visible { restoreBaseAnimation(force:true); petView.isPaused = false; petPanel.orderFrontRegardless() }
@@ -309,7 +344,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         guard !smokeMode else { return }
         UserDefaults.standard.set(petPanel.frame.minX, forKey: "petX"); UserDefaults.standard.set(petPanel.frame.minY, forKey: "petY")
     }
-    private func suspend() { petView.cancelInteraction();speech.hide();dialogue.resetTiming();save(); suspended = true; walkingUntil = 0; autonomousUntil = 0; autonomy.reset(); petView.isPaused = true; petScene.releaseTextures() }
+    private func suspend() { petView.cancelInteraction();speech.hide();toolbar?.hide();dialogue.resetTiming();save(); suspended = true; walkingUntil = 0; autonomousUntil = 0; autonomy.reset(); petView.isPaused = true; petScene.releaseTextures() }
     private func resume() {
         engine.resetClock();dialogue.resetTiming(); lastTick = nil; lastSave = ProcessInfo.processInfo.systemUptime
         autonomousUntil = 0; autonomy.reset(); suspended = false
@@ -320,7 +355,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         do { try store.save(engine.state) }
         catch { message = "保存失败：\(error.localizedDescription)"; NSLog("%@", message) }
     }
-    func stop() { speech.hide();petView?.cancelInteraction();timer?.cancel(); if engine != nil { save() }; persistPositionIfReady() }
+    func stop() { speech.hide();toolbar?.hide();petView?.cancelInteraction();timer?.cancel(); if engine != nil { save() }; persistPositionIfReady() }
     private func persistPositionIfReady() { if petPanel != nil { persistPosition() } }
     @objc func showControls() {
         if controls == nil {

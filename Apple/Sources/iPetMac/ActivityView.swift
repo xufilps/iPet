@@ -8,13 +8,14 @@ struct ActivityView: View {
             VStack(alignment:.leading,spacing:14) {
                 if let session=model.state.activity {
                     let activity=model.catalog.activity(session.activityID)
-                    Text(activity?.name ?? "未识别的活动：\(session.activityID)").font(.headline)
-                    if let activity {
-                        ProgressView(value:min(session.elapsedSeconds,activity.durationSeconds),total:activity.durationSeconds)
+                    let feedback=ActivityFeedback(session:session,activity:activity,mood:model.state.mood)
+                    Text(feedback.title).font(.headline)
+                    if let activity,let progress=feedback.progress {
+                        ProgressView(value:progress)
                         Text("\(Int(session.elapsedSeconds/60)) / \(Int(activity.durationSeconds/60)) 分钟 · 已获 \(session.earned.formatted(.number.precision(.fractionLength(2)))) \(activity.kind == .work ? "金币" : "经验")")
                     }
                     HStack {
-                        if session.isPaused { Button("继续活动") { model.perform(.resumeActivity) }.disabled(activity == nil || model.state.mood == .ill) }
+                        if session.isPaused { Button("继续活动") { model.perform(.resumeActivity) }.disabled(!feedback.canResume) }
                         else { Button("暂停活动") { model.perform(.pauseActivity) } }
                         Button("结束活动") { model.perform(.stopActivity) }
                     }

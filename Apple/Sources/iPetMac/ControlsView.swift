@@ -42,9 +42,10 @@ struct ControlsView: View {
     private var settings: some View {
         VStack(alignment:.leading,spacing:16) {
             HStack { Text("桌宠大小"); Slider(value:$model.size,in:150...500,step:10).onChange(of:model.size) { model.updateSize() }; Text("\(Int(model.size))").monospacedDigit() }
+            Toggle("随宠工具栏",isOn:$model.toolbarEnabled).onChange(of:model.toolbarEnabled) { model.updateToolbarPreference() }
             Toggle("自主移动",isOn:$model.autoMove).onChange(of:model.autoMove) { model.updateAutoMove() }
             HStack { Button(model.visible ? "隐藏桌宠" : "显示桌宠") { model.toggleVisibility() }; Button("重置位置") { model.resetPosition() } }
-            Text("点击头部或身体进行抚摸，拖动角色可以提起。右键打开面板；菜单栏 🐾 可找回桌宠。隐藏后养成继续，退出与系统睡眠期间不补算；重新打开后可在活动页继续暂停的活动。")
+            Text("点击头部或身体进行抚摸，拖动角色可以提起。右键打开面板；菜单栏 🐾 可找回桌宠或开启随宠工具栏。隐藏后养成继续，退出与系统睡眠期间不补算；重新打开后可在活动页继续暂停的活动。")
                 .font(.callout).foregroundStyle(.secondary)
             Divider()
             Text("iPet · v0.2.0\n角色与动画来自虚拟主播模拟器制作组；原作 LorisYounger/VPet。代码 Apache 2.0，动画和图片适用单独授权。原生界面与平台行为仍待实机验收。")
