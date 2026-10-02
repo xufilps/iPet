@@ -20,10 +20,13 @@ struct ShortcutView:View {
                         HStack {
                             Text(entry.name).font(.headline)
                             Spacer()
-                            Button("打开") { model.runShortcut(entry.id) }.disabled(entry.kind == .windowsKeys)
+                            Button("打开") { model.runShortcut(entry.id) }.disabled(entry.kind == .windowsKeys || entry.kind == .macKeys)
                             Button("编辑") { editingID=entry.id;name=entry.name;target=entry.target;kind=entry.kind }.disabled(!model.shortcutsEditable)
                         }
-                        Text(entry.target).font(.caption).foregroundStyle(.secondary).textSelection(.enabled).lineLimit(3)
+                        if entry.kind == .macKeys {
+                            if let macro=try? PetKeyboardMacro.decodeTarget(entry.target) { Text("原生按键计划 · \(macro.steps.count)步骤").font(.caption).foregroundStyle(.secondary) }
+                        } else { Text(entry.target).font(.caption).foregroundStyle(.secondary).textSelection(.enabled).lineLimit(3) }
+                        if entry.kind == .macKeys { Text("原生按键配置已识别，录制与发送入口尚在推进，当前不可执行。").font(.caption).foregroundStyle(.secondary) }
                         if entry.kind == .windowsKeys { Text("保留的Windows按键序列，当前不能执行。可删除或编辑为原生链接/路径。").font(.caption).foregroundStyle(.orange) }
                         HStack {
                             Button("置顶") { model.editShortcut(.front(entry.id)) }.disabled(!model.shortcutsEditable || index==0)
@@ -41,8 +44,13 @@ struct ShortcutView:View {
                     Text("链接").tag(PetShortcutKind.url)
                     Text("应用、文件或文件夹").tag(PetShortcutKind.file)
                     if kind == .windowsKeys { Text("Windows按键（仅保留）").tag(PetShortcutKind.windowsKeys) }
+                    if kind == .macKeys { Text("原生按键（发送器待接入）").tag(PetShortcutKind.macKeys) }
                 }.disabled(!model.shortcutsEditable)
-                TextField(kind == .file ? "绝对路径，例如 /Applications/Safari.app":"完整URL，例如 https://example.com",text:$target).disabled(!model.shortcutsEditable || kind == .windowsKeys)
+                if kind == .macKeys {
+                    Text("原生按键计划已识别，录制与发送入口尚未开放。可保留当前记录，或改为链接/文件。").font(.caption).foregroundStyle(.secondary)
+                } else {
+                    TextField(kind == .file ? "绝对路径，例如 /Applications/Safari.app":"完整URL，例如 https://example.com",text:$target).disabled(!model.shortcutsEditable || kind == .windowsKeys)
+                }
                 if kind == .file { Button("选择应用或文件…") { chooseFile() }.disabled(!model.shortcutsEditable) }
                 HStack {
                     Button(editingID==nil ? "添加并保存":"保存修改") {

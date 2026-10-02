@@ -37,7 +37,7 @@
 | 联机/对话生态 | MutiPlayer接口；TalkBox及插件可扩展对话 | 无联机、AI服务或网络对话 | 不将插件能力视为内置AI已移植 | 尚未迁移 | U9、U12、U14 → A1 | 5研究 |
 | iOS | 本基线Windows工程，无原生iOS产品 | PetCore/PetRendering Simulator编译通过，无iOS界面/真机证据 | 移动应用内养宠另做前后台适配 | 待验证 | U1 → A6 | 6 |
 | 发行与许可证 | 原README渠道及Apache代码/独立素材授权 | GitHub源码、自用ad-hoc构建；原署名/许可随包，无签名公证发行包 | 发行准备未完成；素材授权独立 | 部分实现 | 原README、LICENSE → A5、A7 | 0、6 |
-| 性能和稳定性 | 原版实现不能单凭源码推断性能 | 缓存估算48MiB、按帧加载；v0.1历史120秒观察；当前共204个Swift测试，短时实机记录不替代长期观察；两小时留到功能完善后 | 无同条件Windows对照，不能声称更省资源/稳定 | 待验证 | U8 → A3、A7 | 1 |
+| 性能和稳定性 | 原版实现不能单凭源码推断性能 | 缓存估算48MiB、按帧加载；v0.1历史120秒观察；当前共215个Swift测试，短时实机记录不替代长期观察；两小时留到功能完善后 | 无同条件Windows对照，不能声称更省资源/稳定 | 待验证 | U8 → A3、A7 | 1 |
 
 ## 2026-10-02 逐功能复核补充
 
@@ -56,8 +56,8 @@
 | 存档管理界面 | 查看/选择存档、多开档、新建/重开等 | 单JSON v7、版本原件备份、显式导出与确认恢复、打开存档目录 | 多档列表/新建与Windows LPS导入未迁移 | 部分实现 | U6、U7、U11 → A1、A2 | 4、5 |
 | 活动倍率与排程 | Work.Double与平衡公式；套餐/抽成/自动续费后循环执行 | 倍率需求、等级与收益重算、会话/历史保存；14项套餐签署/退款/到期检查续费 | 日程队列/执行/存档与操作界面已接入，实机待验；基线抽成只保存/展示，不另加无来源扣除；0授权拒绝负价续费 | 部分实现 | ExtensionFunction.Double/FixOverLoad、ScheduleTask → PetActivityMultiplier、PetEngine、ActivityView | 2、5 |
 | 活动收藏与检索 | work_star按名称保存，收藏类别/菜单及任务排程 | 名称搜索、类别/收藏筛选、默认/名称/时长/等级升降序，按ID收藏 | 原生检索扩展；本机偏好不随档，日程与DIY链接/本机目标已接入，Windows按键仍缺 | 部分实现 | U6 winWorkMenu → PetActivityQuery、ActivityView、AppModel | 3、5 |
-| 自定义菜单链接/启动目标 | DIY名称/内容、删除/首尾排序、LoadDIY/RunDIY | 原生快捷页、菜单栏与随宠Menu；打开系统URL处理器及本机应用/文件/文件夹，独立配置v1与备份 | macOS NSWorkspace代替Process.Start，原LPS DIY未导入 | 部分实现 | U6 MainWindow/DIYViewer → PetShortcuts、AppModel、ShortcutView、PetToolbarWindow | 5 |
-| Windows按键序列 | SendKeys键语法、录制及发送到应用 | Windows键记录保留不可执行，无录制/转换 | 需独立macOS按键与权限方案，不能直接解释Windows语法 | 需要平台替代 | U6 MainWindow.RunDIY/DIYViewer → PetShortcuts.windowsKeys | 5 |
+| 自定义菜单链接/启动目标 | DIY名称/内容、删除/首尾排序、LoadDIY/RunDIY | 原生快捷页、菜单栏与随宠Menu；打开系统URL处理器及本机应用/文件/文件夹，独立配置v2与备份，保留v1升级原件 | macOS NSWorkspace代替Process.Start，原LPS DIY未导入 | 部分实现 | U6 MainWindow/DIYViewer → PetShortcuts、AppModel、ShortcutView、PetToolbarWindow | 5 |
+| Windows按键序列 | SendKeys键语法、录制及发送到应用 | Windows键记录保留不可执行；原生组合键/文本模型已实现，录制/投递未接入 | 需独立macOS按键与权限方案，不能直接解释Windows语法 | 需要平台替代 | U6 MainWindow.RunDIY/DIYViewer → PetShortcuts.windowsKeys、PetKeyboardMacro | 5 |
 | 开发者控制台/报告 | 控制台、调试与报告窗口 | 尚无原生对应入口 | 独立周边功能，未随快捷列表迁移 | 尚未迁移 | U6、U9 → A1 | 5 |
 | 开机启动 | Windows启动设置及Steam启动选项 | 不提供 | macOS需独立登录项实现，原计划默认不纳入首版 | 需要平台替代 | U6 → A1 | 6或单独规格 |
 
@@ -223,3 +223,6 @@ PetIdleCycles、PetManifest.fidgetCandidates/resolveFidget、PetScene和AppModel
 
 
 阶段5G：本机自定义快捷名称/目标编辑、删除/置顶置底、原生页面/菜单栏/随宠Menu接入。链接与绝对本机路径显式区分，由NSWorkspace打开，不运行shell；Windows键记录保留不可执行，不支持原DIY LPS导入、多开或插件入口。独立shortcuts.json v1原子保存与previous，未来v2主或备份保护、损坏原件锁编辑、显式恢复先保留当前原件，副本保存成功才发布；与PetState/v7导入相互独立。新增9项核心，140核心+64渲染=204 Swift、17 Python/macOS/iOS/签名通过。未打开任何真实目标或写正式配置；跨应用实际打开、随宠Menu焦点/点击、恢复交互/压力仍待验。详情[规格](specs/PHASE-5G.md)。
+
+
+阶段5H任务1：原生组合键/文本有序计划与配置兼容已实现；录制UI和实际发送仍待任务2，macKeys菜单禁用。宏v1校验步骤/文本/键码边界，文本按UTF16分块且不拆代理对，Tab/CRLF映射键事件；纯核心PID/权限门槛不执行平台投递。快捷配置v2读取v1不写盘，首次改写及恢复v1备份前保留独立原件；根未来v3及嵌套未来宏保护主档/备份/恢复。修复合法Unicode格式字符（如家庭emoji）被误判控制字符，真实C0/C1限制保留。宠物存档仍v7；回滚旧版先退出并备份整个目录，移开v2主档/previous后恢复独立v1原件。151核心+64渲染=215 Swift、17 Python/macOS/iOS/签名验证；未请求权限、投递真实按键或修改正式配置。独立6.1-sol审查受线程限额阻止，采用作者自查，不能替代独立审查或实机验收。详情[规格](specs/PHASE-5H.md)。

@@ -33,6 +33,11 @@ final class PetShortcutTests:XCTestCase {
         }
         XCTAssertEqual(try PetShortcutEntry(id:1,name:"邮件",kind:.url,target:"mailto:user@example.com").resolvedURL().scheme,"mailto")
     }
+    func testUnicodeJoinedEmojiInNamesAndPathsRemainsLiteral() throws {
+        let path="/tmp/👨‍👩‍👧‍👦.md"
+        let entry=PetShortcutEntry(id:1,name:"家庭👨‍👩‍👧‍👦",kind:.file,target:path)
+        try entry.validate();XCTAssertEqual(try entry.resolvedURL().path,path)
+    }
     func testWindowsKeyRecordSurvivesButCannotExecute() throws {
         var list=PetShortcutList();try list.edit(.add(name:"原键序列",kind:.windowsKeys,target:"^(c)"))
         let loaded=try JSONDecoder().decode(PetShortcutList.self,from:JSONEncoder().encode(list))
@@ -43,7 +48,7 @@ final class PetShortcutTests:XCTestCase {
         for _ in 0..<1000 { try list.edit(.add(name:"网站",kind:.url,target:"https://example.com")) }
         let before=list;XCTAssertThrowsError(try list.edit(.add(name:"满",kind:.url,target:"https://example.com")));XCTAssertEqual(list,before)
         XCTAssertThrowsError(try PetShortcutEntry(id:1,name:String(repeating:"字",count:101),kind:.url,target:"https://example.com").validate())
-        for raw in [#"{"version":2,"entries":[],"nextID":1}"#,#"{"version":1,"entries":[],"nextID":0}"#,#"{"version":1,"entries":[{"id":1,"name":"a","kind":"url","target":"https://example.com"},{"id":1,"name":"b","kind":"url","target":"https://example.com"}],"nextID":2}"#] {
+        for raw in [#"{"version":3,"entries":[],"nextID":1}"#,#"{"version":1,"entries":[],"nextID":0}"#,#"{"version":1,"entries":[{"id":1,"name":"a","kind":"url","target":"https://example.com"},{"id":1,"name":"b","kind":"url","target":"https://example.com"}],"nextID":2}"#] {
             XCTAssertThrowsError(try JSONDecoder().decode(PetShortcutList.self,from:Data(raw.utf8)))
         }
     }
@@ -63,7 +68,7 @@ final class PetShortcutTests:XCTestCase {
             let dir=directory();defer { try? FileManager.default.removeItem(at:dir) }
             let store=PetShortcutStore(directory:dir),value=try list("安全")
             try store.save(value);try store.save(value)
-            let path=futureInBackup ? store.backup:store.primary,bytes=Data(#"{"version":2,"entries":[]}"#.utf8)
+            let path=futureInBackup ? store.backup:store.primary,bytes=Data(#"{"version":3,"entries":[]}"#.utf8)
             try bytes.write(to:path)
             XCTAssertThrowsError(try store.save(value));XCTAssertEqual(try Data(contentsOf:path),bytes)
             XCTAssertThrowsError(try store.restoreBackup());XCTAssertEqual(try Data(contentsOf:path),bytes)

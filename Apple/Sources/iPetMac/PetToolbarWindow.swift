@@ -29,7 +29,7 @@ private struct PetToolbarView:View {
                 shortcut("状态",.status);shortcut("活动",.activity);shortcut("商店",.shop)
                 shortcut("背包",.inventory);shortcut(display.resting ? "起床" : "休息",.rest);shortcut("聊一句",.talk)
                 Menu("自定义") {
-                    ForEach(display.shortcuts) { entry in Button(entry.name) { action(.shortcut(entry.id)) }.disabled(entry.kind == .windowsKeys) }
+                    ForEach(display.shortcuts) { entry in Button(entry.name) { action(.shortcut(entry.id)) }.disabled(entry.kind == .windowsKeys || entry.kind == .macKeys) }
                     if !display.shortcuts.isEmpty { Divider() }
                     Button("管理快捷入口…") { action(.shortcuts) }
                 }.frame(maxWidth:.infinity)

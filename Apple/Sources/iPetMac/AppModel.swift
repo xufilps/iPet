@@ -292,7 +292,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         guard let menu=shortcutMenu else { return };menu.removeAllItems()
         for entry in shortcuts.entries {
             let item=NSMenuItem(title:entry.name,action:#selector(runShortcutMenu(_:)),keyEquivalent:"")
-            item.target=self;item.tag=entry.id;item.isEnabled=entry.kind != .windowsKeys;menu.addItem(item)
+            item.target=self;item.tag=entry.id;item.isEnabled=entry.kind != .windowsKeys && entry.kind != .macKeys;menu.addItem(item)
         }
         if !shortcuts.entries.isEmpty { menu.addItem(.separator()) }
         let manage=NSMenuItem(title:"管理快捷入口…",action:#selector(showShortcuts),keyEquivalent:"");manage.target=self;menu.addItem(manage)
