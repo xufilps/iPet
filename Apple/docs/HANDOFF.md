@@ -215,3 +215,11 @@ toolbarEnabled仅新增UserDefaults偏好，smoke不读写，保存v2/动画v3/�
 110项Swift（56核心/54渲染）、15项Python、macOS Release/ad-hoc及iOS共享模块构建/签名通过；工程重复生成、原README7775字节后缀/LICENSE完整、文档链接/diff检查通过。纯核心验证ONE/TWO/返回和次数改变概率、分支6；渲染验证TWO C回ONE B无提前完成、最终结束/手动打断、Ill无资源、概率打盹退出与人工休息保持。测试去变体以隔离随机来源，同时实际素材完成加载验证。证据在忽略目录Apple/build/verification/specialidle-*及tests.log；真实观感、输入、多屏/睡眠与压力未验。
 
 保存v2/清单v3/文本v1不变，可选idleLoopLimit扩展specialIdle/sleep并兼容旧清单；展示保持启动时状态，循环内变体/状态重选、扩展随机插件和活动中互动尚缺，自动睡眠完整养成对照继续核对。回滚同步源码/转换器重建，正式存档退出备份，不降级保存；继续可独立实施的差异，最终实机和压力保留。
+
+## 阶段3Q循环内状态与变体刷新 — 2026-10-02
+
+版本仍v0.2.0，阶段切换或B完成时从原清单按当前状态解析当前Graph并重选该阶段变体，保留人工结束、续一次与概率循环计数，不重播A；活动/人工休息状态变化不再重启。动态提起下一轮与放下、特殊内部返回也使用最新状态；新语义动作清理旧排队状态。缺Ill资源结束后回当前Ill基础，食物层保留并刷新轨迹。
+
+115项Swift（56核心/59渲染）、15项Python、macOS Release/ad-hoc与iOS共享模块构建/签名通过；工程两次生成一致、原README7775字节后缀/LICENSE完整及diff检查通过。回归先复现缺Ill动作结束回旧状态和新特殊待机误用旧排队状态，再修复验证；另覆盖当前阶段变体、结束标志、按住捏脸和人工休息状态换图。证据在忽略目录Apple/build/verification/playback-*和tests.log；未新增真实观感/输入、多屏/睡眠或压力证据。
+
+原MainDisplay.cs DisplaySleep(force=false)不修改WorkingState，force=true才置Sleep，随机打盹与人工休息的养成区分已核对符合原版。资源147组合/4248PNG/555.1MiB、按需48MiB纹理缓存及保存v2/清单v3/文本v1不变；阶段剩余时间安全夹取不承诺.NET帧级/随机序列一致。继续全部MoveEnd入口和原生操作/设置缺口，最终实机和压力保留。回滚源码重建，正式存档退出备份，不降级保存。

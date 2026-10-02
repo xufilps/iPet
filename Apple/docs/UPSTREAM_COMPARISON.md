@@ -1,6 +1,6 @@
 # Windows 原版与 iPet 的持续差异矩阵
 
-原版基线：`1a06c5981330564bab05a098d2d7969a4b119dd3`；iPet 当前基线：v0.2.0，已推进至阶段3P；部分实机验收已记录，压力测试按用户要求留到功能完善后。原版功能依据上游固定基线源码，不将第三方插件功能算作内置功能；当前行为依据 Apple 源码和已记录验证。后续每次迁移更新本表、行为说明和交接记录。源码入口编号在文末，阶段对应 [ROADMAP.md](ROADMAP.md)。
+原版基线：`1a06c5981330564bab05a098d2d7969a4b119dd3`；iPet 当前基线：v0.2.0，已推进至阶段3Q；部分实机验收已记录，压力测试按用户要求留到功能完善后。原版功能依据上游固定基线源码，不将第三方插件功能算作内置功能；当前行为依据 Apple 源码和已记录验证。后续每次迁移更新本表、行为说明和交接记录。源码入口编号在文末，阶段对应 [ROADMAP.md](ROADMAP.md)。
 
 状态定义：**已保留**为纳入范围的原规则已移植；**已适配**为平台或产品行为有明确变化；**部分实现**为有可用子集；**尚未迁移**为没有原生实现；**需要平台替代**为原机制不能直接复用；**待验证**为代码或构建证据不足以完成验收。状态指本行能力，不代表整个类别完成。
 
@@ -170,3 +170,11 @@ PetIdleCycles、PetManifest.fidgetCandidates/resolveFidget、PetScene和AppModel
 原随机分支6进入StateONE；MainDisplay.StateONEing以duration10循环退出，Next(2+CountNomal)==0进入TWO并递增CountNomal，TWO结束后C返回ONE B，后续进入TWO概率随次数下降。当前PetSpecialIdle与PetScene完整阶段链已接入，人工结束/新动作清理内部返回，缺当前状态ONE回普通待机，Ill不借非Ill。打盹使用sleep duration20概率循环，取消固定20秒定时器，状态变化不按人工休息路径提前重置打盹；人工休息仍无限循环。
 
 资源147组合/4248PNG/555.1MiB（物品另计），新增6个特殊状态组合，保存v2/清单v3/文本v1不变；可选idleLoopLimit接受specialIdle/sleep且旧清单用默认值。详见[规格](specs/PHASE-3P.md)，阶段3仍“部分实现”：展示保留开始时状态、逐循环变体重抽/扩展随机插件与活动中互动未迁移；打盹不新增state.resting或补算离线时间，自动睡眠养成效果需后续全场景对照。真实两阶段观感、输入/多屏/睡眠和压力待验。
+
+## 阶段3Q循环内状态与变体
+
+原GraphCore.FindGraph/FindGraphs每次Display按当前Mode和阶段重新抽图。当前Manifest.resolvePlayback逐动作/Graph/阶段查询，Timeline.rebind保留阶段、循环/人工结束/续一次标志及余量，Scene在阶段变化/B边界重新选当前变体，不重播A；AppModel排队最新显示状态，活动和人工休息状态变化不再重开开始段。动态提起下一轮也重查原素材，捏脸循环效果产生的新状态立即排队；无Ill资源请求结束，最终回最新状态待机，不借非Ill延长动作。
+
+详见[规格](specs/PHASE-3Q.md)，阶段3仍“部分实现”。资源147组合/4248PNG/555.1MiB、保存v2/清单v3/文本v1不变；250ms内跨多个短循环只渲染最后可见结果，余量夹到新时长内，为安全时间轴适配，不承诺.NET随机序列或逐帧一致。原全部MoveEnd侧挂、自动睡眠养成对照、扩展池和完整配置仍缺；真实状态变化观感、焦点/输入、多屏/睡眠与压力待验。
+
+自动打盹养成核对：基线MainDisplay.cs的DisplaySleep(false)只播A及概率B循环，不设置WorkingState；DisplaySleep(true)才设置Sleep并无限循环。iPet随机playDoze不设置resting，人工休息设置resting，符合该区分；本项为源码与模型核对，未增加实机验收证据。

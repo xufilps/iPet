@@ -1,6 +1,6 @@
 # 对照原版的剩余功能 — 2026-10-02
 
-复核基线为原版 `1a06c598`；当前清单随阶段3P更新。原C#依据来自保留Git历史，当前实现以Swift源码为准。完整状态与来源见 [UPSTREAM_COMPARISON.md](UPSTREAM_COMPARISON.md)；以下按用户能观察到的体验组织缺口。
+复核基线为原版 `1a06c598`；当前清单随阶段3Q更新。原C#依据来自保留Git历史，当前实现以Swift源码为准。完整状态与来源见 [UPSTREAM_COMPARISON.md](UPSTREAM_COMPARISON.md)；以下按用户能观察到的体验组织缺口。
 
 ## 已有能力，不重复当成待开发
 
@@ -10,9 +10,9 @@
 
 | 缺口 | 当前实际行为 | 原版依据 | 建议顺序 |
 | --- | --- | --- | --- |
-| 自主随机行为 | 已实现15秒抽选、9种普通待机、StateONE/StateTWO和打盹概率退出；扩展池、活动中互动与逐循环状态/变体选择仍缺 | MainLogic.EventTimer_Elapsed，MainDisplay.DisplayToIdel/StateONE/StateTWO | 1：先建立可测调度，分别考虑空闲、活动、休息、生病和人工互动 |
+| 自主随机行为 | 已实现15秒抽选、9种普通待机、StateONE/StateTWO和打盹概率退出；循环内状态/变体重选已接入；扩展池和活动中互动仍缺 | MainLogic.EventTimer_Elapsed，MainDisplay.DisplayToIdel/StateONE/StateTWO | 1：先建立可测调度，分别考虑空闲、活动、休息、生病和人工互动 |
 | 动画变体与状态过渡 | 147组合并非全部动作；Default/抚摸/Boring/Squat变体和逐级状态过渡已接入，其余动画变体仍缺 | PlaySwitchAnimat、Graph/PetLoader；convert_assets.py choices[0] | 2：建立完整资源差距清单，再接入变体和Switch_Up/Down |
-| 抚摸/按压细节 | 原区域300ms长按、连续抚摸续循环及动态三次/静态悬挂/直接放下已实现；长按捏脸/持续效果已接入；RaisePoint定位、循环状态贴图切换和特殊提起关联仍缺 | Main.xaml.cs按压流程、MainDisplay.DisplayToTouchHead/Body | 3：完善输入状态机，与提起/拖动清楚区分 |
+| 抚摸/按压细节 | 原区域300ms长按、连续抚摸续循环及动态三次/静态悬挂/直接放下已实现；长按捏脸/持续效果已接入；RaisePoint定位、特殊提起关联与RaisePoint定位仍缺 | Main.xaml.cs按压流程、MainDisplay.DisplayToTouchHead/Body | 3：完善输入状态机，与提起/拖动清楚区分 |
 | 说话栏与原文案 | 671条离线文案、原生气泡与空闲饥渴提醒已接入；选项式聊天、说话动画、语音和完整消息设置仍缺 | MessageBar、ClickText/LowText/SelectText、TalkBox | 4：先本地文本与状态提醒，再研究网络对话；不依赖AI服务 |
 | 随宠工具栏 | 可选原生工具栏及活动进度/暂停/继续/结束已接入；原多级快捷菜单、自动隐藏和完整WorkTimer反馈仍缺 | ToolBar.xaml/.cs、WorkTimer | 5：原生快捷入口和活动反馈，不复制WPF布局 |
 | 丰富移动/边缘行为 | 状态快/慢走、爬行、起步反向及边缘提前停止已实现；循环计数随机退出和同方向水平衔接已接入，左右/顶部爬墙、斜向下落和侧挂/探头/回正已实现；原内置16条初始/兼容移动池已接入，缺全部MoveEnd侧挂、智能范围与跨屏策略 | DisplayToMove、MoveSideHideCheck、winMoveArea | 6：动作和窗口规则一起实现，跨屏在真实验收后确认 |
@@ -73,3 +73,5 @@ Steam、工坊、云存档、联机、联网聊天和C#插件需要独立接口/
 阶段3O恢复9个普通待机Graph、Single/ABC概率退出与逐阶段状态回退；StateONE/StateTWO两阶段特殊待机及扩展池下一批核对。资源包增至540.8MiB，按需纹理缓存维持48MiB，但真实内存/卡顿尚未测，压力留最后。
 
 阶段3P已接入两阶段特殊待机和打盹概率退出；继续逐循环状态/变体重选与自动睡眠养成对照，然后原生操作/设置缺口。扩展插件不宣称兼容，最终实机和压力仍待验证。
+
+阶段3Q接入循环边界状态/变体刷新、保留人工结束与续一次、Ill缺图安全结束。继续核对自动睡眠养成与原全部MoveEnd入口，再推进背包/设置等独立原生操作；最终观感/实机与压力仍待验证。

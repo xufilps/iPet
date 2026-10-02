@@ -197,7 +197,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         NSApp.mainMenu = main
     }
     private func applyPinchEffects() {
-        _ = engine.send(.touchPinch);state=engine.state;autonomy.reset();consumeEvents();save()
+        _ = engine.send(.touchPinch);state=engine.state;petScene.setPlaybackMood(state.mood);autonomy.reset();consumeEvents();save()
     }
     func command(_ command: PetCommand) {
         petView.cancelInteraction()
@@ -265,8 +265,9 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         guard engine.applyDialogue(entry.effects) else { message="本地文本效果不合法，未应用。";return }
         state=engine.state;autonomy.reset();consumeEvents();save()
         if oldMood != state.mood {
-            if !petScene.playMoodTransition(from:oldMood,to:state.mood) && ([.idle,.activity].contains(petScene.requestedAction) || (petScene.requestedAction == .sleep && engine.state.resting)) { restoreBaseAnimation() }
+            _ = petScene.playMoodTransition(from:oldMood,to:state.mood)
         }
+        petScene.setPlaybackMood(state.mood)
         showSpeech(entry.rendered(state:state))
     }
     private func showSpeech(_ text:String) {
@@ -314,11 +315,12 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         }
         let oldMood = engine.state.mood
         engine.tick()
+        petScene.setPlaybackMood(engine.state.mood)
         consumeEvents()
         if now - lastUIRefresh >= 0.25 { state = engine.state; lastUIRefresh = now }
         if now-lastToolbarRefresh>=0.25 { refreshToolbar();lastToolbarRefresh=now }
         if oldMood != engine.state.mood {
-            if !petScene.playMoodTransition(from:oldMood,to:engine.state.mood) && ([.idle,.activity].contains(petScene.requestedAction) || (petScene.requestedAction == .sleep && engine.state.resting)) { restoreBaseAnimation() }
+            _ = petScene.playMoodTransition(from:oldMood,to:engine.state.mood)
         }
         if visible {
             petPanel.ignoresMouseEvents = !petView.isInteracting && !petView.opaqueUnderMouse()

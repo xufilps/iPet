@@ -48,6 +48,15 @@ public struct AnimationClip: Codable, Sendable {
     public let mood: PetMood
     public var stages: [AnimationStage]
     public var idleLoopLimit:Int?=nil
+    public func selectingVariant(phase:AnimationPhase,random:inout any PetRandom) -> Self {
+        var result=self
+        if let index=result.stages.firstIndex(where: { $0.phase == phase }) {
+            let stage=result.stages[index],choices=[stage.layers]+(stage.variants ?? [])
+            let value=choices.count>1 ? random.unit():0,unit=value.isFinite ? min(1.0.nextDown,max(0,value)):0
+            result.stages[index]=AnimationStage(phase:phase,layers:choices[Int(unit*Double(choices.count))],foodTrack:stage.foodTrack)
+        }
+        return result
+    }
     public func selectingVariants(random: inout any PetRandom) -> Self {
         var result=self
         result.stages=stages.map { stage in
@@ -125,6 +134,17 @@ public struct PetManifest: Codable, Sendable {
         else { return nil }
         return AnimationClip(graphID:graphID,action:.fidget,mood:mood,stages:stages,idleLoopLimit:family.compactMap(\.idleLoopLimit).first)
     }
+    public func resolvePlayback(action:PetAction,graphID:String?,mood:PetMood) -> AnimationClip? {
+        if action == .fidget,let graphID { return resolveFidget(graphID:graphID,mood:mood) }
+        let family=clips.filter { $0.action == action && (graphID == nil || $0.graphID == graphID) && (mood == .ill ? $0.mood == .ill:$0.mood != .ill) }
+        guard !family.isEmpty else { return nil }
+        let order:[PetMood]=mood == .happy ? [.happy,.normal,.poor]:mood == .normal ? [.normal,.poor,.happy]:mood == .poor ? [.poor,.normal,.happy]:[.ill]
+        let stages:[AnimationStage]=[AnimationPhase.start,.loop,.end].compactMap { phase in
+            order.lazy.compactMap { candidate in family.first { $0.mood == candidate }?.stages.first { $0.phase == phase } }.first
+        }
+        guard !stages.isEmpty else { return nil }
+        return AnimationClip(graphID:graphID,action:action,mood:mood,stages:stages,idleLoopLimit:family.compactMap(\.idleLoopLimit).first)
+    }
     public func resolve(action: PetAction, mood: PetMood) -> AnimationClip {
         clips.first { $0.action == action && $0.mood == mood }
         ?? clips.first { $0.action == action && $0.mood == .normal }
@@ -142,6 +162,12 @@ public struct AnimationTimeline {
     private var keepLooping: Bool
     private var continueOnce = false
     public init(clip: AnimationClip, looping: Bool) { self.clip = clip; keepLooping = looping }
+    @discardableResult public mutating func rebind(clip replacement:AnimationClip) -> Bool {
+        guard !finished,let index=replacement.stages.firstIndex(where: { $0.phase == stage.phase }) else { return false }
+        clip=replacement;stageIndex=index
+        elapsed=min(elapsed,max(0,stage.duration.nextDown))
+        return true
+    }
     public var stage: AnimationStage { clip.stages[stageIndex] }
     public mutating func requestFinish() { keepLooping = false;continueOnce=false }
     @discardableResult public mutating func requestContinue() -> Bool {
