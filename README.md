@@ -1,3 +1,5 @@
+> 当前检查点（2026-10-02）：第五阶段的本机功能开发与生态研究已收尾，按用户要求暂停，不进入第六阶段。整体实机验收和完整原版还原尚未完成；交付、证据、保留限制与恢复方法见[第五阶段交接](Apple/docs/PHASE-5-HANDOFF.md)，生态依赖见[研究说明](Apple/docs/ECOSYSTEM_RESEARCH.md)。
+
 # iPet
 
 <img src="Apple/Design/ipet-icon-pixel-v1-master.png" alt="iPet 像素风图标" width="128">
