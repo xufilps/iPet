@@ -355,7 +355,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
             case .walkLeft, .walkRight:
                 _ = chooseMovement()
             case .fidget:
-                petScene.playFidget(graphID:autonomy.fidgetGraphID,mood:engine.state.mood)
+                _ = petScene.playRandomFidget(mood:engine.state.mood)
             case .doze:
                 autonomousUntil=now+20;petScene.play(.sleep,mood:engine.state.mood)
             }

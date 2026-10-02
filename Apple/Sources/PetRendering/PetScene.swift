@@ -54,6 +54,7 @@ import PetCore
     private var sideHideMain:AnimationClip?
     private var sideHideReturning=false
     private(set) var raisedCycles:Int?
+    private var fidgetCycles:PetIdleCycles?
     private var random: any PetRandom
     private var transitionSteps: [PetMoodTransition] = []
     private var transitionTarget: PetMood?
@@ -119,7 +120,7 @@ import PetCore
         play(action,mood:mood)
     }
     public func play(_ action: PetAction, mood: PetMood) {
-        sideHideMain=nil;sideHideReturning=false;raisedCycles=nil
+        sideHideMain=nil;sideHideReturning=false;raisedCycles=nil;fidgetCycles=nil
         transitionSteps=[];transitionTarget=nil
         isFinishingActivity=false; requestedGraphID=nil
         requestedAction = action; self.mood = mood
@@ -163,7 +164,7 @@ import PetCore
     public var isMovementAnimation:Bool { timeline.map { [.walkLeft,.walkRight,.climb].contains($0.clip.action) } ?? false }
     public var currentPhase:AnimationPhase? { timeline?.stage.phase }
     public func playMovement(_ action:PetAction,graphID:String,mood:PetMood) {
-        sideHideMain=nil;sideHideReturning=false;raisedCycles=nil
+        sideHideMain=nil;sideHideReturning=false;raisedCycles=nil;fidgetCycles=nil
         transitionSteps=[];transitionTarget=nil;isFinishingActivity=false
         requestedAction=action;requestedGraphID=graphID;self.mood=mood
         let clip=manifest.clips.first { $0.action==action && $0.graphID==graphID && $0.mood==mood }
@@ -178,7 +179,7 @@ import PetCore
             ?? manifest.clips.first(where: { $0.action == .sideHide && $0.graphID == graphID && $0.mood == .normal }) else {
             onDiagnostic?("侧挂动画缺失：\(graphID)/\(mood.rawValue)");play(.idle,mood:mood);return false
         }
-        transitionSteps=[];transitionTarget=nil;isFinishingActivity=false;raisedCycles=nil
+        transitionSteps=[];transitionTarget=nil;isFinishingActivity=false;raisedCycles=nil;fidgetCycles=nil
         requestedAction = .sideHide;requestedGraphID=graphID;self.mood=mood
         if clip.mood != mood { onDiagnostic?("侧挂状态回退：\(graphID)/\(mood.rawValue)") }
         sideHideMain=clip;sideHideReturning=false
@@ -223,20 +224,26 @@ import PetCore
     public func finishSideHide() {
         guard requestedAction == .sideHide,let main=sideHideMain else { return }
         // Recovery from Main or Rise always plays Main C directly.
-        sideHideMain=nil;sideHideReturning=false;raisedCycles=nil;installSideHideEnd(main)
+        sideHideMain=nil;sideHideReturning=false;raisedCycles=nil;fidgetCycles=nil;installSideHideEnd(main)
+    }
+    @discardableResult public func playRandomFidget(mood:PetMood) -> Bool {
+        let choices=manifest.fidgetCandidates(mood:mood)
+        guard !choices.isEmpty else { return false }
+        let value=random.unit(),unit=value.isFinite ? min(1.0.nextDown,max(0,value)):0
+        guard let graph=choices[Int(unit*Double(choices.count))].graphID else { return false }
+        playFidget(graphID:graph,mood:mood);return true
     }
     public func playFidget(graphID: String, mood: PetMood) {
-        sideHideMain=nil;sideHideReturning=false;raisedCycles=nil
+        sideHideMain=nil;sideHideReturning=false;raisedCycles=nil;fidgetCycles=nil
         transitionSteps=[];transitionTarget=nil
         isFinishingActivity=false;requestedAction = .fidget;requestedGraphID=graphID;self.mood=mood
-        let clip=manifest.clips.first { $0.action == .fidget && $0.graphID == graphID && $0.mood == mood }
-            ?? manifest.clips.first { $0.action == .fidget && $0.graphID == graphID && $0.mood == .normal }
-            ?? manifest.resolve(action:.idle,mood:mood)
+        let clip=manifest.resolveFidget(graphID:graphID,mood:mood) ?? manifest.resolve(action:.idle,mood:mood)
         if clip.graphID != graphID || clip.mood != mood { onDiagnostic?("自主待机回退：\(graphID)/\(mood.rawValue)") }
-        timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:false);installTimeline()
+        fidgetCycles=clip.idleLoopLimit.map { PetIdleCycles(limit:$0) }
+        timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:fidgetCycles != nil);installTimeline()
     }
     public func playActivity(graphID: String, mood: PetMood) {
-        sideHideMain=nil;sideHideReturning=false;raisedCycles=nil
+        sideHideMain=nil;sideHideReturning=false;raisedCycles=nil;fidgetCycles=nil
         transitionSteps=[];transitionTarget=nil
         isFinishingActivity=false;requestedAction = .activity;requestedGraphID=graphID;self.mood=mood
         let clip=manifest.resolveActivity(graphID:graphID,mood:mood)
@@ -282,6 +289,12 @@ import PetCore
             if requestedAction == .idle, let timeline, timeline.stage.phase == .loop {
                 let cycles=Int((timeline.elapsed+delta)/timeline.stage.duration)
                 for _ in 0..<cycles { onIdleCycle?() }
+            }
+            if requestedAction == .fidget,let current=timeline,current.stage.phase == .loop,fidgetCycles != nil {
+                let cycles=Int((current.elapsed+delta)/current.stage.duration)
+                for _ in 0..<cycles {
+                    if fidgetCycles?.continueAfterLoop(random:&random) != true { timeline?.requestFinish();break }
+                }
             }
             if requestedAction == .pinch,let current=timeline,current.clip.action == .pinch,current.stage.phase == .loop {
                 let generation=timelineGeneration

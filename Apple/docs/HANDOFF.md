@@ -199,3 +199,11 @@ toolbarEnabled仅新增UserDefaults偏好，smoke不读写，保存v2/动画v3/�
 102项Swift（52核心/50渲染）、15项Python、macOS Release/ad-hoc签名与iOS共享模块编译通过；工程重复生成、原README7775字节后缀/LICENSE完整及文档链接/diff检查通过。测试覆盖10/100边界和休息保持、长按只消费一次/仍可转拖动、配置坐标、按住循环与释放完成、Ill缺资源拒绝、解码失败通知和动作打断不再调用旧效果。证据在忽略目录Apple/build/verification/pinch-*及tests.log，未新增物理长按/焦点/穿透、多屏/睡眠或压力证据。
 
 侧挂时禁pinch保留找回/拖动优先，循环显示状态保持开始时，不实时切换贴图；原头/身体宿主统计事件、好友联动、特殊Graph和RaisePoint定位仍未迁移。保存v2/动画v3/文本v1不变，回滚同步源码/转换器重建；退出备份正式存档，不降级保存。继续核对特殊随机待机及独立原生操作缺口，最终实机和压力测试保留。
+
+## 阶段3O普通待机池与概率循环 — 2026-10-02
+
+版本仍v0.2.0，普通待机9个有效Graph，合计141组合/4132PNG/540.8MiB（物品另计）；Single只播一次，ABC循环以Next(++count)>duration退出，默认10/boring与squat20。无状态目录按Nomal、happy_like520按Happy，B-only amusement不独立触发。逐阶段非Ill相邻状态回退保留，开心Squat缺B借Nomal。人工动作清理计数，手动结束与旧回调隔离。
+
+106项Swift（54核心/52渲染）、15项Python、macOS Release/ad-hoc及iOS共享模块构建/签名通过；工程重复生成、原README7775字节后缀/LICENSE完整、文档链接/diff通过。测试覆盖原>duration边界、固定/非法随机、默认状态/Single、9Graph池、开心缺B回退、Ill不借非Ill和动画概率结束。旧C-only帧排序夹具补A成为可触发动作；旧侧挂打断测试显式结束新待机再检查，保留不能回旧侧挂断言。证据在忽略目录Apple/build/verification/idlepool-*及tests.log；真实显示、内存/卡顿、多屏/睡眠与压力未验。
+
+清单v3增加可选idleLoopLimit，兼容旧清单；保存v2/文本v1不变，无养成数据变化。资源包增加104.3MiB，仍按需48MiB纹理缓存，未以代码缓存上限替代实际内存测量。StateONE/StateTWO、扩展池、打盹20秒上限及逐循环变体重选尚缺，继续两阶段特殊待机；回滚源码/转换器重建，正式存档退出备份，不降级保存，最终压力保留。

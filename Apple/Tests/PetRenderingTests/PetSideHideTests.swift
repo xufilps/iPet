@@ -94,6 +94,9 @@ final class PetSideHideTests:XCTestCase {
                 scene.update(50)
                 for step in 1...160 { scene.update(50+Double(step)*0.25) }
                 XCTAssertNotEqual(scene.requestedAction,.sideHide)
+                XCTAssertNotEqual(scene.requestedGraphID,"sidehide."+side)
+                scene.finishAction()
+                for step in 1...80 { scene.update(90+Double(step)*0.25) }
                 XCTAssertNil(scene.requestedGraphID)
             }
         }

@@ -61,7 +61,10 @@ def convert(source, destination):
     roots += [(action,'MOVE/'+graph,graph) for action,side in [('walkLeft','left'),('walkRight','right')] for graph in ['walk.'+side+'.faster','walk.'+side+'.slow','crawl.'+side]]
     roots += [('sideHide','SideHide_'+side+'_'+kind,'sidehide.'+side.lower()+('' if kind=='Main' else '.rise')) for side in ['Left','Right'] for kind in ['Main','Rise']]
     roots += [('climb','MOVE/'+graph,graph) for graph in ['climb.left','climb.right','climb.top.left','climb.top.right','fall.left','fall.right']]
-    roots += [('fidget', 'IDEL/Boring', 'boring'), ('fidget', 'IDEL/Squat', 'squat'), ('stateUp','Switch/Up',None),('stateDown','Switch/Down',None)]
+    roots += [('fidget',p.relative_to(pet).as_posix(),p.name.lower()) for p in sorted((pet/'IDEL').iterdir(),key=natural) if p.is_dir()] if (pet/'IDEL').exists() else []
+    roots += [('stateUp','Switch/Up',None),('stateDown','Switch/Down',None)]
+    config_lines=(source/'pet/vup.lps').read_text(encoding='utf-8-sig').splitlines()
+    durations=next((fields(line) for line in config_lines if line.startswith('duration:')), {})
     for line in (source/'pet/vup.lps').read_text(encoding='utf-8-sig').splitlines():
         if not line.startswith('work:'): continue
         graph=fields(line)['Graph'].lower()
@@ -75,6 +78,30 @@ def convert(source, destination):
             root = pet / 'MOVE/walk.left.slow'
         leaves = sorted({p.parent for p in root.rglob('*.png')}, key=natural)
         for mode in MODES:
+            if action=='fidget':
+                def tokens(directory):
+                    return re.split(r'[/_]',directory.relative_to(pet).as_posix().lower())
+                def inferred_mode(directory):
+                    parts=tokens(directory)
+                    return next((m for m in MODES if m.lower() in parts),'Nomal')
+                def phase(directory):
+                    parts=tokens(directory)
+                    return next((p for p,names in [('start',['a','start']),('loop',['b','loop']),('end',['c','end'])] if any(n in parts for n in names)),'single')
+                matching=[p for p in leaves if inferred_mode(p)==mode]
+                groups={p:[d for d in matching if phase(d)==p] for p in ['start','loop','end','single']}
+                selected=['start','loop','end'] if groups['start'] else ['single'] if groups['single'] else []
+                stages=[]
+                for p in selected:
+                    choices=groups[p]
+                    if not choices: continue
+                    stage={'phase':'loop' if p=='single' else p,'layers':[layer(choices[0],0)],'foodTrack':[]}
+                    if len(choices)>1: stage['variants']=[[layer(d,0)] for d in choices[1:]]
+                    stages.append(stage)
+                if stages:
+                    clip={'action':action,'mood':mode,'graphID':graph,'stages':stages}
+                    if groups['start'] and groups['loop']: clip['idleLoopLimit']=int(durations.get(graph,10))
+                    clips.append(clip)
+                continue
             matching = [p for p in leaves if mode.lower() in p.relative_to(root).as_posix().lower()]
             if not matching:
                 continue  # Renderer explicitly falls back to Nomal/idle.

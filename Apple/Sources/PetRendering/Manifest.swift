@@ -47,6 +47,7 @@ public struct AnimationClip: Codable, Sendable {
     public let action: PetAction
     public let mood: PetMood
     public var stages: [AnimationStage]
+    public var idleLoopLimit:Int?=nil
     public func selectingVariants(random: inout any PetRandom) -> Self {
         var result=self
         result.stages=stages.map { stage in
@@ -78,6 +79,9 @@ public struct PetManifest: Codable, Sendable {
         }
         var identifiers = Set<String>()
         for clip in clips {
+            if let limit=clip.idleLoopLimit {
+                guard (0...1_000_000).contains(limit),clip.action == .fidget else { throw fail("待机循环配置无效。") }
+            }
             guard identifiers.insert(clip.action.rawValue + (clip.graphID ?? "") + clip.mood.rawValue).inserted, !clip.stages.isEmpty,
                   Set(clip.stages.map(\.phase)).count == clip.stages.count else { throw fail("动画重复或缺少阶段。") }
             for stage in clip.stages {
@@ -104,6 +108,22 @@ public struct PetManifest: Codable, Sendable {
         ?? clips.first { $0.action == .activity && $0.graphID == graphID && $0.mood == .normal }
         ?? clips.first { $0.action == .activity && $0.graphID == graphID }
         ?? resolve(action:.idle,mood:mood)
+    }
+    public func fidgetCandidates(mood:PetMood) -> [AnimationClip] {
+        Set(clips.filter { $0.action == .fidget }.compactMap(\.graphID)).sorted().compactMap { resolveFidget(graphID:$0,mood:mood) }
+    }
+    public func resolveFidget(graphID:String,mood:PetMood) -> AnimationClip? {
+        let family=clips.filter { $0.action == .fidget && $0.graphID == graphID && (mood == .ill ? $0.mood == .ill:$0.mood != .ill) }
+        guard !family.isEmpty else { return nil }
+        let order:[PetMood]=mood == .happy ? [.happy,.normal,.poor]:mood == .normal ? [.normal,.poor,.happy]:mood == .poor ? [.poor,.normal,.happy]:[.ill]
+        func stage(_ phase:AnimationPhase) -> AnimationStage? {
+            order.lazy.compactMap { candidate in family.first { $0.mood == candidate }?.stages.first { $0.phase == phase } }.first
+        }
+        let stages:[AnimationStage]
+        if let start=stage(.start) { stages=[start]+[stage(.loop),stage(.end)].compactMap { $0 } }
+        else if let single=stage(.loop) { stages=[single] }
+        else { return nil }
+        return AnimationClip(graphID:graphID,action:.fidget,mood:mood,stages:stages,idleLoopLimit:family.compactMap(\.idleLoopLimit).first)
     }
     public func resolve(action: PetAction, mood: PetMood) -> AnimationClip {
         clips.first { $0.action == action && $0.mood == mood }

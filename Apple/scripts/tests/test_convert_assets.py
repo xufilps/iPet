@@ -47,12 +47,15 @@ class ConversionTests(unittest.TestCase):
     def test_upstream_numeric_only_filename_uses_final_numeric_milliseconds(self):
         directory=self.source/'pet/vup/IDEL/Squat/C_Happy'
         directory.mkdir(parents=True)
+        start=self.source/'pet/vup/IDEL/Squat/A_Happy'
+        start.mkdir(parents=True)
+        (start/'000_100.png').write_bytes(png(5))
         (directory/'0002.png').write_bytes(png(10))
         (directory/'0001.png').write_bytes(png(20))
         self.run_conversion()
         manifest=json.loads((self.output/'manifest.json').read_text())
         clip=next(c for c in manifest['clips'] if c.get('graphID')=='squat')
-        frames=clip['stages'][0]['layers'][0]['frames']
+        frames=next(s for s in clip['stages'] if s['phase']=='end')['layers'][0]['frames']
         self.assertEqual([f['duration'] for f in frames],[0.001,0.002])
         self.assertTrue(frames[0]['path'].endswith('0001.png'))
 
