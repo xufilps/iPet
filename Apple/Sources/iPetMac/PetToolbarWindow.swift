@@ -4,8 +4,9 @@ import SwiftUI
 import PetCore
 import PetRendering
 
-enum ToolbarAction { case status,activity,shop,inventory,rest,talk,pauseOrResume,stop,close }
+enum ToolbarAction { case shortcut(Int),shortcuts, status,activity,shop,inventory,rest,talk,pauseOrResume,stop,close }
 @MainActor private final class ToolbarPresentation:ObservableObject {
+    @Published var shortcuts:[PetShortcutEntry]=[]
     @Published var name=""
     @Published var mood=""
     @Published var message=""
@@ -27,6 +28,11 @@ private struct PetToolbarView:View {
             LazyVGrid(columns:columns,spacing:6) {
                 shortcut("状态",.status);shortcut("活动",.activity);shortcut("商店",.shop)
                 shortcut("背包",.inventory);shortcut(display.resting ? "起床" : "休息",.rest);shortcut("聊一句",.talk)
+                Menu("自定义") {
+                    ForEach(display.shortcuts) { entry in Button(entry.name) { action(.shortcut(entry.id)) }.disabled(entry.kind == .windowsKeys) }
+                    if !display.shortcuts.isEmpty { Divider() }
+                    Button("管理快捷入口…") { action(.shortcuts) }
+                }.frame(maxWidth:.infinity)
             }
             if let feedback=display.feedback {
                 Divider()
@@ -65,9 +71,9 @@ private struct PetToolbarView:View {
         panel.isReleasedWhenClosed=false;panel.collectionBehavior=[.canJoinAllSpaces,.fullScreenAuxiliary]
         hosting=ToolbarHostingView(rootView:PetToolbarView(display:display,action:action));panel.contentView=hosting
     }
-    func update(state:PetState,catalog:PetCatalog,message:String,petFrame:CGRect,screen:CGRect) {
+    func update(state:PetState,catalog:PetCatalog,message:String,shortcuts:[PetShortcutEntry]=[],petFrame:CGRect,screen:CGRect) {
         display.name=state.name;display.mood=state.resting ? "休息中" : state.mood.title
-        display.resting=state.resting;display.message=message
+        display.resting=state.resting;display.message=message;display.shortcuts=shortcuts
         display.feedback=state.activity.map { ActivityFeedback(session:$0,activity:catalog.activity($0.activityID),mood:state.mood) }
         hosting.layoutSubtreeIfNeeded()
         let frame=SpeechPlacement.frame(pet:petFrame,bubble:hosting.fittingSize,screen:screen,preferBelow:true)

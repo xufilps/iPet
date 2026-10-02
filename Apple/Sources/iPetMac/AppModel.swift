@@ -8,10 +8,15 @@ import UniformTypeIdentifiers
 import PetCore
 import PetRendering
 
-enum ControlPage: String, CaseIterable { case status="状态", activity="活动", schedule="日程", shop="商店", inventory="背包", settings="设置", statistics="统计" }
+enum ControlPage: String, CaseIterable { case status="状态", activity="活动", schedule="日程", shortcuts="快捷", shop="商店", inventory="背包", settings="设置", statistics="统计" }
 
 @MainActor final class AppModel: ObservableObject {
     @Published var state = PetState()
+    @Published private(set) var shortcuts=PetShortcutList()
+    @Published private(set) var shortcutError=""
+    @Published private(set) var shortcutsEditable=true
+    private var shortcutStore:PetShortcutStore!
+    private var shortcutMenu:NSMenu?
     @Published var selectedPage = ControlPage.status
     private(set) var catalog = PetCatalog()
     private(set) var assetRoot: URL!
@@ -96,6 +101,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
             } else { base = FileManager.default.temporaryDirectory.appendingPathComponent("iPet-smoke-\(ProcessInfo.processInfo.processIdentifier)") }
         }
         else { base = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent("VPetApple") }
+        shortcutStore=PetShortcutStore(directory:base);reloadShortcuts()
         store = PetSaveStore(directory: base)
         do { state = try store.load() ?? PetState(); message = store.recoveryMessage ?? "" }
         catch { writable = false; message = "\(error.localizedDescription) 本次仅运行，存档写入已暂停。" }
@@ -209,6 +215,9 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         menu.addItem(item("日程…",#selector(showSchedule)));menu.addItem(item("活动…", #selector(showActivities))); menu.addItem(item("商店…", #selector(showShop)))
         menu.addItem(item("背包…", #selector(showInventory)))
         menu.addItem(item("统计与历史…", #selector(showStatistics)))
+        let custom=NSMenuItem(title:"自定义快捷",action:nil,keyEquivalent:"")
+        shortcutMenu=NSMenu(title:"自定义快捷");shortcutMenu?.autoenablesItems=false;custom.submenu=shortcutMenu;menu.addItem(custom)
+        rebuildShortcutMenu()
         menu.addItem(item("聊一句", #selector(sayClick)))
         menuToolbar=item("随宠工具栏",#selector(toggleToolbar));menuToolbar.state=toolbarEnabled ? .on : .off;menu.addItem(menuToolbar)
         menu.addItem(item("休息 / 起床", #selector(rest)))
@@ -243,6 +252,52 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         }
         save()
     }
+    func reloadShortcuts() {
+        guard shortcutStore != nil else { return }
+        do { shortcuts=try shortcutStore.load();shortcutsEditable=true;shortcutError="";rebuildShortcutMenu() }
+        catch { shortcutsEditable=false;shortcutError="快捷配置读取失败：\(error.localizedDescription) 原文件与上次已读取列表已保留。" }
+    }
+    @discardableResult func editShortcut(_ action:PetShortcutEdit) -> Bool {
+        guard shortcutsEditable,shortcutStore != nil else { return false }
+        do {
+            var next=shortcuts;try next.edit(action);try shortcutStore.save(next)
+            shortcuts=next;shortcutError="";message="快捷入口已保存。";rebuildShortcutMenu();refreshToolbar();return true
+        } catch { shortcutError="快捷入口保存失败：\(error.localizedDescription) 已保存列表未改变。";return false }
+    }
+    func runShortcut(_ id:Int) {
+        guard let entry=shortcuts.entries.first(where:{ $0.id==id }) else { message="快捷入口已不存在。";return }
+        do {
+            try entry.validate();let url=try entry.resolvedURL()
+            if url.isFileURL,!FileManager.default.fileExists(atPath:url.path) { message="目标路径不存在，记录仍保留：\(entry.name)。";return }
+            guard NSWorkspace.shared.open(url) else { message="系统无法打开目标，记录仍保留：\(entry.name)。";return }
+            message="已向系统请求打开：\(entry.name)。"
+        } catch { message="打开快捷入口失败：\(error.localizedDescription)" }
+    }
+    func openShortcutFolder() {
+        do {
+            try FileManager.default.createDirectory(at:shortcutStore.directory,withIntermediateDirectories:true)
+            message=NSWorkspace.shared.open(shortcutStore.directory) ? "已请求打开快捷配置目录。":"系统无法打开快捷配置目录。"
+        }
+        catch { shortcutError="无法打开配置目录：\(error.localizedDescription)" }
+    }
+    func restoreShortcuts() {
+        let alert=NSAlert();alert.messageText="恢复上一份快捷入口备份？"
+        alert.informativeText="只恢复快捷列表，宠物存档不变。当前快捷配置会独立保留原件；未来版本不会覆盖。"
+        alert.addButton(withTitle:"恢复并保留原件");alert.addButton(withTitle:"取消")
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        do { shortcuts=try shortcutStore.restoreBackup();shortcutsEditable=true;shortcutError="";message="快捷入口备份已恢复，原件已保留。";rebuildShortcutMenu();refreshToolbar() }
+        catch { shortcutError="恢复快捷备份失败：\(error.localizedDescription)" }
+    }
+    private func rebuildShortcutMenu() {
+        guard let menu=shortcutMenu else { return };menu.removeAllItems()
+        for entry in shortcuts.entries {
+            let item=NSMenuItem(title:entry.name,action:#selector(runShortcutMenu(_:)),keyEquivalent:"")
+            item.target=self;item.tag=entry.id;item.isEnabled=entry.kind != .windowsKeys;menu.addItem(item)
+        }
+        if !shortcuts.entries.isEmpty { menu.addItem(.separator()) }
+        let manage=NSMenuItem(title:"管理快捷入口…",action:#selector(showShortcuts),keyEquivalent:"");manage.target=self;menu.addItem(manage)
+    }
+    @objc private func runShortcutMenu(_ sender:NSMenuItem) { runShortcut(sender.tag) }
     var scheduleAccess:PetScheduleAccess {
         PetScheduleAccess(writable:writable,saveFailed:packageWriteFailed,busy:inventoryUseTask != nil,simulationEnabled:simulationEnabled)
     }
@@ -362,6 +417,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         guard petScene != nil, sideHidePlan == nil, petView?.isInteracting != true else { return }
         _ = petScene.restoreBase(state:engine.state,catalog:catalog,force:force,mood:presentationMood)
     }
+    @objc private func showShortcuts() { selectedPage = .shortcuts;showControls() }
     @objc private func showSchedule() { selectedPage = .schedule;showControls() }
     @objc private func showActivities() { selectedPage = .activity; showControls() }
     @objc private func showShop() { selectedPage = .shop; showControls() }
@@ -394,7 +450,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     }
     private func refreshToolbar() {
         guard toolbarEnabled,visible,!suspended,petView?.isInteracting != true,let screen=companionScreen,engine != nil else { toolbar?.hide();return }
-        toolbar?.update(state:engine.state,catalog:catalog,message:message,petFrame:petPanel.frame,screen:screen)
+        toolbar?.update(state:engine.state,catalog:catalog,message:message,shortcuts:shortcuts.entries,petFrame:petPanel.frame,screen:screen)
     }
     private func toolbarAction(_ action:ToolbarAction) {
         switch action {
@@ -402,6 +458,8 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         case .activity: showActivities()
         case .shop: showShop()
         case .inventory: showInventory()
+        case .shortcuts: showShortcuts()
+        case .shortcut(let id): runShortcut(id)
         case .rest: command(.toggleRest)
         case .talk: sayClick()
         case .pauseOrResume: perform(state.activity?.isPaused == true ? .resumeActivity : .pauseActivity)
@@ -646,7 +704,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
             let alert=NSAlert();alert.messageText="恢复此存档？"
             let quantity=preview.inventory.values.reduce(0,+)
             let unknown=preview.inventory.keys.filter { catalog.item($0) == nil }.count
-            alert.informativeText="\(preview.name) · 等级 \(preview.level) · 金币 \(preview.money.formatted(.number.precision(.fractionLength(2))))\n库存 \(quantity) 件，未知物品 \(unknown) 种；导入活动保持暂停。\n当前最新状态和导入原件会独立保留在存档目录。Windows LPS不支持。"
+            alert.informativeText="\(preview.name) · 等级 \(preview.level) · 金币 \(preview.money.formatted(.number.precision(.fractionLength(2))))\n库存 \(quantity) 件，未知物品 \(unknown) 种；导入活动保持暂停。\n当前最新状态和导入原件会独立保留在存档目录。快捷入口列表不随此恢复改变。Windows LPS不支持。"
             if preview.schedule?.isRunning == true { alert.informativeText += "\n导入日程将保持暂停，不自动续费或执行。" }
             if let session=preview.activity { alert.informativeText += "\n导入活动倍率：\(session.effectiveMultiplier)倍。" }
             if !simulationEnabled,preview.activity != nil { alert.informativeText += "\n养成当前关闭，导入活动会按该设置结束；原始会话仍保留在导入原件。" }

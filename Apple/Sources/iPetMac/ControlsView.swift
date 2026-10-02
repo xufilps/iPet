@@ -20,6 +20,7 @@ struct ControlsView: View {
                 ShopView(model:model).tabItem { Text("商店") }.tag(ControlPage.shop)
                 InventoryView(model:model).tabItem { Text("背包") }.tag(ControlPage.inventory)
                 StatisticsView(model:model).tabItem { Text("统计") }.tag(ControlPage.statistics)
+                ShortcutView(model:model).tabItem { Text("快捷") }.tag(ControlPage.shortcuts)
                 settings.tabItem { Text("设置") }.tag(ControlPage.settings)
             }
             if !model.message.isEmpty {
