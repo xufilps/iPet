@@ -11,13 +11,16 @@ public final class PetAutonomy {
     private var previous: TimeInterval
     private var nextSample: TimeInterval
     public private(set) var idleCycles = 0
+    public private(set) var interactionCycle:Int
     public private(set) var fidgetGraphID = "boring"
-    public init(clock: any PetClock = SystemPetClock(), random: any PetRandom = SeededPetRandom(seed: UInt64.random(in: 0...UInt64.max))) {
+    public init(clock: any PetClock = SystemPetClock(), random: any PetRandom = SeededPetRandom(seed: UInt64.random(in: 0...UInt64.max)), interactionCycle:Int=200) {
         self.clock=clock;self.random=random;previous=clock.now;nextSample=previous+15
+        self.interactionCycle=min(1000,max(30,interactionCycle))
     }
     public static func canStart(state: PetState, action: PetAction, visible: Bool, interacting: Bool, finishing: Bool) -> Bool {
         visible && !interacting && !finishing && action == .idle && !state.resting && state.activity == nil
     }
+    public func setInteractionCycle(_ value:Int) { interactionCycle=min(1000,max(30,value)) }
     public func reset() { previous=clock.now;nextSample=previous+15;idleCycles=0 }
     public func recordIdleCycle() { idleCycles=min(1_000_000,idleCycles+1) }
     private func unit() -> Double {
@@ -31,7 +34,7 @@ public final class PetAutonomy {
         guard now >= nextSample else { return nil }
         nextSample=now+15
         guard eligible else { return nil }
-        let roll=Int(unit()*Double(max(20,200-idleCycles)))
+        let roll=Int(unit()*Double(max(20,interactionCycle-idleCycles)))
         switch roll {
         case 0...2:
             guard allowsMovement, mood != .ill else { return nil }

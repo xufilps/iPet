@@ -17,6 +17,7 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     private var lastUIRefresh = 0.0
     @Published var message = ""
     @Published var size = UserDefaults.standard.object(forKey: "petSize") as? Double ?? 280
+    @Published var interactionCycle=200
     @Published var autoMove = UserDefaults.standard.object(forKey: "autoMove") as? Bool ?? true
     @Published var visible = true
     @Published var toolbarEnabled=false
@@ -66,8 +67,10 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
         autoMove = defaults.object(forKey: "autoMove") as? Bool ?? true
         toolbarEnabled = !smokeMode && defaults.bool(forKey:"toolbarEnabled")
         favoriteItems = smokeMode ? []:Set(defaults.stringArray(forKey:"favoriteItems") ?? [])
+        interactionCycle=smokeMode ? 200:min(1000,max(30,defaults.object(forKey:"interactionCycle") as? Int ?? 200))
     }
     func start() throws {
+        autonomy.setInteractionCycle(interactionCycle)
         size = size.isFinite ? min(500, max(150, size)) : 280
         let base: URL
         if smokeMode {
@@ -476,6 +479,11 @@ enum ControlPage: String, CaseIterable { case status="状态", activity="活动"
     }
     private func updateTextureResolution() {
         petScene.setTextureResolution(pixelWidth: Int(size * (petPanel.screen?.backingScaleFactor ?? 2)))
+    }
+    func updateInteractionCycle() {
+        interactionCycle=min(1000,max(30,interactionCycle))
+        autonomy.setInteractionCycle(interactionCycle)
+        if !smokeMode { UserDefaults.standard.set(interactionCycle,forKey:"interactionCycle") }
     }
     func updateAutoMove() {
         if !smokeMode { UserDefaults.standard.set(autoMove, forKey: "autoMove") }

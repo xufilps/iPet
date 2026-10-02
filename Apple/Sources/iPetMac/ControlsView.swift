@@ -40,10 +40,20 @@ struct ControlsView: View {
         }.padding(16)
     }
     private var settings: some View {
+        ScrollView {
         VStack(alignment:.leading,spacing:16) {
             HStack { Text("桌宠大小"); Slider(value:$model.size,in:150...500,step:10).onChange(of:model.size) { model.updateSize() }; Text("\(Int(model.size))").monospacedDigit() }
             Toggle("随宠工具栏",isOn:$model.toolbarEnabled).onChange(of:model.toolbarEnabled) { model.updateToolbarPreference() }
             Toggle("自主移动",isOn:$model.autoMove).onChange(of:model.autoMove) { model.updateAutoMove() }
+            HStack {
+                Text("自主互动周期")
+                Slider(value:Binding(get:{ Double(model.interactionCycle) },set:{ model.interactionCycle=Int($0.rounded()) }),in:30...1000,step:1)
+                    .onChange(of:model.interactionCycle) { model.updateInteractionCycle() }
+                Text("\(model.interactionCycle)").monospacedDigit().frame(width:45)
+                Button("恢复默认") { model.interactionCycle=200 }
+            }
+            Text("数值越小通常越活跃；影响随机移动、待机和打盹的机会，不改变养成速度。当前每15秒采样，持续待机后概率会提高，并非固定间隔触发。")
+                .font(.caption).foregroundStyle(.secondary)
             HStack { Button(model.visible ? "隐藏桌宠" : "显示桌宠") { model.toggleVisibility() }; Button("重置位置") { model.resetPosition() } }
             Text("点击头部或身体进行抚摸，拖动角色可以提起。右键打开面板；菜单栏 🐾 可找回桌宠或开启随宠工具栏。隐藏后养成继续，退出与系统睡眠期间不补算；重新打开后可在活动页继续暂停的活动。")
                 .font(.callout).foregroundStyle(.secondary)
@@ -56,6 +66,7 @@ struct ControlsView: View {
             }
             Spacer()
         }.padding(16)
+        }
     }
     private func metric(_ title:String,_ value:Double) -> some View {
         HStack { Text(title).frame(width:38,alignment:.leading); ProgressView(value:value,total:100); Text(value.formatted(.number.precision(.fractionLength(1)))).monospacedDigit().frame(width:44,alignment:.trailing) }

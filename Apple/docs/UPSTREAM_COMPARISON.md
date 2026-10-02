@@ -1,6 +1,6 @@
 # Windows 原版与 iPet 的持续差异矩阵
 
-原版基线：`1a06c5981330564bab05a098d2d7969a4b119dd3`；iPet 当前基线：v0.2.0，已推进至阶段3T；部分实机验收已记录，压力测试按用户要求留到功能完善后。原版功能依据上游固定基线源码，不将第三方插件功能算作内置功能；当前行为依据 Apple 源码和已记录验证。后续每次迁移更新本表、行为说明和交接记录。源码入口编号在文末，阶段对应 [ROADMAP.md](ROADMAP.md)。
+原版基线：`1a06c5981330564bab05a098d2d7969a4b119dd3`；iPet 当前基线：v0.2.0，已推进至阶段3U；部分实机验收已记录，压力测试按用户要求留到功能完善后。原版功能依据上游固定基线源码，不将第三方插件功能算作内置功能；当前行为依据 Apple 源码和已记录验证。后续每次迁移更新本表、行为说明和交接记录。源码入口编号在文末，阶段对应 [ROADMAP.md](ROADMAP.md)。
 
 状态定义：**已保留**为纳入范围的原规则已移植；**已适配**为平台或产品行为有明确变化；**部分实现**为有可用子集；**尚未迁移**为没有原生实现；**需要平台替代**为原机制不能直接复用；**待验证**为代码或构建证据不足以完成验收。状态指本行能力，不代表整个类别完成。
 
@@ -184,3 +184,5 @@ PetIdleCycles、PetManifest.fidgetCandidates/resolveFidget、PetScene和AppModel
 阶段3S按winInventory.UpdateList接入背包名称搜索/分类/收藏、默认/名称/数量/单价升降序与全库存价值汇总；未知物品保留并标记未计价。状态仍部分实现：原详情数量/批量使用尚缺，收藏从原物品Star适配为本机偏好，未纳入跨机保存；排序文化与大小写搜索是原生适配。依据：PetInventoryQuery、InventoryView和AppModel.toggleFavorite；单件养成/经济规则不变，真实UI尚待验。
 
 阶段3T接入背包数量输入/步进、按库存夹取、逐件批量使用及停止剩余，重复衰减/库存/保存结果有固定时钟对照。原winInventory.UseItem与Food UseAction → PetEngine.useItems、AppModel.useInventory、InventoryUseControls；主线程分批32件及批内只展示最后进食是平台响应性适配，非原动画请求队列完全一致。每批保存，保存失败停止、只读模式拒绝开始；收藏随档迁移和真实批量/取消/睡眠验收仍缺，存档v2不变。
+
+阶段3U将硬编码互动周期改为30...1000可调/默认200，本机偏好保存；原MainLogic max(20,InteractionCycle-CountNomal)范围沿用，修改不清空计数或抢先采样。依据winGameSetting.InteractionSlider、Setting.InteractionCycle → PetAutonomy.setInteractionCycle、AppModel/ControlsView。仍15秒采样/基础待机才触发，活动中互动权重和扩展池未迁移；养成关闭/固定状态仍缺，真实频率观感待验。

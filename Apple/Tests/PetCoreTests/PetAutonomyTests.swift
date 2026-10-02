@@ -59,4 +59,23 @@ final class PetAutonomyTests: XCTestCase {
         let results=run();XCTAssertEqual(results,run())
         XCTAssertTrue(results.contains(.walkLeft));XCTAssertTrue(results.contains(.walkRight))
     }
+    func testConfiguredCycleChangesSelectionAndPreservesSchedule() {
+        let clock=FakeClock()
+        let scheduler=PetAutonomy(clock:clock,random:FixedRandom(value:0.1),interactionCycle:200)
+        clock.now=15;XCTAssertNil(scheduler.poll(eligible:true,allowsMovement:true,mood:.normal))
+        scheduler.setInteractionCycle(30)
+        clock.now=16;XCTAssertNil(scheduler.poll(eligible:true,allowsMovement:true,mood:.normal))
+        clock.now=30;XCTAssertEqual(scheduler.poll(eligible:true,allowsMovement:true,mood:.normal),.fidget)
+        XCTAssertEqual(scheduler.interactionCycle,30)
+    }
+    func testCycleClampingAndIdleRandomFloor() {
+        let clock=FakeClock(),scheduler=PetAutonomy(clock:clock,random:FixedRandom(value:0.15),interactionCycle:Int.max)
+        XCTAssertEqual(scheduler.interactionCycle,1000)
+        for _ in 0..<990 { scheduler.recordIdleCycle() }
+        scheduler.setInteractionCycle(1000)
+        XCTAssertEqual(scheduler.idleCycles,990)
+        clock.now=15;XCTAssertEqual(scheduler.poll(eligible:true,allowsMovement:true,mood:.normal),.fidget)
+        scheduler.setInteractionCycle(Int.min);XCTAssertEqual(scheduler.interactionCycle,30)
+    }
+
 }
