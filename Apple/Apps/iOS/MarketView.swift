@@ -13,13 +13,24 @@ struct IOSMarketView:View {
             search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) || $0.description.localizedCaseInsensitiveContains(search)
         }
     }
+    private var unknownIDs:[String] {
+        inventory ? model.unknownInventoryIDs.filter { search.isEmpty || $0.localizedCaseInsensitiveContains(search) }:[]
+    }
     var body:some View {
         List {
             Section {
                 Label("金币 \(model.state.money.formatted(.number.precision(.fractionLength(2))))",systemImage:"creditcard")
                 Text(model.message).font(.caption).foregroundStyle(.secondary)
             }
-            if items.isEmpty { ContentUnavailableView(inventory ? "背包空空的":"没有匹配物品",systemImage:inventory ? "backpack":"magnifyingglass") }
+            if items.isEmpty && unknownIDs.isEmpty {
+                ContentUnavailableView(inventory && model.state.inventory.isEmpty ? "背包空空的":"没有匹配物品",systemImage:inventory ? "backpack":"magnifyingglass")
+            }
+            ForEach(unknownIDs,id:\.self) { id in
+                VStack(alignment:.leading,spacing:4) {
+                    Text("未识别物品：\(id) · 数量 \(model.state.inventory[id,default:0])")
+                    Text("数据已保留，当前版本无法使用。").font(.caption).foregroundStyle(.secondary)
+                }.textSelection(.enabled)
+            }
             ForEach(items) { item in
                 Button { selected=item } label: {
                     HStack(spacing:12) {

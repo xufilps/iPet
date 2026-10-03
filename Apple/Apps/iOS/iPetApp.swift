@@ -2,7 +2,7 @@
 import SwiftUI
 
 @main struct IPetIOSApp: App {
-    @StateObject private var model = IOSPetModel()
+    @StateObject private var model = IOSPetModel.application()
     @Environment(\.scenePhase) private var phase
     var body: some Scene {
         WindowGroup {

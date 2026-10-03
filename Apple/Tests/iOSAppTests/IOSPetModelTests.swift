@@ -105,4 +105,82 @@ private final class IOSClock:PetClock { var now=0.0 }
         XCTAssertEqual(model.state,before)
         model.setActive(false)
     }
+    func testUnknownInventoryRemainsVisibleAndCannotBeUsed() async throws {
+        let (directory,defaults)=try fixture();defer { try? FileManager.default.removeItem(at:directory) }
+        var state=PetEngine().state;state.inventory=["unresolved.item":4]
+        try PetSaveStore(directory:directory).save(state)
+        let model=IOSPetModel(directory:directory,defaults:defaults)
+        XCTAssertTrue(model.ready)
+        XCTAssertEqual(model.unknownInventoryIDs,["unresolved.item"])
+        model.setActive(true);model.perform(.useItem("unresolved.item"));model.setActive(false)
+        XCTAssertEqual(model.state.inventory["unresolved.item"],4)
+        XCTAssertEqual(try PetSaveStore(directory:directory).load()?.inventory["unresolved.item"],4)
+    }
+
+    func testApplicationHostIsIsolatedFromOrdinarySave() async throws {
+        XCTAssertEqual(ProcessInfo.processInfo.environment["IPET_TEST_HOST"],"1")
+        let ordinary=try FileManager.default.url(for:.applicationSupportDirectory,in:.userDomainMask,appropriateFor:nil,create:false).appendingPathComponent("iPet/pet.json")
+        let before=try? Data(contentsOf:ordinary)
+        let model=IOSPetModel.application()
+        let host=try XCTUnwrap(model.saveDirectory)
+        guard host.deletingLastPathComponent().standardizedFileURL == FileManager.default.temporaryDirectory.standardizedFileURL,
+              host.lastPathComponent.hasPrefix("iPet-host-"),!model.automaticDialogue else {
+            XCTFail("Test factory must be isolated before issuing any command");return
+        }
+        defer {
+            try? FileManager.default.removeItem(at:host)
+            UserDefaults.standard.removePersistentDomain(forName:host.lastPathComponent)
+        }
+        XCTAssertTrue(model.ready)
+        model.setActive(true);model.interact(.feed);model.setActive(false)
+        XCTAssertEqual(try? Data(contentsOf:ordinary),before)
+    }
+    func testCorruptPrimaryRecoversBackupAndRetainsOriginal() async throws {
+        let (directory,defaults)=try fixture();defer { try? FileManager.default.removeItem(at:directory) }
+        let store=PetSaveStore(directory:directory)
+        var state=PetEngine().state;state.money=42;try store.save(state)
+        state.money=52;try store.save(state)
+        let damaged=Data("broken json".utf8);try damaged.write(to:store.primary)
+        let model=IOSPetModel(directory:directory,defaults:defaults)
+        XCTAssertTrue(model.ready);XCTAssertEqual(model.state.money,42)
+        XCTAssertTrue(model.message.contains("备份"))
+        let original=try XCTUnwrap(FileManager.default.contentsOfDirectory(at:directory,includingPropertiesForKeys:nil).first { $0.lastPathComponent.hasPrefix("pet.corrupt-") })
+        XCTAssertEqual(try Data(contentsOf:original),damaged)
+        model.setActive(true);model.save();model.setActive(false)
+        XCTAssertEqual(try Data(contentsOf:original),damaged)
+    }
+    func testRelaunchKeepsActivityPausedUntilExplicitResume() async throws {
+        let (directory,defaults)=try fixture();defer { try? FileManager.default.removeItem(at:directory) }
+        let clock=IOSClock(),first=IOSPetModel(directory:directory,defaults:defaults,clock:clock)
+        first.setActive(true)
+        let work=try XCTUnwrap(first.catalog.activities.first { $0.levelLimit<=first.state.level })
+        first.perform(.startActivity(work.id));clock.now=15;first.tick();first.setActive(false)
+        let elapsed=try XCTUnwrap(first.state.activity?.elapsedSeconds),money=first.state.money
+        clock.now=3600
+        let reopened=IOSPetModel(directory:directory,defaults:defaults,clock:clock)
+        XCTAssertTrue(reopened.state.activity?.isPaused == true)
+        reopened.setActive(true);clock.now += 15;reopened.tick()
+        XCTAssertEqual(reopened.state.activity?.elapsedSeconds,elapsed);XCTAssertEqual(reopened.state.money,money)
+        reopened.perform(.resumeActivity);clock.now += 15;reopened.tick()
+        XCTAssertEqual(reopened.state.activity?.elapsedSeconds,elapsed+15)
+        reopened.setActive(false)
+    }
+    func testTransientCareReturnsToActivityAndHidingStageClosesSpeech() async throws {
+        let (directory,defaults)=try fixture();defer { try? FileManager.default.removeItem(at:directory) }
+        let clock=IOSClock(),model=IOSPetModel(directory:directory,defaults:defaults,clock:clock)
+        model.setActive(true)
+        let work=try XCTUnwrap(model.catalog.activities.first { $0.levelLimit<=model.state.level })
+        model.perform(.startActivity(work.id));model.interact(.feed)
+        XCTAssertEqual(model.scene?.requestedAction,.eat)
+        for index in 0..<200 { model.scene?.update(Double(index)*0.15) }
+        XCTAssertEqual(model.state.activity?.activityID,work.id)
+        XCTAssertEqual(model.scene?.requestedAction,.activity)
+        XCTAssertEqual(model.scene?.requestedGraphID,work.graphID)
+        model.perform(.pauseActivity)
+        let before=model.state;model.showPreview();clock.now=1;model.tick()
+        XCTAssertFalse(model.speechText.isEmpty);model.setStageVisible(false)
+        XCTAssertTrue(model.speechText.isEmpty);clock.now=2;model.tick()
+        XCTAssertEqual(model.state,before);model.setActive(false)
+    }
+
 }

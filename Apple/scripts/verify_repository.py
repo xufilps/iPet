@@ -19,7 +19,7 @@ def verify():
     required = [
         'Apple/Package.swift', 'Apple/Sources/PetCore', 'Apple/Sources/PetRendering',
         'Apple/Sources/PetMacInput', 'Apple/Apps/macOS/main.swift', 'Apple/Apps/iOS/iPetApp.swift',
-        'Apple/Tests/iOSAppTests', 'Apple/scripts/build-ios.sh', 'Apple/scripts/test-ios.sh',
+        'Apple/Tests/iOSAppTests', 'Apple/Tests/iOSUITests', 'Apple/scripts/build-ios.sh', 'Apple/scripts/test-ios.sh',
         'Apple/Tests/PetCoreTests', 'Apple/Tests/PetRenderingTests', 'Apple/Tests/PetMacInputTests',
         'Assets/Upstream/VPet/Core/pet/vup', 'Apple/docs/README.md',
         'CONTRIBUTING.md', 'CODE_OF_CONDUCT.md', 'SECURITY.md', 'SUPPORT.md',

@@ -34,6 +34,7 @@ import PetRendering
     private var lastAutomatic = true
     private var stageVisible = false
     let root: URL?
+    var saveDirectory: URL? { store?.directory }
     var ready: Bool { engine != nil && scene != nil && startupError == nil }
     var canOperate: Bool { ready && active && saveError.isEmpty }
     var settings: PetSpeechSettings {
@@ -46,6 +47,21 @@ import PetRendering
     var activityFeedback: ActivityFeedback? { state.activity.map { ActivityFeedback(session:$0,activity:catalog.activity($0.activityID),mood:state.mood) } }
     var inventoryItems: [ItemDefinition] {
         state.inventory.keys.sorted().compactMap { state.inventoryDefinition($0,catalog:catalog) }
+    }
+    var unknownInventoryIDs: [String] {
+        state.inventory.keys.sorted().filter { state.inventoryDefinition($0,catalog:catalog) == nil }
+    }
+    /// Test hosts must not start the ordinary sandbox model when XCTest mounts the app.
+    static func application() -> IOSPetModel {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["IPET_TEST_HOST"] == "1" {
+            let id="iPet-host-"+UUID().uuidString
+            let defaults=UserDefaults(suiteName:id)!
+            defaults.set(false,forKey:"speechAutomaticDialogue")
+            return IOSPetModel(directory:FileManager.default.temporaryDirectory.appendingPathComponent(id),defaults:defaults)
+        }
+        #endif
+        return IOSPetModel()
     }
     init(root:URL? = Bundle.main.url(forResource:"PetAssets",withExtension:nil),directory:URL? = nil,defaults:UserDefaults = .standard,clock:any PetClock=SystemPetClock()) {
         self.root=root;self.defaults=defaults;self.clock=clock

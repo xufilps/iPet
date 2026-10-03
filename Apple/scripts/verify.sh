@@ -26,4 +26,4 @@ swift build --package-path "$apple_root" --target PetRendering --triple arm64-ap
 "$apple_root/scripts/test-ios.sh" > "$apple_root/build/verification/ios-app-tests.log" 2>&1
 codesign --verify --strict "$apple_root/build/Build/Products/Release/iPet.app"
 codesign --verify --strict "$apple_root/build/iOS/Build/Products/Release-iphonesimulator/iPet-iOS.app"
-printf '%s\n' 'Core/rendering tests, macOS Release, iOS Simulator application/model tests/shared-module build and signature verification passed.'
+printf '%s\n' 'Core/rendering tests, macOS Release, iOS Simulator application/model/UI tests/shared-module build and signature verification passed.'

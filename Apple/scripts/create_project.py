@@ -70,10 +70,11 @@ for configuration in ['Debug', 'Release']:
     obj('ios-target-' + configuration, f'''isa = XCBuildConfiguration; name = {configuration}; buildSettings = {{
         ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
         PRODUCT_NAME = "iPet-iOS"; PRODUCT_BUNDLE_IDENTIFIER = org.xufilps.iPet.ios;
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) {"DEBUG" if configuration == "Debug" else ""}";
         GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = "iPet";
         INFOPLIST_KEY_UILaunchScreen_Generation = YES;
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-        INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+        INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
         MARKETING_VERSION = 0.2.0; CURRENT_PROJECT_VERSION = 2;
         SWIFT_VERSION = 6.0; IPHONEOS_DEPLOYMENT_TARGET = 26.0; SDKROOT = iphoneos;
         ONLY_ACTIVE_ARCH = {"YES" if configuration == "Debug" else "NO"}; ENABLE_TESTABILITY = {"YES" if configuration == "Debug" else "NO"};
@@ -106,7 +107,23 @@ obj('ios-test-configs', f'isa = XCConfigurationList; buildConfigurations = {refs
 obj('ios-test-target', f'isa = PBXNativeTarget; buildConfigurationList = {ident("ios-test-configs")}; buildPhases = {refs(["ios-test-sources", "ios-test-frameworks"])}; buildRules = (); dependencies = {refs(["ios-test-dependency"])}; name = "iPet-iOSTests"; productName = "iPet-iOSTests"; productReference = {ident("ios-test-product")}; productType = "com.apple.product-type.bundle.unit-test";')
 obj('main-group', objects[ident('main-group')].replace('children = (', 'children = ('+ident('ios-test-file')+', '))
 obj('products-group', f'isa = PBXGroup; children = {refs(["product", "ios-product", "ios-test-product"])}; name = Products; sourceTree = "<group>";')
-obj('project', f'isa = PBXProject; attributes = {{ LastUpgradeCheck = 1600; }}; buildConfigurationList = {ident("project-configs")}; compatibilityVersion = "Xcode 14.0"; developmentRegion = "zh-Hans"; hasScannedForEncodings = 0; knownRegions = ("zh-Hans", en, Base,); mainGroup = {ident("main-group")}; packageReferences = {refs(["package"])}; productRefGroup = {ident("products-group")}; projectDirPath = ""; projectRoot = ""; targets = {refs(["target", "ios-target", "ios-test-target"])};')
+# UI navigation tests exercise the real SwiftUI app with a disposable Debug host.
+obj('ios-ui-file', 'isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/iOSUITests/IOSNavigationTests.swift; sourceTree = "<group>";')
+obj('ios-ui-build', f'isa = PBXBuildFile; fileRef = {ident("ios-ui-file")};')
+obj('ios-ui-product', 'isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = "iPet-iOSUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR;')
+obj('ios-ui-sources', f'isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = {refs(["ios-ui-build"])}; runOnlyForDeploymentPostprocessing = 0;')
+for configuration in ['Debug', 'Release']:
+    obj('ios-ui-' + configuration, f'''isa = XCBuildConfiguration; name = {configuration}; buildSettings = {{
+        PRODUCT_NAME = "iPet-iOSUITests"; PRODUCT_BUNDLE_IDENTIFIER = org.xufilps.iPet.ios.uitests;
+        GENERATE_INFOPLIST_FILE = YES; SWIFT_VERSION = 6.0; IPHONEOS_DEPLOYMENT_TARGET = 26.0; SDKROOT = iphoneos;
+        ONLY_ACTIVE_ARCH = YES; TARGETED_DEVICE_FAMILY = "1,2"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+        TEST_TARGET_NAME = "iPet-iOS"; CODE_SIGN_STYLE = Automatic;
+    }};''')
+obj('ios-ui-configs', f'isa = XCConfigurationList; buildConfigurations = {refs(["ios-ui-Debug", "ios-ui-Release"])}; defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;')
+obj('ios-ui-target', f'isa = PBXNativeTarget; buildConfigurationList = {ident("ios-ui-configs")}; buildPhases = {refs(["ios-ui-sources"])}; buildRules = (); dependencies = {refs(["ios-test-dependency"])}; name = "iPet-iOSUITests"; productName = "iPet-iOSUITests"; productReference = {ident("ios-ui-product")}; productType = "com.apple.product-type.bundle.ui-testing";')
+obj('main-group', objects[ident('main-group')].replace('children = (', 'children = ('+ident('ios-ui-file')+', '))
+obj('products-group', f'isa = PBXGroup; children = {refs(["product", "ios-product", "ios-test-product", "ios-ui-product"])}; name = Products; sourceTree = "<group>";')
+obj('project', f'isa = PBXProject; attributes = {{ LastUpgradeCheck = 1600; }}; buildConfigurationList = {ident("project-configs")}; compatibilityVersion = "Xcode 14.0"; developmentRegion = "zh-Hans"; hasScannedForEncodings = 0; knownRegions = ("zh-Hans", en, Base,); mainGroup = {ident("main-group")}; packageReferences = {refs(["package"])}; productRefGroup = {ident("products-group")}; projectDirPath = ""; projectRoot = ""; targets = {refs(["target", "ios-target", "ios-test-target", "ios-ui-target"])};')
 text = '// !$*UTF8*$!\n{ archiveVersion = 1; classes = {}; objectVersion = 56; objects = {\n'
 text += '\n'.join(f'{key} = {{ {value} }};' for key, value in objects.items())
 text += '\n}; rootObject = ' + ident('project') + '; }\n'
@@ -128,5 +145,5 @@ mac_scheme = (root / 'iPet.xcodeproj/xcshareddata/xcschemes/iPet.xcscheme').read
 
 ios_scheme_path = root / 'iPet.xcodeproj/xcshareddata/xcschemes/iPet-iOS.xcscheme'
 ios_scheme = ios_scheme_path.read_text()
-ios_scheme = ios_scheme.replace('<LaunchAction', f'''<TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="YES"><Testables><TestableReference skipped="NO"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{ident('ios-test-target')}" BuildableName="iPet-iOSTests.xctest" BlueprintName="iPet-iOSTests" ReferencedContainer="container:iPet.xcodeproj"/></TestableReference></Testables></TestAction>\n<LaunchAction''')
+ios_scheme = ios_scheme.replace('<LaunchAction', f'''<TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="NO"><EnvironmentVariables><EnvironmentVariable key="IPET_TEST_HOST" value="1" isEnabled="YES"/></EnvironmentVariables><Testables><TestableReference skipped="NO"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{ident('ios-test-target')}" BuildableName="iPet-iOSTests.xctest" BlueprintName="iPet-iOSTests" ReferencedContainer="container:iPet.xcodeproj"/></TestableReference><TestableReference skipped="NO"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{ident('ios-ui-target')}" BuildableName="iPet-iOSUITests.xctest" BlueprintName="iPet-iOSUITests" ReferencedContainer="container:iPet.xcodeproj"/></TestableReference></Testables></TestAction>\n<LaunchAction''')
 ios_scheme_path.write_text(ios_scheme)
