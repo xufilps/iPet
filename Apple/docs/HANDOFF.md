@@ -391,3 +391,6 @@ v1～v7先按旧边界验证，再迁移累计经验；高于1000级进入桌面
 后续先设计保留自定义参数/标记的原生库存持久化，再映射统计/Data并交付整档确认导入。回滚本批只读代码不改JSON或原LPS；原件无需恢复。详见[规格](specs/PHASE-4E.md)。
 
 阶段4E最终完整验证日志：Apple/build/verification/phase4e-final.log（本地可再生成）；338 Swift=237核心+95渲染+6输入、23 Python、macOS Release/严格签名与iOS Simulator共享模块均通过。工程再生成逐字节一致，README末尾7775字节/原LICENSE一致，文档链接与diff检查通过。无真实用户数据写入或新实机/压力证据。
+
+阶段4F Task1检查点：纯物品元数据模型及5项回归已交付，不改变当前v8存档或运行时。未知物品只能保留数据，未来元数据错误将在Task2接入存档保护路径；现阶段没有Windows导入入口。Task1回滚代码即可，不需要恢复用户档案；完整阶段独立审查与macOS/iOS构建在Task3执行。
+Task1全套Swift回归343项（242核心+95渲染+6输入）通过，日志Apple/build/inventory-metadata-suite.log；本检查点未重新运行完整macOS/iOS构建，不追认上批构建为本批证据。

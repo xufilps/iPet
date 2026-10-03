@@ -50,3 +50,6 @@ UI先只读预览，列出准确保留、明确转换、未支持内容、原has
 实际库库存样例和来源见[夹具记录](../Tests/Fixtures/LEGACY-LPS-SOURCE.md)。物品普通Double与宠物固定点编码不同；Food继承序列化ItemType/Star有效，数字枚举4等价Drink，大小写错误枚举和布尔0拒绝，null图片与字面/null可区分。原ItemsAdd只按名称累加数量并保留首件参数；导入预览必须保留原记录、报告同名参数冲突，不能用当前商品目录覆盖。原库存加载保留序列化Star/Data；商店目录另从设置/buytime更新收藏与说明，单个旧档不能证明独立收藏设置迁移。Swift类型化映射、冲突预览和导入窗口尚待Task 2，不改变JSONv8。
 
 阶段4E类型化库存核心已实现，详见[规格](specs/PHASE-4E.md)和[PetLegacyInventoryPreview](../Sources/PetCore/PetLegacyInventoryPreview.swift)。原有只读原件保护保持，未发布新运行状态。
+
+## 阶段4F Task1：原生元数据模型检查点
+[PetInventoryMetadata](../Sources/PetCore/PetInventoryMetadata.swift)可Codable往返保存数量以外的旧物品参数，保留普通负价、收藏/可用/单件/可见标记、Image和Data及Food完整效果。数量只由inventory拥有，不在此模型重复保存。未知类型仅作为数据保留；原图片/Graph为不执行的来源字符串，不授权读取任意路径。原生承载上限、已定义类别/Int32经验和未来嵌套版本通过显式validate检查，失败不截断。5项新回归通过；PetState/实际JSON仍v8，元数据尚未进入正式保存/使用。Task2将接v9原件升级与版本保护，Task3接原生UI；详见[规格](specs/PHASE-4F.md)。

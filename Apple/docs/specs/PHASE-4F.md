@@ -27,8 +27,8 @@ PetState可选inventoryMetadata字典用于向后解码；解析未知metadata�
 - 库存收藏/可见与本机旧收藏偏好正确合并，未知/不可见条目仍保留且价值统计不随过滤变化。
 
 ## Task 1：可保存的物品元数据
-- [ ] 先写PetInventoryMetadataTests，观察RED；实现纯元数据类型与4E Food的Codable/Equatable，不改变当前PetState/版本/运行时。
-- [ ] 用原库记录验证Codable往返、全部参数/标记/Data保留、数量不进入JSON、未知类型、负价、非法/未来版本及字符串边界。
+- [x] 先写PetInventoryMetadataTests，观察RED；实现纯元数据类型与4E Food的Codable/Equatable，不改变当前PetState/版本/运行时。
+- [x] 用原库记录验证Codable往返、全部参数/标记/Data保留、数量不进入JSON、未知类型、负价、非法/未来版本及字符串边界。
 
 ## Task 2：v9与使用规则
 - [ ] RED后接入PetState metadata/解析器、版本v9/原件迁移保护和元数据未来版本错误；测试当前v8迁移、v1…v7保持已有增长转换，future10及nested保护各写路径。
@@ -40,3 +40,5 @@ PetState可选inventoryMetadata字典用于向后解码；解析未知metadata�
 
 ## 回滚
 Task1纯类型可直接回滚；v9接入后退出并备份整个存档目录，移开v9主/previous，恢复独立v8-before-upgrade原件；不得只编辑版本头冒充旧档。v9原件保留但旧版不读取。WindowsLPS完整导入仍需统计/Data/主人映射及双原件确认流程，不因元数据能保存而开放半档导入。
+
+Task1检查点：纯PetInventoryMetadata与Food Codable/Equatable已实现，5项新增回归RED→GREEN。PetState/实际存档仍v8；没有导入或运行时切换，也不表示v9已完成。下一步Task2接入状态、未来嵌套版本保护及原件升级，再验证购买/使用不同路径。

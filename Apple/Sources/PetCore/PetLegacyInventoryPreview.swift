@@ -3,7 +3,7 @@
 import Foundation
 
 public struct PetLegacyInventoryPreview: Sendable {
-    public struct Food: Sendable {
+    public struct Food: Codable, Equatable, Sendable {
         public let category: String
         public let experience: Int
         public let strength, food, drink, feeling, health, affection: Double
