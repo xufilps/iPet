@@ -112,6 +112,36 @@ struct ControlsView: View {
             Button("恢复窗口默认设置") { model.resetWindowPreferences() }
             Text("默认只让透明区域穿透。全部穿透时角色不能点击或拖动，可从菜单栏恢复默认；独立工具栏仍可操作，不透明度仅影响角色。")
                 .font(.caption).foregroundStyle(.secondary)
+            Divider()
+            Text("本地消息设置").font(.headline)
+            Picker("消息字体",selection:$model.speechFontFamily) {
+                Text("默认系统字体").tag("")
+                ForEach(model.speechFontFamilies,id:\.self) { Text($0).tag($0) }
+            }.onChange(of:model.speechFontFamily) { model.updateSpeechSettings() }
+            HStack {
+                Text("消息字号")
+                Slider(value:$model.speechFontSize,in:12...24,step:1).onChange(of:model.speechFontSize) { model.updateSpeechSettings() }
+                Text("\(Int(model.speechFontSize)) pt").monospacedDigit()
+            }
+            HStack {
+                Text("消息不透明度")
+                Slider(value:$model.speechOpacity,in:0.2...1,step:0.05).onChange(of:model.speechOpacity) { model.updateSpeechSettings() }
+                Text(model.speechOpacity.formatted(.percent.precision(.fractionLength(0)))).monospacedDigit()
+            }
+            HStack {
+                Text("逐字间隔")
+                Slider(value:$model.speechRevealInterval,in:0.05...0.5,step:0.05).onChange(of:model.speechRevealInterval) { model.updateSpeechSettings() }
+                Text(model.speechRevealInterval.formatted(.number.precision(.fractionLength(2)))+" 秒").monospacedDigit()
+            }
+            HStack {
+                Text("停留倍率")
+                Slider(value:$model.speechHoldMultiplier,in:0.5...3,step:0.25).onChange(of:model.speechHoldMultiplier) { model.updateSpeechSettings() }
+                Text("×"+model.speechHoldMultiplier.formatted(.number.precision(.fractionLength(2)))).monospacedDigit()
+            }
+            Toggle("自动闲聊与饥渴提醒",isOn:$model.speechAutomaticDialogue).onChange(of:model.speechAutomaticDialogue) { model.updateSpeechSettings() }
+            Text("字体、字号和不透明度可立即更新；逐字间隔与停留倍率对下一条消息生效。关闭自动消息仍可手动聊天、选择话题；不会改变养成状态。字体来自本机，缺失时回退系统字体。")
+                .font(.caption).foregroundStyle(.secondary)
+            HStack { Button("预览消息") { model.previewSpeechSettings() }; Button("恢复消息默认设置") { model.resetSpeechSettings() } }
             Picker("说话位置",selection:$model.speechPlacement) {
                 Text("自动避让（既有默认）").tag(SpeechPlacement.Mode.automatic)
                 Text("角色内，下方对齐").tag(SpeechPlacement.Mode.inside)

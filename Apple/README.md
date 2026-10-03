@@ -33,6 +33,6 @@ bash Apple/scripts/verify.sh
 
 [署名](ATTRIBUTION.md)、[原动画授权](ANIMATION_LICENSE.md)、根LICENSE与NOTICE随应用附带。代码Apache 2.0不替代角色/动画授权；不执行C#插件。贡献流程见 [CONTRIBUTING](../CONTRIBUTING.md)，完整差异/缺口/路线见 [文档导航](docs/README.md)。当前继续推进本地内置角色体验，最近补齐升级通知与动画。
 
-当前原素材按实际依赖保留591.19MiB，含本批恢复的升级动画；体积边界、浅克隆和缓存恢复见[PROJECT-SIZE](docs/PROJECT-SIZE.md)。
+当前原素材按实际依赖保留693.13MiB，含升级动画及本批恢复的活动变体；体积边界、浅克隆和缓存恢复见[PROJECT-SIZE](docs/PROJECT-SIZE.md)。
 
 GitHub不会显示Apple/build：应用与日志在本机执行脚本后生成，当前可运行产物为iPet.app；旧VPetApple.app已清理，历史用户存档目录名仍保留。根README已改为当前项目说明，原README/翻译转为上游及Git历史查阅。

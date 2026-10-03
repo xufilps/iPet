@@ -114,6 +114,22 @@ class ConversionTests(unittest.TestCase):
         self.assertEqual(len(end['variants']),1)
         self.assertIn('C_Happy_2',end['variants'][0][0]['frames'][0]['path'])
 
+    def test_activity_numbered_and_nested_stage_variants(self):
+        self.config.write_text(self.config.read_text()+'work:|Graph#testwork:\n')
+        for name in ['A_Nomal','B/Nomal/1','B/Nomal/2','B_3_Nomal','B4_Nomal','C_Nomal','C_2_Nomal']:
+            directory=self.source/'pet/vup/WORK/TestWork'/name
+            directory.mkdir(parents=True)
+            (directory/'work_0_125.png').write_bytes(png(10))
+        self.run_conversion()
+        clip=next(c for c in json.loads((self.output/'manifest.json').read_text())['clips'] if c.get('graphID')=='testwork')
+        self.assertEqual([s['phase'] for s in clip['stages']],['start','loop','end'])
+        loop=clip['stages'][1]
+        self.assertEqual(len(loop['variants']),3)
+        paths=[layers[0]['frames'][0]['path'] for layers in [loop['layers']]+loop['variants']]
+        self.assertTrue(any('B4_Nomal' in path for path in paths))
+        self.assertEqual(len(clip['stages'][2]['variants']),1)
+        self.assertTrue(all(layers[0]['frames'][0]['duration']==0.125 for layers in [loop['layers']]+loop['variants']))
+
     def test_speech_default_mode_and_loop_variants(self):
         for name in ['A','B_1','B_2','C']:
             directory=self.source/'pet/vup/Say/Shining'/name

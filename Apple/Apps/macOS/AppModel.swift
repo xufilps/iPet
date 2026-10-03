@@ -40,6 +40,14 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
     @Published var autoMove = UserDefaults.standard.object(forKey: "autoMove") as? Bool ?? true
     @Published var speechPlacement:SpeechPlacement.Mode = .automatic
     @Published var speechInteractive=false
+    @Published var speechFontFamily=""
+    @Published var speechFontSize=15.0
+    @Published var speechOpacity=0.8
+    @Published var speechRevealInterval=0.15
+    @Published var speechHoldMultiplier=1.0
+    @Published var speechAutomaticDialogue=true
+    let speechFontFamilies=NSFontManager.shared.availableFontFamilies.sorted()
+    private var lastSpeechAutomaticDialogue=true
     @Published var autoChangeScreen=false
     private var activeScreenID:String?
     @Published var movementAreaMode:PetMovementAreaMode = .current
@@ -119,6 +127,17 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
         interactionCycle=smokeMode ? 200:min(1000,max(30,defaults.object(forKey:"interactionCycle") as? Int ?? 200))
         speechPlacement=smokeMode ? .automatic:(SpeechPlacement.Mode(rawValue:defaults.string(forKey:"speechPlacement") ?? "") ?? .automatic)
         speechInteractive = !smokeMode && defaults.bool(forKey:"speechInteractive")
+        let speechDefaults=PetSpeechSettings(
+            fontFamily:smokeMode ? "":(defaults.string(forKey:"speechFontFamily") ?? ""),
+            fontSize:smokeMode ? 15:(defaults.object(forKey:"speechFontSize") as? Double ?? 15),
+            opacity:smokeMode ? 0.8:(defaults.object(forKey:"speechOpacity") as? Double ?? 0.8),
+            revealInterval:smokeMode ? 0.15:(defaults.object(forKey:"speechRevealInterval") as? Double ?? 0.15),
+            holdMultiplier:smokeMode ? 1:(defaults.object(forKey:"speechHoldMultiplier") as? Double ?? 1),
+            automaticDialogue:smokeMode ? true:(defaults.object(forKey:"speechAutomaticDialogue") as? Bool ?? true))
+        speechFontFamily=speechFontFamilies.contains(speechDefaults.fontFamily) ? speechDefaults.fontFamily:""
+        speechFontSize=speechDefaults.fontSize;speechOpacity=speechDefaults.opacity
+        speechRevealInterval=speechDefaults.revealInterval;speechHoldMultiplier=speechDefaults.holdMultiplier
+        speechAutomaticDialogue=speechDefaults.automaticDialogue;lastSpeechAutomaticDialogue=speechAutomaticDialogue
         autoChangeScreen = !smokeMode && (defaults.object(forKey:"autoChangeScreen") as? Bool ?? false)
         activeScreenID=smokeMode ? nil:PetScreenChange.persistedIdentity(defaults.string(forKey:"activeScreenID"))
         movementAreaMode=smokeMode ? .current:(PetMovementAreaMode(rawValue:defaults.string(forKey:"movementAreaMode") ?? "") ?? .current)
@@ -156,6 +175,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
         petScene = PetScene(manifest: try PetManifest.load(from: root), assetRoot: root)
         petScene.onDiagnostic = { [weak self] text in self?.recordDiagnostic(.rendering,text);NSLog("%@",text) }
         petScene.play(state.resting ? .sleep : .idle, mood: presentationMood)
+        speech.setSettings(speechSettings)
         speech.setPlacement(speechPlacement)
         speech.setInteractive(speechInteractive)
         speech.onCloseRequested = { [weak self] in self?.closeSpeech() }
@@ -569,6 +589,33 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
     @objc func closeSpeech() {
         petScene?.discardSpeechStart();petScene?.finishSpeech();speech.hide()
     }
+    private var speechSettings:PetSpeechSettings {
+        PetSpeechSettings(fontFamily:speechFontFamily,fontSize:speechFontSize,opacity:speechOpacity,
+                          revealInterval:speechRevealInterval,holdMultiplier:speechHoldMultiplier,automaticDialogue:speechAutomaticDialogue)
+    }
+    func updateSpeechSettings() {
+        let settings=speechSettings
+        speechFontFamily=speechFontFamilies.contains(settings.fontFamily) ? settings.fontFamily:""
+        speechFontSize=settings.fontSize;speechOpacity=settings.opacity
+        speechRevealInterval=settings.revealInterval;speechHoldMultiplier=settings.holdMultiplier
+        if lastSpeechAutomaticDialogue != speechAutomaticDialogue { dialogue?.resetTiming();lastSpeechAutomaticDialogue=speechAutomaticDialogue }
+        speech.setSettings(speechSettings)
+        if speech.isVisible,let screen=companionScreen { speech.updatePosition(petFrame:speechAnchor,screen:screen) }
+        if !smokeMode {
+            let defaults=UserDefaults.standard
+            defaults.set(speechFontFamily,forKey:"speechFontFamily");defaults.set(speechFontSize,forKey:"speechFontSize")
+            defaults.set(speechOpacity,forKey:"speechOpacity");defaults.set(speechRevealInterval,forKey:"speechRevealInterval")
+            defaults.set(speechHoldMultiplier,forKey:"speechHoldMultiplier");defaults.set(speechAutomaticDialogue,forKey:"speechAutomaticDialogue")
+        }
+    }
+    func resetSpeechSettings() {
+        speechFontFamily="";speechFontSize=15;speechOpacity=0.8;speechRevealInterval=0.15;speechHoldMultiplier=1;speechAutomaticDialogue=true
+        speechPlacement = .automatic;speechInteractive=false
+        updateSpeechSettings();updateSpeechPlacement();updateSpeechInteraction()
+    }
+    func previewSpeechSettings() {
+        showSpeech("你好，这是本地消息预览。👋\n字号和字体可以立即调整，播放速度与停留倍率从下一条消息生效。预览不会改变养成属性。")
+    }
     func updateSpeechInteraction() {
         speech.setInteractive(speechInteractive)
         if !smokeMode { UserDefaults.standard.set(speechInteractive,forKey:"speechInteractive") }
@@ -578,13 +625,14 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
         if speech.isVisible,let screen=companionScreen { speech.updatePosition(petFrame:speechAnchor,screen:screen) }
         if !smokeMode { UserDefaults.standard.set(speechPlacement.rawValue,forKey:"speechPlacement") }
     }
-    private func showSpeech(_ text:String) {
+    private func showSpeech(_ text:String,automatic:Bool=false) {
         guard visible,!suspended,companionScreen != nil else { return }
         petScene.discardSpeechStart();speech.hide()
-        if !petView.isInteracting,petScene.playSpeech(mood:presentationMood,onReady:{ [weak self] in self?.presentSpeech(text) }) { return }
-        presentSpeech(text)
+        if !petView.isInteracting,petScene.playSpeech(mood:presentationMood,onReady:{ [weak self] in self?.presentSpeech(text,automatic:automatic) }) { return }
+        presentSpeech(text,automatic:automatic)
     }
-    private func presentSpeech(_ text:String) {
+    private func presentSpeech(_ text:String,automatic:Bool=false) {
+        guard !automatic || speechAutomaticDialogue else { petScene.finishSpeech();return }
         guard visible, !suspended, let screen=companionScreen else { return }
         if text.count>4000 { recordDiagnostic(.rendering,"说话内容超过显示上限，仅显示前4000字符。") }
         speech.show(text:text,name:engine.state.name,petFrame:speechAnchor,screen:screen)
@@ -685,7 +733,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
             }
         }
         let eligible = !manualTest && PetAutonomy.canStart(state:engine.state,action:petScene.requestedAction,visible:visible,interacting:petView.isInteracting,finishing:petScene.isFinishingActivity)
-        if let entry=dialogue.automatic(state:engine.state,eligible:eligible && !speech.isVisible,mood:presentationMood) { showSpeech(entry.rendered(state:engine.state)) }
+        if let entry=dialogue.automatic(state:engine.state,eligible:eligible && speechAutomaticDialogue && !speech.isVisible,mood:presentationMood) { showSpeech(entry.rendered(state:engine.state),automatic:true) }
         let autonomyEligible = !manualTest && PetAutonomy.canStart(state:engine.state,action:petScene.requestedAction,visible:visible,interacting:petView.isInteracting,finishing:petScene.isFinishingActivity)
         if let behavior = autonomy.poll(eligible:autonomyEligible,allowsMovement:movementEnabled,mood:engine.presentationMood,working:petScene.requestedAction == .activity) {
             switch behavior {

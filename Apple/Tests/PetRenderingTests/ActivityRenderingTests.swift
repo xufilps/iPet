@@ -3,7 +3,34 @@ import XCTest
 import PetCore
 @testable import PetRendering
 private struct VariantRandom: PetRandom { var value: Double; mutating func unit() -> Double { value } }
+private struct ActivityCycleRandom:PetRandom {
+    var index=0
+    mutating func unit()->Double { defer { index+=1 };return index%2 == 0 ? 0:1.0.nextDown }
+}
 final class ActivityRenderingTests: XCTestCase {
+    func testRestoredActivityCyclesChangeVariantAndManualStopCompletesOnce() async throws {
+        let manifest=try PetManifest.load(from:root),assets=root
+        let work=manifest.resolveActivity(graphID:"workone",mood:.normal)
+        XCTAssertGreaterThan(work.stages.first { $0.phase == .loop }?.variants?.count ?? 0,0)
+        await MainActor.run {
+            let scene=PetScene(manifest:manifest,assetRoot:assets,random:ActivityCycleRandom())
+            var completed=0
+            scene.onActionFinished={ if $0 == .activity { completed+=1 } }
+            scene.playActivity(graphID:"workone",mood:.normal);scene.update(0)
+            var time=0.0,parents=Set<String>()
+            while time<20 && parents.count<2 {
+                time+=0.25;scene.update(time)
+                if scene.currentPhase == .loop,let path=scene.currentFramePath {
+                    parents.insert(URL(fileURLWithPath:path).deletingLastPathComponent().path)
+                }
+            }
+            XCTAssertEqual(parents.count,2)
+            XCTAssertTrue(scene.finishActivity())
+            for _ in 0..<100 { time+=0.25;scene.update(time) }
+            XCTAssertEqual(completed,1);XCTAssertEqual(scene.requestedAction,.idle)
+        }
+    }
+
     func testMovementGraphPreservesStartAndInterruptClearsGraph() async throws {
         let manifest=try PetManifest.load(from:root),assets=root
         let clip=try XCTUnwrap(manifest.clips.first { $0.graphID=="crawl.right" && $0.mood == .normal })

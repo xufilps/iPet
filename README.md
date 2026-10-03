@@ -7,7 +7,7 @@ iPet 是基于 [VPet / LorisYounger](https://github.com/LorisYounger/VPet) 的 S
 - macOS 14+，Swift 6，AppKit 桌面窗口、SpriteKit 动画、SwiftUI 功能面板。
 - 原生共享核心支持 iOS 17+编译；这不等于已交付 iOS 应用。
 - 开发及贡献分支为 **`ipet-dev`**，也是 GitHub 首页默认分支；`main` 仅同步原 Windows 项目。
-- 当前已恢复功能推进，阶段2D新增升级动画与通知、阶段3AK补随宠活动分组菜单、3AL加入可选自动隐藏、3AM补四种计时显示、2E补商品低价修正，最近完成本机基本验收。实际完成与待验证项见 [交接](Apple/docs/HANDOFF.md)。
+- 当前已恢复功能推进，阶段2D新增升级动画与通知、阶段3AK补随宠活动分组菜单、3AL加入可选自动隐藏、3AM补四种计时显示、2E补商品低价修正、3AN补活动变体与本地消息设置，最近完成本机基本验收。实际完成与待验证项见 [交接](Apple/docs/HANDOFF.md)。
 
 ## 快速构建
 
@@ -30,7 +30,7 @@ open Apple/build/Build/Products/Release/iPet.app
 | 范围 | 已实现内容 |
 | --- | --- |
 | 桌面互动 | 透明桌宠、按帧alpha穿透、抚摸、长按捏脸、提起/拖动、隐藏/显示与位置恢复；可选随宠工具栏 |
-| 动作与反馈 | 154个动作/Graph/状态组合、4475张选用PNG帧；待机/特殊待机、状态过渡、说话、进食、休息、移动与边缘动作 |
+| 动作与反馈 | 154个动作/Graph/状态组合、5257张选用PNG帧；待机/特殊待机、状态过渡、说话、进食、休息、移动与边缘动作 |
 | 养成 | 体力、饱腹、口渴、心情、健康、好感；桌面剩余经验/等级突破与动态上限，抚摸、分次投喂、休息和疾病状态判断 |
 | 活动与经济 | 13项工作/学习/娱乐，收益与完成奖励、倍率、暂停/继续/停止；118项物品与原图片，购买即用/入包、库存检索/收藏/批量使用、药品与重复食用衰减 |
 | 日程与本地记录 | 14项活动套餐、日程队列及循环控制；购买/使用/活动统计、结束历史、陪伴时间及活跃日评价 |
@@ -81,7 +81,7 @@ bash Apple/scripts/verify.sh
 swift test --package-path Apple
 ```
 
-最近完整自动验证包含 **398项Swift、27项Python**，macOS Release、iOS Simulator共享模块和严格签名检查通过。GitHub自动检查见 [Actions](https://github.com/xufilps/iPet/actions)；日志生成于本机或runner的 `Apple/build/verification/`。自动测试、加速时钟模拟和短时观察不能代替真实使用。
+最近完整自动验证包含 **403项Swift、28项Python**，macOS Release、iOS Simulator共享模块和严格签名检查通过。GitHub自动检查见 [Actions](https://github.com/xufilps/iPet/actions)；日志生成于本机或runner的 `Apple/build/verification/`。自动测试、加速时钟模拟和短时观察不能代替真实使用。
 
 当前范围专注内置萝莉斯和本地养成。多角色与第三方数据型MOD留给未来独立的 **petloader**（尚未开发）；云存档/云同步与联机不做，不列为待补齐能力。本地存档、备份与导出恢复继续保留。
 
@@ -105,3 +105,5 @@ swift test --package-path Apple
 问题与贡献请使用 [Issues](https://github.com/xufilps/iPet/issues) 和指向 `ipet-dev` 的PR，流程见 [CONTRIBUTING](CONTRIBUTING.md)、[支持](SUPPORT.md) 与 [安全报告](SECURITY.md)。详细开发入口见 [文档导航](Apple/docs/README.md)及 [构建说明](Apple/README.md)。
 
 商品价格默认按原版合理阈值修正，可在设置关闭恢复配置原价；当前只有 Shiori v5／v7 两项后续售价改变，既有库存和历史费用不重算。
+
+消息设置支持本机字体、字号、不透明度、逐字间隔、停留倍率与自动消息开关，提供无奖励预览和恢复默认；速度/停留对下一条生效，外观可实时调整。新增活动变体使用原始PNG，当前内置源693.13MiB，仍按需加载；详情见 [项目体积](Apple/docs/PROJECT-SIZE.md)。

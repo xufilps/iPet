@@ -16,16 +16,17 @@ private struct SpeechScrollTarget:Hashable {
 }
 private struct SpeechBubble:View {
     @ObservedObject var content:SpeechTextModel
+    let bodyFont,nameFont:Font
     let textWidth:CGFloat
     let textHeight:CGFloat
     var body:some View {
         VStack(alignment:.leading,spacing:6) {
-            Text(content.name).font(.system(size:12,weight:.semibold)).foregroundStyle(.secondary)
+            Text(content.name).font(nameFont).foregroundStyle(.secondary)
                 .lineLimit(1).frame(width:textWidth,alignment:.leading)
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment:.leading,spacing:0) {
-                        Text(content.text).font(.system(size:15)).foregroundStyle(.primary)
+                        Text(content.text).font(bodyFont).foregroundStyle(.primary)
                             .fixedSize(horizontal:false,vertical:true).frame(width:textWidth,alignment:.leading)
                         Color.clear.frame(height:1).id("speech-end")
                     }
@@ -72,11 +73,17 @@ private struct SpeechBubble:View {
     private var layoutLimits=CGSize.zero
     private var placement:SpeechPlacement.Mode = .automatic
     private var interactive=false
+    private var settings=PetSpeechSettings()
     private var hosting:SpeechHostingView?
     var onCloseRequested:(()->Void)?
     var onRevealFinished:(()->Void)?
     var isVisible:Bool { panel.isVisible }
     func setPlacement(_ value:SpeechPlacement.Mode) { placement=value;layoutLimits = .zero }
+    func setSettings(_ value:PetSpeechSettings) {
+        settings=value;layoutLimits = .zero
+        if let playback { panel.alphaValue=displayOpacity(playback) }
+    }
+    private func displayOpacity(_ playback:PetSpeechPlayback)->Double { playback.opacity/0.8*settings.opacity }
     func setInteractive(_ value:Bool) { interactive=value;updateInteraction() }
     private var mouseInside:Bool {
         let point=panel.convertPoint(fromScreen:NSEvent.mouseLocation)
@@ -95,7 +102,7 @@ private struct SpeechBubble:View {
         panel.collectionBehavior=[.canJoinAllSpaces,.fullScreenAuxiliary]
     }
     func show(text:String,name:String,petFrame:CGRect,screen:CGRect) {
-        let next=PetSpeechPlayback(text:text)
+        let next=PetSpeechPlayback(text:text,settings:settings)
         playback=next;previousTime=ProcessInfo.processInfo.systemUptime
         content.text="";content.fullText=next.fullText;content.name=name
         let limits=SpeechPlacement.textLimits(pet:petFrame,screen:screen,mode:placement)
@@ -107,7 +114,7 @@ private struct SpeechBubble:View {
             guard let self else { return };NSPasteboard.general.clearContents();NSPasteboard.general.setString(self.content.text,forType:.string)
         }
         view.onMenuChanged={ [weak self] in self?.updateInteraction() }
-        hosting=view;panel.contentView=view;contentSize=view.fittingSize;panel.alphaValue=next.opacity
+        hosting=view;panel.contentView=view;contentSize=view.fittingSize;panel.alphaValue=displayOpacity(next)
         updatePosition(petFrame:petFrame,screen:screen);panel.orderFrontRegardless();updateInteraction()
         if ProcessInfo.processInfo.environment["IPET_MANUAL_TEST"] == "1" {
             NSLog("IPET_SPEECH visible=%d width=%.1f height=%.1f key=%d ignoresMouse=%d",panel.isVisible ? 1 : 0,panel.frame.width,panel.frame.height,panel.isKeyWindow ? 1 : 0,panel.ignoresMouseEvents ? 1 : 0)
@@ -121,13 +128,19 @@ private struct SpeechBubble:View {
         if playback.phase == .finished { hide();return }
         let text=playback.displayedText
         if content.text != text { content.text=text }
-        panel.alphaValue=playback.opacity
+        panel.alphaValue=displayOpacity(playback)
+    }
+    private func font(size:Double)->Font {
+        if !settings.fontFamily.isEmpty,let font=NSFontManager.shared.font(withFamily:settings.fontFamily,traits:[],weight:5,size:size) { return Font(font) }
+        return .system(size:size)
     }
     private func bubbleRoot(limits:CGSize) -> SpeechBubble {
-        let measure=NSHostingView(rootView:Text(content.fullText).font(.system(size:15))
+        let bodyFont=font(size:settings.fontSize)
+        let nameFont=font(size:max(12,settings.fontSize*0.8)).weight(.semibold)
+        let measure=NSHostingView(rootView:Text(content.fullText).font(bodyFont)
             .fixedSize(horizontal:false,vertical:true).frame(width:limits.width,alignment:.leading))
         let height=min(limits.height,max(1,measure.fittingSize.height+1))
-        return SpeechBubble(content:content,textWidth:limits.width,textHeight:height)
+        return SpeechBubble(content:content,bodyFont:bodyFont,nameFont:nameFont,textWidth:limits.width,textHeight:height)
     }
     func updatePosition(petFrame:CGRect,screen:CGRect) {
         let limits=SpeechPlacement.textLimits(pet:petFrame,screen:screen,mode:placement)

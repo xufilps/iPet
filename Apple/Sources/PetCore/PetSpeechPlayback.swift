@@ -9,17 +9,19 @@ public struct PetSpeechPlayback: Sendable {
     public let wasTruncated: Bool
     public let holdDuration: Double
     private let characters: [Character]
+    private let revealInterval:Double
     private var elapsed=0.0
     private var cancelled=false
     private var hovered=false
-    private var revealDuration: Double { Double((characters.count+1)/2+1)*0.15 }
+    private var revealDuration: Double { Double((characters.count+1)/2+1)*revealInterval }
     private var fadeElapsed: Double { max(0,elapsed-revealDuration-holdDuration) }
-    public init(text: String) {
+    public init(text: String,settings:PetSpeechSettings=PetSpeechSettings()) {
+        revealInterval=settings.revealInterval
         characters=Array(text.prefix(4000));fullText=String(characters)
         wasTruncated=text.count>4000
         let punctuation=Set<Character>("，。！？；：\n.,!?;:")
         let normalized=fullText.replacingOccurrences(of:"\r",with:"").replacingOccurrences(of:"\n\n",with:"\n")
-        holdDuration=Double(normalized.filter { punctuation.contains($0) }.count)*2+4
+        holdDuration=(Double(normalized.filter { punctuation.contains($0) }.count)*2+4)*settings.holdMultiplier
     }
     @discardableResult public mutating func advance(by seconds: Double) -> Bool {
         guard !cancelled,seconds.isFinite,seconds>=0 else { return false }
@@ -42,7 +44,7 @@ public struct PetSpeechPlayback: Sendable {
     }
     public var displayedText: String {
         guard !cancelled else { return "" }
-        let count=min(characters.count,Int((elapsed+1e-9)/0.15)*2)
+        let count=min(characters.count,Int((elapsed+1e-9)/revealInterval)*2)
         return String(characters.prefix(count))
     }
     public var opacity: Double {

@@ -115,10 +115,10 @@ def convert(source, destination):
                 stages = [stage]
             else:
                 for phase, prefix in [('start', 'a'), ('loop', 'b'), ('end', 'c')]:
-                    choices = [p for p in matching if any(part.lower().split('_')[0] == prefix or part.lower().split('_')[-1] == prefix for part in p.relative_to(root).parts)]
+                    choices = [p for p in matching if any(part.lower().split('_')[0] == prefix or part.lower().split('_')[-1] == prefix or (action == 'activity' and re.fullmatch(prefix+r'\d+',part.lower().split('_')[0])) for part in p.relative_to(root).parts)]
                     if choices:
                         stage = {'phase': phase, 'layers': [layer(choices[0], 0)], 'foodTrack': []}
-                        if action in ('head','body','fidget','walkLeft','walkRight','climb','sideHide','pinch','specialIdle','raised','say') and len(choices)>1:
+                        if action in ('head','body','fidget','walkLeft','walkRight','climb','sideHide','pinch','specialIdle','raised','say','activity','sleep') and len(choices)>1:
                             stage['variants'] = [[layer(path,0)] for path in choices[1:]]
                         stages.append(stage)
             if stages:
