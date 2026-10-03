@@ -10,7 +10,7 @@ import PetCore
 import PetRendering
 import PetMacInput
 
-enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状态", activity="活动", schedule="日程", shortcuts="快捷", shop="商店", inventory="背包", settings="设置", statistics="统计" }
+enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics="诊断",status="状态", activity="活动", schedule="日程", shortcuts="快捷", shop="商店", inventory="背包", settings="设置", statistics="统计" }
 
 @MainActor final class AppModel: ObservableObject {
     @Published var state = PetState()
@@ -79,6 +79,9 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
     private var moveRandom=SeededPetRandom(seed:UInt64.random(in:0...UInt64.max))
     private let autonomy = PetAutonomy()
     private var dialogue:PetDialogue!
+    private var selectionDialogue:PetSelectionSession!
+    @Published private(set) var selectionChoices:[PetSelectionEntry]=[]
+    @Published private(set) var lastSelectionEffect=""
     private let speech=PetSpeechWindow()
     private var toolbar:PetToolbarWindow?
     private var lastToolbarRefresh=0.0
@@ -139,6 +142,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         engine.configureSimulation(enabled:simulationEnabled,fixedMood:fixedMood)
         state=engine.state
         dialogue=PetDialogue(catalog:try PetDialogueCatalog.load(from:root.appendingPathComponent("dialogue.json")))
+        selectionDialogue=try PetSelectionSession(catalog:PetSelectionCatalog.load(from:root.appendingPathComponent("selection-dialogue.json")))
         petScene = PetScene(manifest: try PetManifest.load(from: root), assetRoot: root)
         petScene.onDiagnostic = { [weak self] text in self?.recordDiagnostic(.rendering,text);NSLog("%@",text) }
         petScene.play(state.resting ? .sleep : .idle, mood: presentationMood)
@@ -274,6 +278,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         shortcutMenu=NSMenu(title:"自定义快捷");shortcutMenu?.autoenablesItems=false;custom.submenu=shortcutMenu;menu.addItem(custom)
         rebuildShortcutMenu()
         menu.addItem(item("聊一句", #selector(sayClick)))
+        menu.addItem(item("选择话题…", #selector(showConversation)))
         menu.addItem(item("关闭说话", #selector(closeSpeech)))
         menuToolbar=item("随宠工具栏",#selector(toggleToolbar));menuToolbar.state=toolbarEnabled ? .on : .off;menu.addItem(menuToolbar)
         menu.addItem(item("休息 / 起床", #selector(rest)))
@@ -503,6 +508,30 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
     @objc private func showShop() { selectedPage = .shop; showControls() }
     @objc private func showStatistics() { selectedPage = .statistics;showControls() }
     @objc private func showInventory() { selectedPage = .inventory; showControls() }
+    @objc func showConversation() { selectedPage = .conversation;refreshSelection();showControls() }
+    var selectionEnabled:Bool { writable && !packageWriteFailed && inventoryUseTask == nil && visible && !suspended }
+    var selectionRemaining:Double { selectionDialogue?.remainingSeconds ?? 0 }
+    var selectionProgress:Double { selectionDialogue?.progress ?? 1 }
+    func refreshSelection() {
+        selectionDialogue?.refresh(state:engine.state)
+        selectionChoices=selectionDialogue?.choices ?? []
+    }
+    func selectTopic(_ id:String) {
+        guard selectionEnabled else { message="请先显示桌宠，并处理未保存的变更后再选择话题。";return }
+        let oldMood=engine.presentationMood
+        guard let entry=selectionDialogue.select(id:id,apply:{ effects in
+            engine.applySelectionDialogue(effects) ? engine.state:nil
+        }) else { message="话题已失效或效果未能应用。";return }
+        state=engine.state;selectionChoices=selectionDialogue.choices
+        lastSelectionEffect=entry.effectDescription
+        autonomy.reset();consumeEvents()
+        recordDiagnostic(.interaction,"选择话题："+entry.choose)
+        let saved=save()
+        if saved { message="已选择："+entry.choose+"（"+entry.effectDescription+"）" }
+        if oldMood != presentationMood { _=petScene.playMoodTransition(from:oldMood,to:presentationMood) }
+        petScene.setPlaybackMood(presentationMood)
+        showSpeech(entry.rendered(state:state))
+    }
     @objc func sayClick() {
         guard visible, !suspended else { message="请先显示桌宠，再聊一句。";return }
         guard let entry=dialogue.click(state:engine.state,gameplay:catalog,hour:Calendar.current.component(.hour,from:Date()),mood:presentationMood) else { return }

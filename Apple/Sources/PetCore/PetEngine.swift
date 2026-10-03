@@ -202,8 +202,21 @@ public final class PetEngine {
         }
     }
     @discardableResult public func applyDialogue(_ effects:PetDialogueEffects) -> Bool {
+        applyDialogue(effects,selection:false)
+    }
+    @discardableResult public func applySelectionDialogue(_ effects:PetDialogueEffects) -> Bool {
+        applyDialogue(effects,selection:true)
+    }
+    private func applyDialogue(_ effects:PetDialogueEffects,selection:Bool) -> Bool {
         guard effects.isValid else { return false }
         let before=state
+        if selection {
+            var progress=state.progress ?? PetProgress()
+            for (key,value) in [("exp",effects.experience),("like",effects.affection),("money",effects.money)] where value != 0 {
+                progress.increment("stat_say_"+key+(value>0 ? "_p":"_d"))
+            }
+            state.progress=progress
+        }
         eat(effects.petFood);state.resting=before.resting;state.money += effects.money
         do { try state.validate() } catch { state=before;return false }
         recordInteraction();return true

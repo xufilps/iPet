@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import Foundation
-public enum PetDiagnosticKind:String,CaseIterable,Sendable { case rendering,save,shortcut,keyboard,lifecycle }
+public enum PetDiagnosticKind:String,CaseIterable,Sendable { case rendering,save,shortcut,keyboard,lifecycle,interaction }
 public struct PetDiagnosticEntry:Equatable,Sendable,Identifiable {
     public let id:Int
     public let kind:PetDiagnosticKind

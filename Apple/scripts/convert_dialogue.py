@@ -17,6 +17,31 @@ def numeric(f,key,default=0):
     if not math.isfinite(value):raise ValueError('Nonfinite dialogue value: '+key)
     return value
 
+def selection_entries(source,records):
+    entries=[]
+    limits={'money':1000,'strength':1000,'food':1000,'drink':1000,'feeling':100,'health':100,'affection':50,'experience':1000}
+    for filename in ['SelectText.lps','SelectTextv2.lps']:
+        path=source/'text'/filename
+        if not path.exists():continue
+        records['text/'+filename]=hashlib.sha256(path.read_bytes()).hexdigest()
+        for line_number,line in enumerate(path.read_text(encoding='utf-8-sig').splitlines(),1):
+            if not line.strip() or line.startswith('///'):continue
+            if line.split(':',1)[0].lower()!='selecttext':raise ValueError('Unknown selection row')
+            f={key.lower():value for key,value in fields(line).items()}
+            allowed={'choose','text','tag','tags','totags','mode'}|set(EFFECTS)|{a+b for a in ATTRS for b in ['min','max']}
+            if set(f)-allowed:raise ValueError('Unknown selection fields: '+str(set(f)-allowed))
+            text=f.get('text','').replace('/n','\n');choose=f.get('choose','')
+            if not text or not choose or len(text)>5000 or len(choose)>5000:raise ValueError('Invalid selection text')
+            if set(re.findall(r'\{([^}]+)\}',text))-TOKENS:raise ValueError('Unsupported selection placeholder')
+            if 'mode' in f:numeric(f,'mode') # Original CheckState does not use Mode.
+            bounds={a+b:numeric(f,a+b) for a in ATTRS for b in ['min','max'] if a+b in f}
+            for a in ATTRS:
+                if bounds.get(a+'min',-2147483648 if a=='money' else 0)>bounds.get(a+'max',2147483647):raise ValueError('Inverted selection bounds')
+            effects={value:max(-limits[value],min(limits[value],numeric(f,key))) for key,value in EFFECTS.items()}
+            if not numeric(f,'exp').is_integer():raise ValueError('Selection experience must be an integer')
+            entries.append({'id':f'{filename}:{line_number}','choose':choose,'text':text,'characterTags':f.get('tag','all').split(','),'conversationTags':f['tags'].split(',') if f.get('tags') else [],'toTags':f['totags'].split(',') if f.get('totags') else [],'bounds':bounds,'effects':effects})
+    return entries
+
 def convert_dialogue(source,destination):
     entries=[];records={};diagnostics=[]
     config=source/'pet/vup.lps';records['pet/vup.lps']=hashlib.sha256(config.read_bytes()).hexdigest()
@@ -49,9 +74,12 @@ def convert_dialogue(source,destination):
             if not 0<=entry['mode']<=15 or not 0<=entry['dayTime']<=15 or entry['workState'] not in ['Nomal','Sleep','Work','Empty','Travel']:raise ValueError('Unsupported dialogue condition')
             if kind!='click' and (entry['lowMode'] not in ['H','L'] or entry['severity'] not in ['L','M','S']):raise ValueError('Invalid low-state condition')
             entries.append(entry)
+    selections=selection_entries(source,records)
+    write_if_changed(destination/'selection-dialogue.json',(json.dumps({'version':1,'tags':tags,'entries':selections},ensure_ascii=False,indent=2,allow_nan=False)+'\n').encode())
     result={'version':1,'tags':tags,'entries':entries,'diagnostics':diagnostics}
     write_if_changed(destination/'dialogue.json',(json.dumps(result,ensure_ascii=False,indent=2,allow_nan=False)+'\n').encode())
     write_if_changed(destination/'dialogue-sources.sha256.json',(json.dumps(records,sort_keys=True,indent=2)+'\n').encode())
+    print(f'Selection dialogue: {len(selections)} rows')
     print(f'Dialogue: {len(entries)} rows, {len(diagnostics)} source diagnostics')
 if __name__=='__main__':
     root=Path(__file__).resolve().parents[1]

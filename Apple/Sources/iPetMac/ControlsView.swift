@@ -15,6 +15,7 @@ struct ControlsView: View {
                 Text(model.simulationEnabled ? (model.state.resting ? "休息中":model.state.mood.title):"固定显示：\(model.presentationMood.title)").foregroundStyle(.secondary)
             }
             TabView(selection:$model.selectedPage) {
+                conversation.tabItem { Text("对话") }.tag(ControlPage.conversation)
                 status.tabItem { Text("状态") }.tag(ControlPage.status)
                 ActivityView(model:model).tabItem { Text("活动") }.tag(ControlPage.activity)
                 ScheduleView(model:model).tabItem { Text("日程") }.tag(ControlPage.schedule)
@@ -37,6 +38,7 @@ struct ControlsView: View {
             metric("饮水",model.state.drink); metric("心情",model.state.feeling); metric("健康",model.state.health)
             HStack {
                 Button(model.state.resting ? "起床" : "休息") { model.command(.toggleRest) }
+                Button("选话题") { model.showConversation() }
                 Button("关闭说话") { model.closeSpeech() }
                 Button("聊一句") { model.sayClick() }.help("本地原版文本可能带少量属性或金币变化，每20秒可聊一次。")
             }
@@ -44,6 +46,39 @@ struct ControlsView: View {
                 .font(.callout).foregroundStyle(.secondary)
             Spacer()
         }.padding(16)
+    }
+    private var conversation:some View {
+        VStack(alignment:.leading,spacing:12) {
+            Text("选择一句想对\(model.state.name)说的话").font(.headline)
+            Text("话题按当前状态抽取，选择后可能改变属性或金币，并出现后续话题。每次选择会将原刷新期限延长五分钟。")
+                .font(.callout).foregroundStyle(.secondary)
+            ScrollView {
+                VStack(alignment:.leading,spacing:10) {
+                    ForEach(model.selectionChoices) { entry in
+                        Button { model.selectTopic(entry.id) } label: {
+                            VStack(alignment:.leading,spacing:4) {
+                                Text(entry.choose).frame(maxWidth:.infinity,alignment:.leading)
+                                Text(entry.effectDescription).font(.caption).foregroundStyle(.secondary)
+                            }.padding(6)
+                        }.disabled(!model.selectionEnabled)
+                    }
+                    if model.selectionChoices.isEmpty { Text("没有可以说的话，等待下一次刷新。").foregroundStyle(.secondary) }
+                }.frame(maxWidth:.infinity,alignment:.leading)
+            }
+            TimelineView(.periodic(from:.now,by:1)) { _ in
+                VStack(alignment:.leading,spacing:8) {
+                    ProgressView(value:model.selectionProgress)
+                    HStack {
+                        Text("下次刷新剩余 \(Int(ceil(model.selectionRemaining))) 秒").monospacedDigit()
+                        Spacer()
+                        Button("刷新话题") { model.refreshSelection() }.disabled(model.selectionRemaining>0)
+                    }
+                }
+            }
+            if !model.lastSelectionEffect.isEmpty { Text("上次效果："+model.lastSelectionEffect).font(.caption) }
+            Text("话题池仅保留在本次运行中；重新打开程序会重新抽取。等待时间包含系统睡眠，养成状态不补算。")
+                .font(.caption).foregroundStyle(.secondary)
+        }.padding(16).onAppear { model.refreshSelection() }
     }
     private var settings: some View {
         ScrollView {

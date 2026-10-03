@@ -39,10 +39,7 @@ public struct PetTextEntry:Codable,Sendable {
         let strength=high ? (value>60 ? "L" : value>40 ? "M" : "S") : (value>40 ? "L" : value>20 ? "M" : "S")
         return self.kind==kind && value < (high ? 70 : 60) && lowMode==(high ? "H" : "L") && severity==strength && (high ? like<=tier : like<tier)
     }
-    public func rendered(state:PetState) -> String {
-        let values=["name":state.name,"food":String(format:"%.0f",state.food),"drink":String(format:"%.0f",state.drink),"feel":String(format:"%.0f",state.feeling),"strength":String(format:"%.0f",state.strength),"money":String(format:"%.0f",state.money),"level":String(state.level),"health":String(format:"%.0f",state.health),"hostname":"主人"]
-        return values.reduce(text) { $0.replacingOccurrences(of:"{"+$1.key+"}",with:$1.value) }
-    }
+    public func rendered(state:PetState) -> String { PetDialogueFormatting.render(text,state:state) }
 }
 public struct PetDialogueCatalog:Codable,Sendable {
     public var version:Int
@@ -105,5 +102,12 @@ public final class PetDialogue {
             if trigger { return choose(catalog.entries.filter { tagged($0) && $0.matchesLow(state:state,kind:kind,mood:mood) }) }
         }
         return nil
+    }
+}
+
+enum PetDialogueFormatting {
+    static func render(_ text:String,state:PetState) -> String {
+        let values=["name":state.name,"food":String(format:"%.0f",state.food),"drink":String(format:"%.0f",state.drink),"feel":String(format:"%.0f",state.feeling),"strength":String(format:"%.0f",state.strength),"money":String(format:"%.0f",state.money),"level":String(state.level),"health":String(format:"%.0f",state.health),"hostname":"主人"]
+        return values.reduce(text) { $0.replacingOccurrences(of:"{"+$1.key+"}",with:$1.value) }
     }
 }
