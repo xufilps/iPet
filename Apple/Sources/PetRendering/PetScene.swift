@@ -51,6 +51,8 @@ import PetCore
     public var onActionFinished: ((PetAction) -> Void)?
     /// Return true when the owner replaces a successfully completed movement.
     public var onMovementCompleted: (() -> Bool)?
+    /// Resource failures require safety recovery, even when intentional placement disables normal correction.
+    public var onMovementFailed:(()->Void)?
     public var onDiagnostic: ((String) -> Void)?
     private var speechReady:(()->Void)?
     private var timeline: AnimationTimeline?
@@ -172,6 +174,7 @@ import PetCore
         guard let raw=manifest.resolvePlayback(action:requestedAction,graphID:requestedGraphID,mood:target),raw.stages.contains(where: { $0.phase == phase }) else {
             onDiagnostic?("阶段资源缺失，结束当前动作：\(requestedAction.rawValue)/\(target.rawValue)/\(phase.rawValue)")
             if requestedAction == .sideHide { sideHideMain=nil }
+            if [.walkLeft,.walkRight,.climb,.sideHide,.raised].contains(requestedAction) { onMovementFailed?() }
             finishAction();return
         }
         if timeline?.rebind(clip:raw.selectingVariant(phase:phase,random:&random)) == true { mood=target }
@@ -221,7 +224,7 @@ import PetCore
             ?? manifest.clips.first { $0.action==action && $0.graphID==graphID && $0.mood == .normal }
             ?? manifest.resolve(action:action == .climb ? .idle : action,mood:mood)
         if clip.graphID != graphID || clip.mood != mood { onDiagnostic?("移动动画回退：\(graphID)/\(mood.rawValue)") }
-        guard [.walkLeft,.walkRight,.climb].contains(clip.action) else { play(.idle,mood:mood);return }
+        guard [.walkLeft,.walkRight,.climb].contains(clip.action) else { play(.idle,mood:mood);onMovementFailed?();return }
         timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:true);installTimeline()
     }
     @discardableResult public func playSideHide(graphID:String,mood:PetMood) -> Bool {
@@ -461,6 +464,7 @@ import PetCore
                         let completed=requestedAction, target=transitionTarget
                         let ready=completed == .say ? speechReady:nil
                         play(.idle,mood:target ?? mood)
+                        if [.walkLeft,.walkRight,.climb,.sideHide,.raised].contains(completed) { onMovementFailed?() }
                         if target != nil || [.walkLeft,.walkRight,.climb,.sideHide,.raised,.pinch,.specialIdle,.say].contains(completed) { onActionFinished?(completed) }
                         ready?()
                         return

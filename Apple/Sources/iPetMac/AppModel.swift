@@ -72,6 +72,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
     private var sideHideHovered=false
     private var climbLocated=false
     private var edgeScreen:CGRect?
+    private var reposition=PetReposition()
     private var needsEdgeRecovery=false
     private var moveRandom=SeededPetRandom(seed:UInt64.random(in:0...UInt64.max))
     private let autonomy = PetAutonomy()
@@ -149,9 +150,14 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
                   self.needsEdgeRecovery,let screen=self.edgeScreen else { return false }
             return self.beginSideHide(screen:screen)
         }
+        petScene.onMovementFailed = { [weak self] in
+            guard let self else { return };self.cancelMovement();self.clampPosition();self.persistPosition()
+        }
         petScene.onActionFinished = { [weak self] action in
             guard let self else { return }
-            if [.walkLeft,.walkRight,.climb,.sideHide].contains(action) { self.cancelMovement();self.persistPosition() }
+            if [.walkLeft,.walkRight,.climb].contains(action) {
+                self.cancelMovement(reposition:false);self.needsEdgeRecovery=false;self.edgeScreen=nil;self.persistPosition()
+            } else if action == .sideHide { self.cancelMovement();self.persistPosition() }
             self.restoreBaseAnimation()
         }
         petPanel = PetPanel(contentRect: NSRect(x: 0, y: 0, width: size, height: size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
@@ -214,7 +220,10 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         petView.onDragEnd = { [weak self] in
             guard let self else { return }
             self.needsEdgeRecovery=false;self.edgeScreen=nil
-            if !self.beginSideHide() { self.petScene.finishRaise();self.clampPosition() };self.persistPosition()
+            if let area=self.movementArea,let primary=NSScreen.screens.first?.visibleFrame {
+                self.reposition.raised(pet:self.petPanel.frame,area:area,primary:primary)
+            }
+            if !self.beginSideHide() { self.petScene.finishRaise();self.recoverInvisiblePlacement() };self.persistPosition()
             self.recordAcceptanceInput("drag-end")
         }
         if let x = UserDefaults.standard.object(forKey: "petX") as? Double, let y = UserDefaults.standard.object(forKey: "petY") as? Double {
@@ -651,18 +660,35 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         cancelMovement(reposition:false);walkPlan=plan;needsEdgeRecovery=true;moveCycles.begin(distance:plan.distance)
         petScene.playMovement(plan.action,graphID:plan.graphID,mood:engine.presentationMood)
     }
+    private func stopMovementPosition() {
+        guard walkPlan != nil || climbPlan != nil else { return }
+        if let area=edgeScreen ?? movementArea,let primary=NSScreen.screens.first?.visibleFrame {
+            petPanel.setFrame(reposition.stop(pet:petPanel.frame,area:area,primary:primary),display:true)
+        }
+    }
+    private func recoverInvisiblePlacement() {
+        let frame=petPanel.frame
+        let visibleOnScreen=NSScreen.screens.contains { screen in
+            let intersection=screen.frame.intersection(frame)
+            return !intersection.isNull && intersection.width>0 && intersection.height>0
+        }
+        if !visibleOnScreen { clampPosition();reposition.reset() }
+    }
     private func endWalking() {
-        walkPlan=nil;climbPlan=nil
+        stopMovementPosition();walkPlan=nil;climbPlan=nil
         if petScene.isMovementAnimation { petScene.finishAction() }
         else { cancelMovement();restoreBaseAnimation() }
         persistPosition()
     }
     private func movementLoop() -> Bool {
-        guard (walkPlan != nil || climbPlan != nil),visible,!suspended,movementEnabled,!petView.isInteracting,engine.presentationMood != .ill else { walkPlan=nil;climbPlan=nil;return false }
+        guard (walkPlan != nil || climbPlan != nil),visible,!suspended,movementEnabled,!petView.isInteracting,engine.presentationMood != .ill else {
+            if !petView.isInteracting { stopMovementPosition() }
+            walkPlan=nil;climbPlan=nil;return false
+        }
         if moveCycles.continueAfterLoop() { return true }
         let previous:PetMovementChoice?=climbPlan.map(PetMovementChoice.traversal) ?? walkPlan.map(PetMovementChoice.walk)
         if let previous,moveCycles.triesCompatibility(),chooseMovement(previous:previous) { return true }
-        walkPlan=nil;climbPlan=nil;persistPosition();return false
+        stopMovementPosition();walkPlan=nil;climbPlan=nil;persistPosition();return false
     }
     @objc func toggleVisibility() {
         keyboardSender.cancel()
@@ -794,6 +820,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         petPanel.setFrameOrigin(NSPoint(x:rect.maxX-size-30,y:rect.minY+30));clampPosition();persistPosition()
     }
     private func clampPosition() {
+        reposition.reset()
         if needsEdgeRecovery,let screen=edgeScreen { petPanel.setFrame(PetClimbPlan.recovered(pet:petPanel.frame,screen:screen),display:true);return }
         guard let rect=movementArea else { return }
         petPanel.setFrame(PetClimbPlan.recovered(pet:petPanel.frame,screen:rect),display:true)
