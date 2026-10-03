@@ -13,6 +13,7 @@ public struct PetLegacySavePreview: Sendable {
     public let sourceData: Data
     public let document: PetLegacyLPSDocument
     public let integrity: PetLegacyIntegrity.Result
+    public let inventory: PetLegacyInventoryPreview
     public let petState: PetState?
     public let hostName: String?
     public let savedMode: String?
@@ -22,6 +23,7 @@ public struct PetLegacySavePreview: Sendable {
     public init(data: Data) throws {
         sourceData=data;document=try PetLegacyLPSDocument.parse(data)
         integrity=PetLegacyIntegrity.inspect(document)
+        inventory=PetLegacyInventoryPreview(document:document)
         var mapper=Mapper(document:document,integrity:integrity);mapper.run()
         petState=mapper.state;hostName=mapper.hostName;savedMode=mapper.savedMode
         issues=mapper.issues;omittedIssueCount=mapper.omitted
@@ -72,7 +74,7 @@ public struct PetLegacySavePreview: Sendable {
             let pets=document.lines.filter { $0.name.utf8.elementsEqual("vpet".utf8) }
             for line in document.lines where !line.name.utf8.elementsEqual("vpet".utf8) {
                 if line.name.utf8.elementsEqual("hash".utf8) { continue }
-                let message = line.name == "statistics" ? "原统计的类型与名称映射尚未实现。" : line.name.hasPrefix("item") ? "原库存参数、类型与自定义数据尚未映射，未替换为同名内置物品。" : "原扩展数据尚未映射，完整源字节保留。"
+                let message = line.name == "statistics" ? "原统计的类型与名称映射尚未实现。" : line.name.hasPrefix("item") ? "库存已提供独立只读参数预览，原生持久化与整档确认导入尚未接入。" : "原扩展数据尚未映射，完整源字节保留。"
                 report(line.name,message,.blocking)
             }
             guard pets.count==1,let line=pets.first else { report("vpet","需要唯一的桌面宠物根行。",.blocking);return }

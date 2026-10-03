@@ -37,4 +37,4 @@ dotnet Apple/scripts/legacy_lps_oracle/bin/Release/net8.0/LegacyLPSOracle.dll --
 
 两个完整记录分别覆盖基类与派生食物，原对象/反序列化快照完全相同；Food未重复标注的ItemType/Star仍由实际库序列化。七个加载样例证明IgnoreCase字段能读取两种大小写，枚举Drink有效而drink拒绝，数字4映射Drink，布尔0拒绝，原始/null是null但/!null解码为字面/null。普通Double保存12.5/21.75和负效果，不能使用宠物FInt64缩放。
 
-MainWindow.ItemsAdd（3086行）仅按Name合并Count并保留首条参数，未检查ItemType/IsSingle或效果差异；Food.LoadSource按独立betterbuy/star重建收藏并按buytime重建Data。类型化Swift库存映射、冲突报告和整档导入仍未完成。
+MainWindow.ItemsAdd（3086行）仅按Name合并Count并保留首条参数，未检查ItemType/IsSingle或效果差异；Food的LoadImageSource/LoadEatTimeSource在商店路径更新收藏/说明；库存SavesLoad调用继承的Item.LoadSource，不调用上述方法，保留序列化Star/Data。类型化Swift库存映射、冲突报告和整档导入仍未完成。

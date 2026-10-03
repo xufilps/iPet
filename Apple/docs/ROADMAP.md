@@ -182,3 +182,8 @@ v1～v7先按旧边界验证，再迁移累计经验；高于1000级进入桌面
 阶段4C新增只读LPS宠物属性候选及兼容诊断，正确区分固定点字段与普通LikabilityMax；保留负经验/钱包/缓释队列/动态属性，缺上限字段保留Exp增量，模式重算差异可见。重复/非法字段阻断候选，主人称呼只读保留。完整源字节、未知库存/统计/Data/hash均保留并报告，尚无预览窗口或确认导入，不改变JSONv8/正式数据。下一批继续库存参数/统计/扩展字段及完整性映射，见[规格](specs/PHASE-4C.md)与[审计](LEGACY-SAVE-AUDIT.md)。
 
 阶段4D已接原hash只读校验：旧宠物MD5优先且仅覆盖宠物，根ver2 SHA512、旧根MD5/SHA512回退核对原库序列化字节。预览明确匹配/不匹配/缺失/不支持、算法和范围；重复/未知版本不猜，不匹配或不支持报告blocking。仍无整档导入界面/确认保存，库存/统计/Data映射与主人持久化继续待实现，见[规格](specs/PHASE-4D.md)及[审计](LEGACY-SAVE-AUDIT.md)。
+
+## 阶段4E：旧库存只读完整参数预览
+已新增PetLegacyInventoryPreview，保留逐条源行、Item/Food参数、数量、收藏/可用/单件/可见标记及自定义Data；普通Double/Int32/null/枚举编码按实际原库样例核对，不用同名内置目录替换。提供原按名称合并的记录索引/Int64数量与参数冲突提示，Unicode名称按ordinal区分；未知字段/类型、重复行/字段和合并Int32溢出明确报告，最多200条诊断及省略计数。PetLegacySavePreview提供inventory结果，但尚无原生自定义物品持久化、整档导入窗口或确认写入，JSON仍v8。
+原库存加载继承Item.LoadSource，保留序列化Star/Data；商店LoadImageSource/LoadEatTimeSource才从设置/buytime更新商店值，不能混淆。11项库存回归覆盖原库往返、默认/大小写、数字枚举、非法值/重复/未知、null字面、同名参数及未知字段冲突、Unicode、数量溢出、诊断上限与预览接入。独立6.1-sol审查的加载路径文案问题已用RED→GREEN修复；Minor建议将夹具loads列表直接参数化遍历，留作后续夹具扩展。
+后续先设计保留自定义参数/标记的原生库存持久化，再映射统计/Data并交付整档确认导入。回滚本批只读代码不改JSON或原LPS；原件无需恢复。详见[规格](specs/PHASE-4E.md)。

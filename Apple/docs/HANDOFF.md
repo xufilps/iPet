@@ -1,6 +1,6 @@
 # 当前交接入口 — 2026-10-02 / v0.2.0
 
-当前最新为阶段4D旧档完整性校验，JSON仍v8，327项Swift测试通过，详见文末。第五阶段历史开发与研究交付、231项Swift测试和未完成验收见[最新交接](PHASE-5-HANDOFF.md)；[生态研究](ECOSYSTEM_RESEARCH.md)解释Steam/工坊/云/插件/图库限制。按用户要求此检查点暂停，不进入第六阶段；下文保留早期交付与逐批历史，历史版本/性能数据不代表当前全部验收。
+当前最新为阶段4E旧库存只读参数预览，JSON仍v8，338项Swift及23项Python测试通过，完整验证结果见文末，详见文末。第五阶段历史开发与研究交付、231项Swift测试和未完成验收见[最新交接](PHASE-5-HANDOFF.md)；[生态研究](ECOSYSTEM_RESEARCH.md)解释Steam/工坊/云/插件/图库限制。按用户要求此检查点暂停，不进入第六阶段；下文保留早期交付与逐批历史，历史版本/性能数据不代表当前全部验收。
 
 ---
 
@@ -384,3 +384,10 @@ v1～v7先按旧边界验证，再迁移累计经验；高于1000级进入桌面
 新增PetLegacyIntegrity及原库文档canonicalString，接入只读预览结果/诊断。旧vpet/hash优先，MD5前8字节little-endian与unchecked加权，原根Info/Text用raw、子Info用解码；根ver2 SHA512及旧0/1 MD5→SHA512回退核对移除hash行后的库序列化。匹配状态、路径和范围明确，宠物校验不覆盖其它根行/注释；重复/未知版本/非规范值不猜，-1常用无效标记不冒称通过。CryptoKit只用于共享核心hash，不需要.NET运行时。
 实际NuGet1.11.9生成5组序列化、4条算法路径合成夹具，旧MD5与宠物加权预期包含负Int64；7项新增回归覆盖库字节、路径、字段/注释改动、范围、优先级、无hash/重复/未来/非法及CRLF/BOM。完整phase4d.log：226核心+95渲染+6适配=327 Swift、23 Python，macOS Release、iOS Simulator共享模块及严格签名通过。宿主仍arm64 macOS27/Xcode27/Swift6.4，生成工具SDK8.0.425；规格检查点a1030bf9，来源/夹具哈希见LEGACY-LPS-SOURCE。
 独立6.1-sol审查未发现正确性问题，非阻断建议为追加非空宠物raw头Info/尾Text的加权夹具；现有这两值为空，源码检查确认用raw，测试补强延后。原README7775字节/LICENSE、工程一致和文档链接检查通过。原JSONv8、用户正式档和源LPS未写；回滚代码无需降档，保留完整目录和原件。下一批继续库存参数、统计与扩展Data/套餐/排程、主人持久化，再接完整预览及双原件确认；当前仍不能整档导入，实机压力/阶段6未执行。
+
+## 阶段4E：旧库存只读完整参数预览
+已新增PetLegacyInventoryPreview，保留逐条源行、Item/Food参数、数量、收藏/可用/单件/可见标记及自定义Data；普通Double/Int32/null/枚举编码按实际原库样例核对，不用同名内置目录替换。提供原按名称合并的记录索引/Int64数量与参数冲突提示，Unicode名称按ordinal区分；未知字段/类型、重复行/字段和合并Int32溢出明确报告，最多200条诊断及省略计数。PetLegacySavePreview提供inventory结果，但尚无原生自定义物品持久化、整档导入窗口或确认写入，JSON仍v8。
+原库存加载继承Item.LoadSource，保留序列化Star/Data；商店LoadImageSource/LoadEatTimeSource才从设置/buytime更新商店值，不能混淆。11项库存回归覆盖原库往返、默认/大小写、数字枚举、非法值/重复/未知、null字面、同名参数及未知字段冲突、Unicode、数量溢出、诊断上限与预览接入。独立6.1-sol审查的加载路径文案问题已用RED→GREEN修复；Minor建议将夹具loads列表直接参数化遍历，留作后续夹具扩展。
+后续先设计保留自定义参数/标记的原生库存持久化，再映射统计/Data并交付整档确认导入。回滚本批只读代码不改JSON或原LPS；原件无需恢复。详见[规格](specs/PHASE-4E.md)。
+
+阶段4E最终完整验证日志：Apple/build/verification/phase4e-final.log（本地可再生成）；338 Swift=237核心+95渲染+6输入、23 Python、macOS Release/严格签名与iOS Simulator共享模块均通过。工程再生成逐字节一致，README末尾7775字节/原LICENSE一致，文档链接与diff检查通过。无真实用户数据写入或新实机/压力证据。

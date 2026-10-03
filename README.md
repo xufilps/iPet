@@ -214,6 +214,8 @@ Windows LPS 导入正在推进：已验证原库格式的解码层与只读宠�
 
 
 
+旧Windows库存兼容已提供只读参数预览与同名冲突诊断；尚未开放完整旧档导入，不会以当前内置商品覆盖原物品效果。进度与边界见 [阶段4E规格](Apple/docs/specs/PHASE-4E.md)。
+
 ## 原项目 README.md（原文保留）
 
 以下完整保留原 VPet 简体中文 README 原文，对照上游基线 `1a06c5981330564bab05a098d2d7969a4b119dd3`。后续内容描述原 Windows 项目、原发布渠道和原授权；iPet 的当前状态以上文为准。原文中的源码相对链接、Windows 工程和构建说明属于历史内容，现应到 [原仓库](https://github.com/LorisYounger/VPet) 阅读使用；下面的原文仍保持逐字节不变。

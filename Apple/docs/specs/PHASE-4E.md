@@ -18,7 +18,7 @@
 - Food增加Type枚举Food/Star/Meal/Snack/Drink/Functional/Drug/Gift、Int32 Exp、普通Double Strength/StrengthFood/StrengthDrink/Feeling/Health/Likability、nullable Graph。物品Double不是宠物的1e9固定点。
 - Food覆盖ItemType与Star但未重新标注LineAttribute；必须用相同继承DTO及实际SerializeObjectToLine<Line>证明序列化/加载行为，不凭属性名推测。
 - ItemsAdd只按Name相等合并Count，保留首件全部参数，忽略IsSingle和后件参数差异。预览保留各源记录并显式列出这种合并造成的差异，不静默应用。
-- Food.LoadSource从独立设置betterbuy/star重建收藏，按buytime重建Data；单个宠物LPS不足以还原设置收藏。8/9月临时数量修补是日期条件，不在导入预览偷偷套用。
+- Food没有覆盖Item.LoadSource；SavesLoad库存路径保留序列化Star/Data。商店目录另调用LoadImageSource/LoadEatTimeSource，从betterbuy/star和buytime更新商店值；单个宠物LPS不足以还原独立设置收藏。8/9月临时数量修补是日期条件，不在导入预览偷偷套用。
 
 ## Review Focus
 - 同名不同类型/参数的记录不能被当前目录覆盖或无提示合并；Unicode名称按.NET ordinal处理。
@@ -32,15 +32,17 @@
 - [x] 用固定NuGet1.11.9生成legacy-item-fields.json，记录来源、生成命令、SHA256及观察；发现标签和实际加载不同则据库行为修订本文。
 
 ## Task 2：只读库存映射
-- [ ] 先新增PetLegacyInventoryPreviewTests.swift并观察RED，再实现PetLegacyInventoryPreview.swift；有序记录保留sourceLine、所有字段、可表示类型化参数和诊断，未知类型明确unsupported。
-- [ ] 验证夹具逐字段、同名参数冲突/原合并、默认/重复/非法/边界/未知字段/枚举Star；接入PetLegacySavePreview的只读库存结果，整档仍不支持确认写入。
+- [x] 先新增PetLegacyInventoryPreviewTests.swift并观察RED，再实现PetLegacyInventoryPreview.swift；有序记录保留sourceLine、所有字段、可表示类型化参数和诊断，未知类型明确unsupported。
+- [x] 验证夹具逐字段、同名参数冲突/原合并、默认/重复/非法/边界/未知字段/枚举Star；接入PetLegacySavePreview的只读库存结果，整档仍不支持确认写入。
 
 ## Task 3：交付
-- [ ] 更新审计/差异/行为/交接/README；完整Swift/Python/macOS/iOS共享模块、工程再生及原文许可检查。
-- [ ] 独立6.1-sol整批审查，必要问题一次RED→GREEN修复；提交推送ipet-dev并核对远程。
+- [x] 更新审计/差异/行为/交接/README；完整Swift/Python/macOS/iOS共享模块、工程再生及原文许可检查。
+- [x] 独立6.1-sol整批审查，必要问题一次RED→GREEN修复；提交推送ipet-dev并核对远程。
 
 ## 回滚与下一步
 本批只读API和测试可回滚，不改存档格式；原件无需恢复。下一批设计能保存自定义物品参数/元数据的原生库存模型，再映射统计和Data，最后整档预览与双原件备份确认导入。
 
 ## Task 1实测裁定
 实际库证明派生Food的ItemType与Star继承标注生效，字段IgnoreCase在加载生效；Type枚举值严格大小写，但规范数字0…7可映射已定义项。bool数字0失败；rawInfo=/null代表null，/!null是字面字符串。后续映射须按此证据测试，不以仅命名枚举的简化替代。
+
+最终验证：11项本批回归，全套338 Swift/23 Python/macOS Release/iOS共享编译/严格签名通过。审查加载路径问题一次RED→GREEN修复；夹具loads直接参数化为Minor后续项。原文/许可/工程再生成一致；不代表实机或整档导入完成。

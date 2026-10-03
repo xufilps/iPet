@@ -17,7 +17,7 @@ MainWindow.SavesLoad创建GameSave_v2（或叠加已有旧数据），取其Game
 | vpet/StoreStrength、StoreStrengthFood、StoreStrengthDrink | 缓释队列，可含负值 | 固定点字段/负值/边界已在合成LPS预览验证，源字节保留 | 部分实现 |
 | vpet/money | 钱包，ToFloat编码 | 固定点钱包预览保留原值，非法数值阻断，原溢出补偿未迁移 | 部分实现 |
 | vpet/mode | 保存的原可变模式 | 原模式名读取与重算差异已报告；未知名称阻断 | 部分实现 |
-| itemN | Item/Food包含name、count、itemtype、参数及Star/Data/CanUse等 | 内置Food名称映射core.item.+name，不能丢原参数或把插件物品当内置；不同参数/未知类型需报告保留原件 | 待实现 |
+| itemN | Item/Food包含name、count、itemtype、参数及Star/Data/CanUse等 | 已有只读完整参数/标记/Data预览、同名冲突及原合并数量报告；尚无原生自定义参数持久化或整档导入 | 部分实现 |
 | statistics | SortedDictionary统计键/SetObject及多种值类型 | counters仅有限Double；日期/字符串、原名称键映射和重复键需单列 | 待实现 |
 | Data中的套餐/排程/日期/自定义值 | GameSave_v2保留未识别行，插件可扩展 | 必须逐项核对结构，不能仅转vpet就宣称完整旧档兼容 | 待审计 |
 | hash（ver=2）及vpet/hash旧路径 | 原完整性/反修改标志，两种hash路径 | hash不是存档总版本；不能忽略后声称验证成功，阶段4D已实现原根SHA512/MD5及宠物MD5，范围与缺失/不匹配/不支持状态明确 | 已实现只读校验 |
@@ -47,4 +47,6 @@ UI先只读预览，列出准确保留、明确转换、未支持内容、原has
 只读预览已接该结果；不匹配/不支持为blocking，缺失/仅宠物范围明确说明。尚无整档确认写入，不修改源LPS，不把hash当来源签名；JSONv8与正式数据不变。库存参数/统计/Data/套餐/排程及主人称呼持久化仍未迁移。
 
 ## 阶段4E Task 1：库存编码及合并审计
-实际库库存样例和来源见[夹具记录](../Tests/Fixtures/LEGACY-LPS-SOURCE.md)。物品普通Double与宠物固定点编码不同；Food继承序列化ItemType/Star有效，数字枚举4等价Drink，大小写错误枚举和布尔0拒绝，null图片与字面/null可区分。原ItemsAdd只按名称累加数量并保留首件参数；导入预览必须保留原记录、报告同名参数冲突，不能用当前商品目录覆盖。原Food加载另从设置重建收藏、从buytime重建Data，单个旧档不能证明收藏设置迁移。Swift类型化映射、冲突预览和导入窗口尚待Task 2，不改变JSONv8。
+实际库库存样例和来源见[夹具记录](../Tests/Fixtures/LEGACY-LPS-SOURCE.md)。物品普通Double与宠物固定点编码不同；Food继承序列化ItemType/Star有效，数字枚举4等价Drink，大小写错误枚举和布尔0拒绝，null图片与字面/null可区分。原ItemsAdd只按名称累加数量并保留首件参数；导入预览必须保留原记录、报告同名参数冲突，不能用当前商品目录覆盖。原库存加载保留序列化Star/Data；商店目录另从设置/buytime更新收藏与说明，单个旧档不能证明独立收藏设置迁移。Swift类型化映射、冲突预览和导入窗口尚待Task 2，不改变JSONv8。
+
+阶段4E类型化库存核心已实现，详见[规格](specs/PHASE-4E.md)和[PetLegacyInventoryPreview](../Sources/PetCore/PetLegacyInventoryPreview.swift)。原有只读原件保护保持，未发布新运行状态。
