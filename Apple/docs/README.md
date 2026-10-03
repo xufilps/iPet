@@ -4,7 +4,7 @@
 
 | 用途 | 文档 |
 | --- | --- |
-| 工程入口与目录职责 | [构建](../README.md)、[结构](REPOSITORY-STRUCTURE.md)、[贡献](../../CONTRIBUTING.md) |
+| 工程入口与目录职责 | [构建](../README.md)、[结构](REPOSITORY-STRUCTURE.md)、[体积](PROJECT-SIZE.md)、[贡献](../../CONTRIBUTING.md) |
 | 原作差异与行为依据 | [对照矩阵](UPSTREAM_COMPARISON.md)、[行为](BEHAVIOR.md) |
 | 当前交接与缺口 | [交接](HANDOFF.md)、[剩余功能](REMAINING-FEATURES.md) |
 | 长期路线与阶段门槛 | [路线](ROADMAP.md)、[第五阶段交接](PHASE-5-HANDOFF.md) |

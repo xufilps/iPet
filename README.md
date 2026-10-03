@@ -225,6 +225,14 @@ Windows LPS 导入正在推进：已验证原库格式的解码层与只读宠�
 
 共享Swift包保留 `Apple/Package.swift` 及标准Sources/Tests结构，macOS应用源码移至 `Apple/Apps/macOS/`，原素材集中在 `Assets/Upstream/VPet/Core/`。入口见 [工程结构](Apple/docs/REPOSITORY-STRUCTURE.md)、[文档导航](Apple/docs/README.md)、[贡献指南](CONTRIBUTING.md)与[支持说明](SUPPORT.md)。GitHub问题/PR模板及macOS CI位于 `.github/`；生成资源、本机状态与构建产物不提交。本次不改变养成、JSON v9或存档目录，后续功能开发仍暂停。
 
+## 获取当前版本与体积
+
+原素材按当前依赖保留4534文件、约578MiB，已移除未使用图库、Windows主题/字体/语言及未选用动画，减少约433MiB；当前功能和生成资源不变，原件仍留在历史/上游。只需当前源码可使用单分支浅克隆：
+```sh
+git clone --depth 1 --single-branch --branch ipet-dev https://github.com/xufilps/iPet.git
+```
+完整Git历史不会因删除当前文件立即缩小；空间口径、原件恢复及缓存清理见[体积说明](Apple/docs/PROJECT-SIZE.md)。
+
 ## 原项目 README.md（原文保留）
 
 以下完整保留原 VPet 简体中文 README 原文，对照上游基线 `1a06c5981330564bab05a098d2d7969a4b119dd3`。后续内容描述原 Windows 项目、原发布渠道和原授权；iPet 的当前状态以上文为准。原文中的源码相对链接、Windows 工程和构建说明属于历史内容，现应到 [原仓库](https://github.com/LorisYounger/VPet) 阅读使用；下面的原文仍保持逐字节不变。

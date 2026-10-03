@@ -8,6 +8,7 @@ mkdir -p "$apple_root/build/verification"
 /usr/bin/python3 "$apple_root/scripts/convert_assets.py"
 /usr/bin/python3 "$apple_root/scripts/convert_gameplay.py"
 /usr/bin/python3 "$apple_root/scripts/convert_dialogue.py"
+/usr/bin/python3 "$apple_root/scripts/audit_resources.py"
 swift test --package-path "$apple_root" > "$apple_root/build/verification/tests.log" 2>&1
 # SwiftPM may print per-target XCTest failures at the end; retain and inspect the full log.
 /usr/bin/python3 - "$apple_root/build/verification/tests.log" <<'PY_CHECK'

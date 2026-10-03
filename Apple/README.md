@@ -21,7 +21,7 @@ bash Apple/scripts/verify.sh
 
 `Package.swift` 是共享库唯一manifest，`Sources/PetCore`为纯Swift养成/保存，`Sources/PetRendering`为SpriteKit，`Sources/PetMacInput`为平台输入适配；对应回归在 `Tests/`。AppKit/SwiftUI应用源码独立放在 `Apps/macOS/`，由Xcode构建。生成的 `Resources/PetAssets/` 不提交；图标资源目录和 [母图来源](Design/README.md) 已提交。
 
-`verify.sh` 验证目录入口、原README/LICENSE和上游归档完整性、文档链接、生成项目一致性，运行23项Python/372项Swift测试，构建macOS Release、交叉编译iOS Simulator共享模块并验证签名。日志在 `build/verification/`。本次本机通过不代表GitHub runner已通过；CI同样不会启动UI、修改用户存档或执行压力测试。
+`verify.sh` 验证目录入口、原README/LICENSE和上游归档完整性、文档链接、生成项目一致性，运行26项Python/372项Swift测试，构建macOS Release、交叉编译iOS Simulator共享模块并验证签名。日志在 `build/verification/`。本次本机通过不代表GitHub runner已通过；CI同样不会启动UI、修改用户存档或执行压力测试。
 
 ## 数据与恢复
 正式存档仍为 `~/Library/Application Support/VPetApple/`，当前JSON v9；主档 `pet.json`、上一份有效档 `pet.previous.json`。每60秒、关键互动、睡眠和退出保存。损坏原件保留并尝试备份，未来版本阻止覆盖；读取旧v1…v8后，首次升级写入前保留独立旧版本原件。
@@ -32,3 +32,5 @@ bash Apple/scripts/verify.sh
 菜单栏提供显示/隐藏、位置恢复和功能入口；现有中文原生面板、13项活动、118项物品、套餐/日程及本地统计见根 [README](../README.md)。窗口不抢桌宠键盘焦点，透明区按帧alpha穿透；真实睡眠、多屏、最低系统/Intel和两小时观察仍待最终验收。
 
 [署名](ATTRIBUTION.md)、[原动画授权](ANIMATION_LICENSE.md)、根LICENSE与NOTICE随应用附带。代码Apache 2.0不替代角色/动画授权；不执行C#插件。贡献流程见 [CONTRIBUTING](../CONTRIBUTING.md)，完整差异/缺口/路线见 [文档导航](docs/README.md)。此批为工程结构整理，后续功能开发保持暂停。
+
+当前原素材已按实际依赖裁剪为578.05MiB，转换输出不变；体积边界、浅克隆和缓存恢复见[PROJECT-SIZE](docs/PROJECT-SIZE.md)。
