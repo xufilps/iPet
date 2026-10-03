@@ -16,6 +16,7 @@ enum ToolbarAction { case startActivity(String),shortcut(Int),stopKeyboard,short
     @Published var feedback:ActivityFeedback?
 }
 private struct PetToolbarView:View {
+    @State private var timerMode=PetActivityTimerMode.elapsed
     @ObservedObject var display:ToolbarPresentation
     let action:(ToolbarAction)->Void
     let hoverChanged:(Bool)->Void
@@ -58,11 +59,14 @@ private struct PetToolbarView:View {
             if let feedback=display.feedback {
                 Divider()
                 Text(feedback.title+(feedback.isPaused ? " · 已暂停" : " · 进行中")).font(.caption.bold()).lineLimit(2)
-                if let progress=feedback.progress,let remaining=feedback.remainingSeconds {
-                    ProgressView(value:progress)
-                    Text("剩余 \(Int(ceil(remaining/60))) 分钟 · 已获 \(feedback.earned.formatted(.number.precision(.fractionLength(2)))) \(feedback.unit)")
-                        .font(.caption).monospacedDigit().fixedSize(horizontal:false,vertical:true)
-                } else { Text("已获 \(feedback.earned.formatted(.number.precision(.fractionLength(2)))) \(feedback.unit)").font(.caption) }
+                Button("显示："+timerMode.title) { timerMode=timerMode.next }
+                    .font(.caption).help("依次切换已用时间、剩余时间、累计收益和收起详情")
+                    .accessibilityLabel("切换活动计时显示，当前"+timerMode.title)
+                if let readout=PetActivityTimer.readout(feedback:feedback,mode:timerMode) {
+                    if let progress=feedback.progress { ProgressView(value:progress) }
+                    Text(readout.value+" "+readout.unit).font(.caption).monospacedDigit()
+                        .fixedSize(horizontal:false,vertical:true)
+                }
                 HStack {
                     Button(feedback.isPaused ? "继续" : "暂停") { action(.pauseOrResume) }.disabled(feedback.isPaused && !feedback.canResume)
                     Button("结束") { action(.stop) }.help("提前结束保留已获收益，不追加完成奖励")

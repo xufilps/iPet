@@ -39,7 +39,7 @@
 | 联机/对话生态 | MutiPlayer接口；TalkBox及插件可扩展对话 | 无联机、AI服务或网络对话 | 联机按产品边界不实施；本地对话与网络服务分别评估 | 尚未迁移 | U9、U12、U14 → A1 | 联机不纳入；对话见3 |
 | iOS | 本基线Windows工程，无原生iOS产品 | PetCore/PetRendering Simulator编译通过，无iOS界面/真机证据 | 移动应用内养宠另做前后台适配 | 待验证 | U1 → A6 | 6 |
 | 发行与许可证 | 原README渠道及Apache代码/独立素材授权 | GitHub源码、自用ad-hoc构建；原署名/许可随包，无签名公证发行包 | 发行准备未完成；素材授权独立 | 部分实现 | 原README、LICENSE → A5、A7 | 0、6 |
-| 性能和稳定性 | 原版实现不能单凭源码推断性能 | 缓存估算48MiB、按帧加载；v0.1历史120秒观察；当前共388个Swift测试，短时实机记录不替代长期观察；两小时留到功能完善后 | 无同条件Windows对照，不能声称更省资源/稳定 | 待验证 | U8 → A3、A7 | 1 |
+| 性能和稳定性 | 原版实现不能单凭源码推断性能 | 缓存估算48MiB、按帧加载；v0.1历史120秒观察；当前共392个Swift测试，短时实机记录不替代长期观察；两小时留到功能完善后 | 无同条件Windows对照，不能声称更省资源/稳定 | 待验证 | U8 → A3、A7 | 1 |
 
 ## 2026-10-02 逐功能复核补充
 
@@ -340,3 +340,7 @@ PetLegacySavePreview已接statistics结果，但不应用到PetState，也未接
 ## 阶段3AL：可选工具栏自动隐藏 — 2026-10-03
 
 原ToolBar.CloseTimer为4000ms单次计时、悬停停止、离开重启。iPet适配为本机可选4秒自动隐藏：角色或工具栏悬停恢复/保持，菜单跟踪保持；生命周期隐藏优先。默认保留常驻，与原默认展示方式不完全相同；关闭自动隐藏即可恢复常驻，宠物JSON v9/养成规则/资源不变。状态为“已适配，实机待验证”；依据1a06c598 ToolBar.xaml.cs CloseTimer/Show/MouseEnter/MouseLeave → PetToolbarVisibility、PetToolbarWindow和AppModel。完整WorkTimer、小标与其它工具栏细节仍有差异，详见[规格](specs/PHASE-3AL.md)。
+
+## 阶段3AM：活动计时显示 — 2026-10-03
+
+原WorkTimer的四模式已用/剩余/收益/收起已适配到随宠工具栏，90秒/90分钟切换秒/分钟/小时、时间1位小数。只读session有效时长，暂停/睡眠不额外计算；收益保留2位精度（原版该模式整数），收起仍可暂停/继续/结束。未知时长不伪造，模式仅在工具栏实例保留，JSON v9不变。392 Swift/27 Python、macOS/iOS共享模块/签名/资源闭包通过，独立审查无发现；真实模式切换、尺寸变化与菜单/自动隐藏组合待实机，完整原样式/小标/完成反馈仍有差异。依据1a06c598 WorkTimer.xaml.cs → ActivityFeedback/PetActivityTimer/PetToolbarWindow；见[规格](specs/PHASE-3AM.md)。
