@@ -20,7 +20,7 @@
 
 舞台的投喂/休息等自定义浮动控件通过 `glassEffect` 实现材质，同组控件置于 `GlassEffectContainer`。展开/收起的控件通过稳定的 `glassEffectID` 与匹配几何过渡保持连续形变；使用系统按钮的按压反馈和原生页面/详情转场。动效不能改变角色舞台位置，也不能触发重复养成事务。遵循“减少动态效果”“降低透明度”和较大文字设置；系统原生适配优先，必要时采用更明确的背景与弱化过渡，避免运动或透明度影响操作辨识。
 
-实现与评审依据：[Apple：Adopting Liquid Glass](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass)、[Apple：Applying Liquid Glass to custom views](https://developer.apple.com/documentation/swiftui/applying-liquid-glass-to-custom-views)。当前共享Package的iOS 17声明与历史构建证据只描述旧基线；实施时同步提升Package平台声明、应用部署目标和共享模块验证命令至iOS 26，macOS最低版本14保持不变。不维护iOS 17—25兼容分支。
+实现与评审依据：[Apple：Adopting Liquid Glass](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass)、[Apple：Applying Liquid Glass to custom views](https://developer.apple.com/documentation/swiftui/applying-liquid-glass-to-custom-views)。用户已确认统一最低支持macOS 26 / iOS 26 / iPadOS 26。先同步提升Package平台声明、macOS应用部署目标和共享模块验证命令，随后新增iOS目标沿用26；不维护旧系统兼容分支。历史macOS 14/iOS 17构建记录保留为历史，不作为当前支持承诺。
 
 ## 页面与操作
 
@@ -54,3 +54,7 @@
 - 校验 iOS Info.plist、AppIcon、资源声明与原授权字节，工程重新生成无差异。真机签名需用户开发团队配置，设备性能、系统挂起、安装与恢复要单独记录；没有设备证据不宣称完成发行验收。
 
 交付应用工程、Simulator运行证据、功能差异表、构建/真机安装步骤与交接说明。回滚通过本阶段Git提交恢复工程与代码；正式存档格式不变，回滚不删除沙盒存档。iOS包体与设备内存是明确风险，最终压力验证仍按用户安排最后进行。
+
+## 前置交付：统一平台最低版本
+
+范围：Package.swift平台声明、create_project.py与生成工程、verify.sh的Simulator目标、README与交接入口。只提高系统要求，不修改养成、存档、动画或窗口行为，也不宣称已有完整iOS应用。检查工程重新生成一致、全套现有回归、macOS Release的LSMinimumSystemVersion为26.0、iOS共享模块26.0编译。当前主机macOS27与Simulator SDK27，只能提供该环境构建证据，macOS26/iOS26运行验收仍待对应系统。回滚该配置提交可恢复旧最低版本，用户JSON无需迁移。
