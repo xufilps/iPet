@@ -1,0 +1,7 @@
+# Preserve upstream evidence/assets exactly, including original line endings and spaces.
+Assets/Upstream/** -text -whitespace linguist-vendored
+# The archive contains original Windows Markdown/configuration, not maintained native code.
+docs/upstream/** -text -whitespace
+# Root README embeds the verbatim upstream suffix; LICENSE is the original license.
+README.md -text
+LICENSE -text

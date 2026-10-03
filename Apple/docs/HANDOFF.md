@@ -415,3 +415,5 @@ PetLegacySavePreview已接statistics结果，但不应用到PetState，也未接
 补iPet贡献/支持/安全/交流指南、问题与PR模板、macOS自动验证流程；GitHub安全私密报告当前未启用，提供不含漏洞/个人数据的公开联系请求表单，未变更仓库管理员设置。CI只读权限、固定checkout提交，不依赖.NET/签名证书，不启动UI或压力测试。新结构验证器核对入口、法律原字节、上游归档、当前文档链接及工程生成一致性，未来文档修改可直接沿用。
 本机最终日志Apple/build/verification/repository-layout-final.log：372Swift=271核心+95渲染+6输入、23Python全部通过，macOS Release/iOS共享模块/严格签名通过；YAML语法解析及diff检查通过。一次独立6.1-sol审查发现安全联系入口Important，已先观察缺入口检查失败再补表单通过；两个Minor（翻译链接、编辑原文保护）同步修正。GitHubCI以远端运行结果为准，不能由本机通过推定。
 回滚整理提交即可恢复旧目录与指南；本批不改养成、JSONv9、应用版本或正式存档位置，不需要用户档案恢复。main上游镜像不变，发布到ipet-dev；本机未跟踪的旧源码恢复文件没有删除或提交。后续功能与最终实机/压力继续暂停。
+
+归档原文包含原有行尾空格，不能为通过空白检查而改写；.gitattributes对上游素材/归档禁用文本换行转换及空白修剪检查，根README/LICENSE禁用换行转换，其余维护文件继续正常diff检查。最终结构与法律字节检查通过。
