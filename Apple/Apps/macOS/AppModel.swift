@@ -51,6 +51,8 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
     private var movementEnabled:Bool { autoMove && smartMove.allowsMovement }
     @Published var visible = true
     @Published var toolbarEnabled=false
+    @Published private(set) var growthNotice=""
+    func clearGrowthNotice() { growthNotice="";refreshToolbar() }
     @Published private(set) var favoriteItems:Set<String>=[]
     @Published private(set) var favoriteActivities:Set<String>=[]
     @Published private(set) var packageWriteFailed=false
@@ -486,6 +488,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
                 let reasonText=reason == .completed ? "完成" : reason == .manual ? "结束" : "因状态不佳停止"
                 message="\(title)\(reasonText)，已获\(earned.formatted(.number.precision(.fractionLength(2))))\(unit)，完成奖励\(bonus.formatted(.number.precision(.fractionLength(2))))。"
             case .scheduleChanged(let notice): scheduleChanged=true;message=notice
+            case .growthChanged(let change): growthNotice=change.message(name:engine.state.name)
             case .itemUsed: break
             }
         }
@@ -585,7 +588,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
     }
     private func refreshToolbar() {
         guard toolbarEnabled,visible,!suspended,petView?.isInteracting != true,let screen=companionScreen,engine != nil else { toolbar?.hide();return }
-        toolbar?.update(state:engine.state,catalog:catalog,message:message,shortcuts:shortcuts.entries,petFrame:petPanel.frame,screen:screen)
+        toolbar?.update(state:engine.state,catalog:catalog,message:message,growthNotice:growthNotice,shortcuts:shortcuts.entries,petFrame:petPanel.frame,screen:screen)
     }
     private func toolbarAction(_ action:ToolbarAction) {
         switch action {
@@ -943,6 +946,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
             guard alert.runModal() == .alertFirstButtonReturn,canManageSave() else { return }
             let restored=try store.restore(data,currentState:engine.state)
             petView.cancelInteraction();cancelMovement();petScene?.discardSpeechStart();speech.hide();dialogue.resetTiming();autonomy.reset()
+            growthNotice=""
             engine=PetEngine(state:restored,catalog:catalog)
             engine.configureSimulation(enabled:simulationEnabled,fixedMood:fixedMood)
             state=engine.state;lastTick=nil;lastSave=ProcessInfo.processInfo.systemUptime

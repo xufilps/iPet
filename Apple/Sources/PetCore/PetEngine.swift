@@ -30,6 +30,7 @@ public final class PetEngine {
     public let catalog: PetCatalog
     private let wallClock: any PetWallClock
     private var events: [PetEvent] = []
+    private var reportedGrowth:PetDesktopGrowth?
     private var previous: TimeInterval
     private var remainder = 0.0
     private var activeSeconds = 0.0
@@ -37,7 +38,7 @@ public final class PetEngine {
     private var lastInteraction = 0.0
     public init(state: PetState = PetState(), clock: any PetClock = SystemPetClock(), random: any PetRandom = SeededPetRandom(seed: UInt64.random(in: 0...UInt64.max)), catalog: PetCatalog = PetCatalog(), wallClock: any PetWallClock = SystemPetWallClock()) {
         self.catalog=catalog; self.wallClock=wallClock
-        self.state = state; self.clock = clock; self.random = random; previous = clock.now
+        self.state = state; reportedGrowth=state.growth; self.clock = clock; self.random = random; previous = clock.now
         var progress=state.progress ?? PetProgress();evaluation.begin(progress:&progress,now:wallClock.now);self.state.progress=progress
     }
     public func recordPinchStart() { updateProgress { $0.increment("stat_touch_head");$0.increment("stat_touch_body") } }
@@ -84,7 +85,13 @@ public final class PetEngine {
         case .toggleRest: stopSchedule("手动休息，日程已停止。");stopActivity(.manual); state.resting.toggle(); return state.resting ? .sleep : .idle
         }
     }
-    public func drainEvents() -> [PetEvent] { let result=events; events.removeAll(); return result }
+    public func drainEvents() -> [PetEvent] {
+        if let before=reportedGrowth,let after=state.growth,let change=PetGrowthFeedback(before:before,after:after) {
+            events.append(.growthChanged(change))
+        }
+        reportedGrowth=state.growth
+        let result=events;events.removeAll();return result
+    }
     @discardableResult public func perform(_ command: PetEconomyCommand) -> PetCommandResult {
         do { try catalog.validate(); try state.validate() } catch { return PetCommandResult(accepted:false,message:"数据不合法，操作已拒绝。") }
         switch command {

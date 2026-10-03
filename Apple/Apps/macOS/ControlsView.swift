@@ -34,6 +34,13 @@ struct ControlsView: View {
     private var status: some View {
         VStack(alignment:.leading,spacing:16) {
             Text("等级 \(model.state.level) · 突破 \(model.state.growth?.prestige ?? 0) · 本级经验 \(model.state.experience.formatted(.number.precision(.fractionLength(2)))) / \((model.state.growth?.nextLevelExperience ?? 100).formatted()) · 好感 \(model.state.affection.formatted(.number.precision(.fractionLength(1)))) / \(model.state.affectionMax.formatted())")
+            if !model.growthNotice.isEmpty {
+                HStack(alignment:.top) {
+                    Text(model.growthNotice).font(.callout).fixedSize(horizontal:false,vertical:true)
+                    Spacer()
+                    Button("关闭提示") { model.clearGrowthNotice() }
+                }
+            }
             metric("体力",model.state.strength,total:model.state.strengthMax); metric("饱腹",model.state.food,total:model.state.strengthMax)
             metric("饮水",model.state.drink,total:model.state.strengthMax); metric("心情",model.state.feeling,total:model.state.feelingMax); metric("健康",model.state.health)
             if model.state.strength>model.state.strengthMax || model.state.food>model.state.strengthMax || model.state.drink>model.state.strengthMax || model.state.feeling>model.state.feelingMax {

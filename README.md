@@ -7,7 +7,7 @@ iPet 是基于 [VPet / LorisYounger](https://github.com/LorisYounger/VPet) 的 S
 - macOS 14+，Swift 6，AppKit 桌面窗口、SpriteKit 动画、SwiftUI 功能面板。
 - 原生共享核心支持 iOS 17+编译；这不等于已交付 iOS 应用。
 - 开发及贡献分支为 **`ipet-dev`**，也是 GitHub 首页默认分支；`main` 仅同步原 Windows 项目。
-- 当前功能开发暂停在阶段4G，最近改动为目录、资源体积与文档整理。实际完成与待验证项见 [交接](Apple/docs/HANDOFF.md)。
+- 当前已恢复功能推进，阶段2C新增升级/突破原生通知，最近完成本机基本验收。实际完成与待验证项见 [交接](Apple/docs/HANDOFF.md)。
 
 ## 快速构建
 
@@ -81,7 +81,7 @@ bash Apple/scripts/verify.sh
 swift test --package-path Apple
 ```
 
-最近完整自动验证包含 **372项Swift、26项Python**，macOS Release、iOS Simulator共享模块和严格签名检查通过。GitHub自动检查见 [Actions](https://github.com/xufilps/iPet/actions)；日志生成于本机或runner的 `Apple/build/verification/`。自动测试、加速时钟模拟和短时观察不能代替真实使用。
+最近完整自动验证包含 **378项Swift、26项Python**，macOS Release、iOS Simulator共享模块和严格签名检查通过。GitHub自动检查见 [Actions](https://github.com/xufilps/iPet/actions)；日志生成于本机或runner的 `Apple/build/verification/`。自动测试、加速时钟模拟和短时观察不能代替真实使用。
 
 当前范围专注内置萝莉斯和本地养成。多角色与第三方数据型MOD留给未来独立的 **petloader**（尚未开发）；云存档/云同步与联机不做，不列为待补齐能力。本地存档、备份与导出恢复继续保留。
 

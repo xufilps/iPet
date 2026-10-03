@@ -10,6 +10,7 @@ enum ToolbarAction { case shortcut(Int),stopKeyboard,shortcuts, status,activity,
     @Published var name=""
     @Published var mood=""
     @Published var message=""
+    @Published var growthNotice=""
     @Published var resting=false
     @Published var feedback:ActivityFeedback?
 }
@@ -48,6 +49,7 @@ private struct PetToolbarView:View {
                     Button("结束") { action(.stop) }.help("提前结束保留已获收益，不追加完成奖励")
                 }
             }
+            if !display.growthNotice.isEmpty { Text(display.growthNotice).font(.caption).lineLimit(3).help(display.growthNotice) }
             if !display.message.isEmpty { Text(display.message).font(.caption).foregroundStyle(.secondary).lineLimit(3).help(display.message) }
         }.padding(10).frame(width:264)
             .background(Color(nsColor:.windowBackgroundColor).opacity(0.97),in:RoundedRectangle(cornerRadius:12))
@@ -72,9 +74,9 @@ private struct PetToolbarView:View {
         panel.isReleasedWhenClosed=false;panel.collectionBehavior=[.canJoinAllSpaces,.fullScreenAuxiliary]
         hosting=ToolbarHostingView(rootView:PetToolbarView(display:display,action:action));panel.contentView=hosting
     }
-    func update(state:PetState,catalog:PetCatalog,message:String,shortcuts:[PetShortcutEntry]=[],petFrame:CGRect,screen:CGRect) {
+    func update(state:PetState,catalog:PetCatalog,message:String,growthNotice:String="",shortcuts:[PetShortcutEntry]=[],petFrame:CGRect,screen:CGRect) {
         display.name=state.name;display.mood=state.resting ? "休息中" : state.mood.title
-        display.resting=state.resting;display.message=message;display.shortcuts=shortcuts
+        display.resting=state.resting;display.message=message;display.growthNotice=growthNotice;display.shortcuts=shortcuts
         display.feedback=state.activity.map { ActivityFeedback(session:$0,activity:catalog.activity($0.activityID),mood:state.mood) }
         hosting.layoutSubtreeIfNeeded()
         let frame=SpeechPlacement.frame(pet:petFrame,bubble:hosting.fittingSize,screen:screen,preferBelow:true)
