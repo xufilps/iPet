@@ -1,0 +1,26 @@
+{
+  "library": "LinePutScript",
+  "version": "1.11.9",
+  "upstream": "1a06c598",
+  "input": "vpet:|name#\u841D\u8389\u65AF:|hostname#\u963F\u8F69\uD83D\uDC31:|money#1234500000000:|Level#10:|LevelMax#0:|exp#50000000000:|strength#115500000000:|StoreStrength#-1250000000:|strengthFood#90250000000:|StoreStrengthFood#2750000000:|strengthDrink#85500000000:|StoreStrengthDrink#1000000000:|feeling#105500000000:|health#82000000000:|likability#135250000000:|mode#Happy:|LikabilityMax#150.25:|",
+  "expected": {
+    "name": "\u841D\u8389\u65AF",
+    "hostName": "\u963F\u8F69\uD83D\uDC31",
+    "money": 1234.5,
+    "level": 10,
+    "prestige": 0,
+    "experience": 50,
+    "strength": 115.5,
+    "food": 90.25,
+    "drink": 85.5,
+    "feeling": 105.5,
+    "health": 82,
+    "affection": 135.25,
+    "affectionMax": 150.25,
+    "storedStrength": -1.25,
+    "storedFood": 2.75,
+    "storedDrink": 1,
+    "savedMode": "Happy"
+  },
+  "unknownModeOutcome": "ArgumentException"
+}

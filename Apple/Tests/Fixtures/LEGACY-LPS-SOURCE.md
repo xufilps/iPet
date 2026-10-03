@@ -15,3 +15,10 @@ dotnet Apple/scripts/legacy_lps_oracle/bin/Release/net8.0/LegacyLPSOracle.dll > 
 夹具只证明结构/编码；尚不能证明宠物字段、库存参数、统计、hash或Data迁移。参见[阶段4B规格](../../docs/specs/PHASE-4B.md)。
 
 夹具SHA-256：`98b7545f6b2d3f7bd80a3d23a84450c22b5eb2d6c98fb1c32f8e5b6b74979d5c`。每组包含实际原库Find返回值，测试比较同名首次匹配和Unicode精确匹配。
+
+## 宠物字段夹具（阶段4C）
+legacy-pet-fields.json由同一生成器加`--pet-fields`生成。DTO复制固定GameSave_VPet的序列化注解、名称和标量类型（包含protected属性与mode四值枚举），样例完整序列化后用实际库反序列化取预期值。LikabilityMax为普通double150.25，money/exp等为固定点整数；DTO不包含原增长setter、不运行WPF，升级预期仍依据原setter与PetDesktopGrowth固定回归。实际库对mode#Bogus抛ArgumentException，夹具记录该结果。
+```sh
+dotnet Apple/scripts/legacy_lps_oracle/bin/Release/net8.0/LegacyLPSOracle.dll --pet-fields > Apple/Tests/Fixtures/legacy-pet-fields.json
+```
+宠物夹具SHA-256：`ab0b27cacb7f93b961a7b05056d5e66e9d666c9be6d8a6182767768d16e5284d`。
