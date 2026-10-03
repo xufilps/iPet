@@ -27,7 +27,13 @@ public final class PetEngine {
     }
     private let clock: any PetClock
     private var random: any PetRandom
-    public let catalog: PetCatalog
+    private let originalCatalog:PetCatalog
+    public private(set) var catalog:PetCatalog
+    public private(set) var automaticItemPricing=false
+    public func configureItemPricing(enabled:Bool) throws {
+        let candidate=try PetItemPricing.catalog(originalCatalog,enabled:enabled)
+        catalog=candidate;automaticItemPricing=enabled
+    }
     private let wallClock: any PetWallClock
     private var events: [PetEvent] = []
     private var reportedGrowth:PetDesktopGrowth?
@@ -37,7 +43,7 @@ public final class PetEngine {
     private var evaluation=PetEvaluation()
     private var lastInteraction = 0.0
     public init(state: PetState = PetState(), clock: any PetClock = SystemPetClock(), random: any PetRandom = SeededPetRandom(seed: UInt64.random(in: 0...UInt64.max)), catalog: PetCatalog = PetCatalog(), wallClock: any PetWallClock = SystemPetWallClock()) {
-        self.catalog=catalog; self.wallClock=wallClock
+        originalCatalog=catalog;self.catalog=catalog; self.wallClock=wallClock
         self.state = state; reportedGrowth=state.growth; self.clock = clock; self.random = random; previous = clock.now
         var progress=state.progress ?? PetProgress();evaluation.begin(progress:&progress,now:wallClock.now);self.state.progress=progress
     }

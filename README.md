@@ -7,7 +7,7 @@ iPet 是基于 [VPet / LorisYounger](https://github.com/LorisYounger/VPet) 的 S
 - macOS 14+，Swift 6，AppKit 桌面窗口、SpriteKit 动画、SwiftUI 功能面板。
 - 原生共享核心支持 iOS 17+编译；这不等于已交付 iOS 应用。
 - 开发及贡献分支为 **`ipet-dev`**，也是 GitHub 首页默认分支；`main` 仅同步原 Windows 项目。
-- 当前已恢复功能推进，阶段2D新增升级动画与通知、阶段3AK补随宠活动分组菜单、3AL加入可选自动隐藏，最近完成本机基本验收。实际完成与待验证项见 [交接](Apple/docs/HANDOFF.md)。
+- 当前已恢复功能推进，阶段2D新增升级动画与通知、阶段3AK补随宠活动分组菜单、3AL加入可选自动隐藏、3AM补四种计时显示、2E补商品低价修正，最近完成本机基本验收。实际完成与待验证项见 [交接](Apple/docs/HANDOFF.md)。
 
 ## 快速构建
 
@@ -81,7 +81,7 @@ bash Apple/scripts/verify.sh
 swift test --package-path Apple
 ```
 
-最近完整自动验证包含 **392项Swift、27项Python**，macOS Release、iOS Simulator共享模块和严格签名检查通过。GitHub自动检查见 [Actions](https://github.com/xufilps/iPet/actions)；日志生成于本机或runner的 `Apple/build/verification/`。自动测试、加速时钟模拟和短时观察不能代替真实使用。
+最近完整自动验证包含 **398项Swift、27项Python**，macOS Release、iOS Simulator共享模块和严格签名检查通过。GitHub自动检查见 [Actions](https://github.com/xufilps/iPet/actions)；日志生成于本机或runner的 `Apple/build/verification/`。自动测试、加速时钟模拟和短时观察不能代替真实使用。
 
 当前范围专注内置萝莉斯和本地养成。多角色与第三方数据型MOD留给未来独立的 **petloader**（尚未开发）；云存档/云同步与联机不做，不列为待补齐能力。本地存档、备份与导出恢复继续保留。
 
@@ -103,3 +103,5 @@ swift test --package-path Apple
 像素风图标由OpenAI imagegen参考原角色生成，是原形象的新演绎，不宣称独立角色权利或原作者新作；母图及记录见 [Design](Apple/Design/README.md)。
 
 问题与贡献请使用 [Issues](https://github.com/xufilps/iPet/issues) 和指向 `ipet-dev` 的PR，流程见 [CONTRIBUTING](CONTRIBUTING.md)、[支持](SUPPORT.md) 与 [安全报告](SECURITY.md)。详细开发入口见 [文档导航](Apple/docs/README.md)及 [构建说明](Apple/README.md)。
+
+商品价格默认按原版合理阈值修正，可在设置关闭恢复配置原价；当前只有 Shiori v5／v7 两项后续售价改变，既有库存和历史费用不重算。

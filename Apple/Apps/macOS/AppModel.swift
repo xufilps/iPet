@@ -22,6 +22,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
     private var shortcutStore:PetShortcutStore!
     private var shortcutMenu:NSMenu?
     @Published var selectedPage = ControlPage.status
+    private var originalCatalog=PetCatalog()
     private(set) var catalog = PetCatalog()
     private(set) var assetRoot: URL!
     private var lastUIRefresh = 0.0
@@ -32,6 +33,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
     @Published var opacity=1.0
     private var windowBehavior:PetWindowBehavior { PetWindowBehavior(topMost:topMost,passThrough:passThrough,opacity:opacity) }
     @Published var simulationEnabled=true
+    @Published var automaticItemPricing=true
     @Published var fixedMood:PetMood = .normal
     var presentationMood:PetMood { engine?.presentationMood ?? state.mood }
     @Published var interactionCycle=200
@@ -111,6 +113,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
         topMost=smokeMode ? true:(defaults.object(forKey:"topMost") as? Bool ?? true)
         passThrough = !smokeMode && defaults.bool(forKey:"passThrough")
         opacity=smokeMode ? 1:PetWindowBehavior(opacity:defaults.object(forKey:"opacity") as? Double ?? 1).opacity
+        automaticItemPricing=smokeMode ? true:(defaults.object(forKey:"automaticItemPricing") as? Bool ?? true)
         simulationEnabled=smokeMode ? true:(defaults.object(forKey:"simulationEnabled") as? Bool ?? true)
         fixedMood=smokeMode ? .normal:(PetMood(rawValue:defaults.string(forKey:"fixedMood") ?? "") ?? .normal)
         interactionCycle=smokeMode ? 200:min(1000,max(30,defaults.object(forKey:"interactionCycle") as? Int ?? 200))
@@ -142,8 +145,10 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
         catch { writable = false; message = "\(error.localizedDescription) 本次仅运行，存档写入已暂停。";recordDiagnostic(.save,message) }
         guard let root = Bundle.main.resourceURL?.appendingPathComponent("PetAssets") else { throw PetSaveError.invalidDocument }
         assetRoot = root
-        catalog = try PetCatalog.load(from: root.appendingPathComponent("gameplay.json"))
-        engine = PetEngine(state: state, catalog: catalog)
+        originalCatalog = try PetCatalog.load(from: root.appendingPathComponent("gameplay.json"))
+        engine = PetEngine(state: state, catalog: originalCatalog)
+        try engine.configureItemPricing(enabled:automaticItemPricing)
+        catalog=engine.catalog
         engine.configureSimulation(enabled:simulationEnabled,fixedMood:fixedMood)
         state=engine.state
         dialogue=PetDialogue(catalog:try PetDialogueCatalog.load(from:root.appendingPathComponent("dialogue.json")))
@@ -811,6 +816,18 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
         updateWindowPreferences()
         if visible { petPanel.orderFrontRegardless() }
     }
+    func updateItemPricing() {
+        guard inventoryUseTask == nil else {
+            automaticItemPricing=engine.automaticItemPricing;message="批量使用结束后再调整商品价格。";return
+        }
+        do {
+            try engine.configureItemPricing(enabled:automaticItemPricing)
+            catalog=engine.catalog
+            if !smokeMode { UserDefaults.standard.set(automaticItemPricing,forKey:"automaticItemPricing") }
+            message=automaticItemPricing ? "已按原版修正超低价商品，历史支出和库存不变。":"已恢复目录原价，历史支出和库存不变。"
+        } catch { automaticItemPricing=engine.automaticItemPricing;message="商品价格设置未更改：\(error.localizedDescription)" }
+        refreshToolbar()
+    }
     func updateSimulationSettings() {
         cancelInventoryUse();petView.cancelInteraction();cancelMovement();autonomy.reset()
         engine.configureSimulation(enabled:simulationEnabled,fixedMood:fixedMood)
@@ -967,10 +984,15 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
             if !simulationEnabled,preview.activity != nil { alert.informativeText += "\n养成当前关闭，导入活动会按该设置结束；原始会话仍保留在导入原件。" }
             alert.addButton(withTitle:"恢复并保留原件");alert.addButton(withTitle:"取消")
             guard alert.runModal() == .alertFirstButtonReturn,canManageSave() else { return }
+            // Validate pricing before restore writes, then publish only a configured engine.
+            _=try PetItemPricing.catalog(originalCatalog,enabled:automaticItemPricing)
             let restored=try store.restore(data,currentState:engine.state)
+            let restoredEngine=PetEngine(state:restored,catalog:originalCatalog)
+            try restoredEngine.configureItemPricing(enabled:automaticItemPricing)
             petView.cancelInteraction();cancelMovement();petScene?.discardSpeechStart();speech.hide();dialogue.resetTiming();autonomy.reset()
             growthNotice="";pendingGrowthAnimation=false
-            engine=PetEngine(state:restored,catalog:catalog)
+            engine=restoredEngine
+            catalog=engine.catalog
             engine.configureSimulation(enabled:simulationEnabled,fixedMood:fixedMood)
             state=engine.state;lastTick=nil;lastSave=ProcessInfo.processInfo.systemUptime
             restoreBaseAnimation(force:true)

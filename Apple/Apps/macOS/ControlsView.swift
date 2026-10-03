@@ -122,6 +122,9 @@ struct ControlsView: View {
             Toggle("说话气泡可交互",isOn:$model.speechInteractive).onChange(of:model.speechInteractive) { model.updateSpeechInteraction() }
             Text("默认气泡点击穿透。开启后悬停保持文字、双击关闭，右键复制已显示文字或关闭；气泡不抢键盘焦点，也可从菜单栏关闭尚未显示的说话。")
                 .font(.caption).foregroundStyle(.secondary)
+            Toggle("按原版修正超低价商品",isOn:$model.automaticItemPricing).onChange(of:model.automaticItemPricing) { model.updateItemPricing() }
+            Text("默认开启，仅修正价格低于原版合理阈值的物品；关闭恢复配置原价，已购库存和历史支出不重算。此开关只控制商品价格。")
+                .font(.caption).foregroundStyle(.secondary)
             Toggle("随宠工具栏",isOn:$model.toolbarEnabled).onChange(of:model.toolbarEnabled) { model.updateToolbarPreference() }
             Toggle("工具栏离开后自动隐藏",isOn:$model.toolbarAutoHide).onChange(of:model.toolbarAutoHide) { model.updateToolbarPreference() }
                 .disabled(!model.toolbarEnabled)
