@@ -78,11 +78,14 @@ struct ControlsView: View {
                 .onChange(of:model.smartMoveInterval) { model.updateSmartMoveSettings() }
             Text(model.smartMovePaused ? "移动已因长时间未互动而暂停。轻点角色后恢复；提起放下不会重置计时。":"智能移动只控制移动，不停止养成、待机或说话。默认等待20分钟；睡眠期间暂停计时，松开非提起互动后重新计时。")
                 .font(.caption).foregroundStyle(.secondary)
-            Picker("移动范围",selection:$model.movementAreaMode) {
+            Picker("移动范围",selection:Binding(get:{ model.movementAreaMode },set:{ model.movementAreaMode=$0;model.updateMovementArea() })) {
                 Text("角色所在屏幕（原有默认）").tag(PetMovementAreaMode.current)
                 Text("主屏幕").tag(PetMovementAreaMode.primary)
                 Text("固定自定义范围").tag(PetMovementAreaMode.custom)
-            }.onChange(of:model.movementAreaMode) { model.updateMovementArea() }
+            }
+            Toggle("边缘检查时自动切换到角色所在屏幕",isOn:$model.autoChangeScreen).onChange(of:model.autoChangeScreen) { model.updateAutoChangeScreen() }
+            Text("仅在跨屏后的提起放下或移动结束检查时更新固定范围；面板或范围选择窗口打开时暂缓。关闭后保留自定义范围，不会移动角色到另一块屏幕。")
+                .font(.caption).foregroundStyle(.secondary)
             HStack { Button("检测角色所在屏幕") { model.detectMovementScreen() };Button("自定义范围…") { model.selectMovementArea() } }
             Text("范围使用屏幕可见区域，避开菜单栏与Dock。自定义窗口可拖动缩放；跨屏范围取最大可用交集，不穿过显示器间空隙。")
                 .font(.caption).foregroundStyle(.secondary)

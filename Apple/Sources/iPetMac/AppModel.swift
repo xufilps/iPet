@@ -1,6 +1,7 @@
 // iPet: Swift native adaptation of VPet; see NOTICE and LICENSE.
 // SPDX-License-Identifier: Apache-2.0
 import AppKit
+import ColorSync
 import SwiftUI
 import Combine
 import SpriteKit
@@ -35,6 +36,8 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
     var presentationMood:PetMood { engine?.presentationMood ?? state.mood }
     @Published var interactionCycle=200
     @Published var autoMove = UserDefaults.standard.object(forKey: "autoMove") as? Bool ?? true
+    @Published var autoChangeScreen=false
+    private var activeScreenID:String?
     @Published var movementAreaMode:PetMovementAreaMode = .current
     @Published private(set) var movementAreaNotice=""
     private var customMovementArea:CGRect?
@@ -100,6 +103,8 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         simulationEnabled=smokeMode ? true:(defaults.object(forKey:"simulationEnabled") as? Bool ?? true)
         fixedMood=smokeMode ? .normal:(PetMood(rawValue:defaults.string(forKey:"fixedMood") ?? "") ?? .normal)
         interactionCycle=smokeMode ? 200:min(1000,max(30,defaults.object(forKey:"interactionCycle") as? Int ?? 200))
+        autoChangeScreen = !smokeMode && (defaults.object(forKey:"autoChangeScreen") as? Bool ?? false)
+        activeScreenID=smokeMode ? nil:PetScreenChange.persistedIdentity(defaults.string(forKey:"activeScreenID"))
         movementAreaMode=smokeMode ? .current:(PetMovementAreaMode(rawValue:defaults.string(forKey:"movementAreaMode") ?? "") ?? .current)
         if !smokeMode,let values=defaults.array(forKey:"customMovementArea") as? [Double],values.count == 4 { customMovementArea=CGRect(x:values[0],y:values[1],width:values[2],height:values[3]) }
         smartMoveEnabled = !smokeMode && defaults.bool(forKey:"smartMoveEnabled")
@@ -215,6 +220,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         if let x = UserDefaults.standard.object(forKey: "petX") as? Double, let y = UserDefaults.standard.object(forKey: "petY") as? Double {
             petPanel.setFrameOrigin(NSPoint(x: x, y: y)); clampPosition()
         } else { resetPosition() }
+        if activeScreenID == nil { synchronizeActiveScreen() }
         refreshMovementAreaNotice()
         petPanel.orderFrontRegardless()
         toolbar=PetToolbarWindow { [weak self] action in self?.toolbarAction(action) }
@@ -601,10 +607,14 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
     }
     private func cancelMovement(reposition:Bool=true) {
         walkPlan=nil;climbPlan=nil;sideHidePlan=nil;sideHideHovered=false;climbLocated=false
-        if reposition && needsEdgeRecovery { clampPosition();needsEdgeRecovery=false;edgeScreen=nil }
+        if reposition {
+            if needsEdgeRecovery { clampPosition() }
+            needsEdgeRecovery=false;edgeScreen=nil
+        }
     }
     private func beginSideHide(screen pinnedScreen:CGRect?=nil) -> Bool {
-        guard let screen=pinnedScreen ?? movementArea,
+        let activated=activateScreenAtEdgeCheck()
+        guard let screen=activated ?? pinnedScreen ?? movementArea,
               let plan=PetSideHidePlan.make(pet:petPanel.frame,screen:screen) else { return false }
         walkPlan=nil;climbPlan=nil;climbLocated=false;sideHidePlan=plan;sideHideHovered=false
         edgeScreen=screen;needsEdgeRecovery=true;autonomy.reset()
@@ -720,6 +730,38 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         if !smokeMode { UserDefaults.standard.set(autoMove, forKey: "autoMove") }
         if !autoMove && (walkPlan != nil || climbPlan != nil || (needsEdgeRecovery && sideHidePlan == nil)) { cancelMovement();restoreBaseAnimation(force:true);persistPosition() }
     }
+    private var physicalDisplays:[PetScreenChange.Display] {
+        NSScreen.screens.map { screen in
+            let identity:String
+            if let number=screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber,
+               let uuid=CGDisplayCreateUUIDFromDisplayID(number.uint32Value)?.takeRetainedValue() {
+                identity=CFUUIDCreateString(nil,uuid) as String
+            } else { identity="" }
+            return PetScreenChange.Display(id:identity,frame:screen.visibleFrame)
+        }
+    }
+    private func synchronizeActiveScreen() {
+        activeScreenID=PetScreenChange.current(pet:movementArea ?? petPanel.frame,displays:physicalDisplays)?.id
+        storeMovementAreaPreference()
+    }
+    func updateAutoChangeScreen() {
+        if !smokeMode { UserDefaults.standard.set(autoChangeScreen,forKey:"autoChangeScreen") }
+    }
+    private func storeMovementAreaPreference() {
+        guard !smokeMode else { return }
+        UserDefaults.standard.set(movementAreaMode.rawValue,forKey:"movementAreaMode")
+        UserDefaults.standard.set(activeScreenID,forKey:"activeScreenID")
+        if let r=customMovementArea { UserDefaults.standard.set([Double(r.minX),Double(r.minY),Double(r.width),Double(r.height)],forKey:"customMovementArea") }
+    }
+    private func activateScreenAtEdgeCheck() -> CGRect? {
+        guard let display=PetScreenChange.target(enabled:autoChangeScreen,blocked:controls?.isVisible == true || movementAreaWindow?.isVisible == true,activeID:activeScreenID,pet:petPanel.frame,displays:physicalDisplays) else { return nil }
+        activeScreenID=display.id;customMovementArea=display.frame;movementAreaMode = .custom
+        // Retire the old pinned boundary before normal completion recovers the pet.
+        if needsEdgeRecovery { edgeScreen=display.frame }
+        storeMovementAreaPreference();refreshMovementAreaNotice()
+        recordDiagnostic(.lifecycle,"边缘检查自动激活角色所在显示器，更新固定移动范围。")
+        return display.frame
+    }
     private var areaResolution:PetMovementArea.Resolution {
         PetMovementArea.resolve(mode:movementAreaMode,custom:customMovementArea,pet:petPanel.frame,screens:NSScreen.screens.map(\.visibleFrame))
     }
@@ -731,10 +773,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
     func updateMovementArea() {
         petView.cancelInteraction();cancelMovement();restoreBaseAnimation(force:true)
         clampPosition();refreshMovementAreaNotice();persistPosition();autonomy.reset()
-        if !smokeMode {
-            UserDefaults.standard.set(movementAreaMode.rawValue,forKey:"movementAreaMode")
-            if let r=customMovementArea { UserDefaults.standard.set([Double(r.minX),Double(r.minY),Double(r.width),Double(r.height)],forKey:"customMovementArea") }
-        }
+        synchronizeActiveScreen()
     }
     func detectMovementScreen() {
         guard let screen=petPanel.screen ?? NSScreen.screens.first else { return }
