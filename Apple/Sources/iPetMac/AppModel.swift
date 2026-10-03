@@ -35,6 +35,11 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
     var presentationMood:PetMood { engine?.presentationMood ?? state.mood }
     @Published var interactionCycle=200
     @Published var autoMove = UserDefaults.standard.object(forKey: "autoMove") as? Bool ?? true
+    @Published var smartMoveEnabled=false
+    @Published var smartMoveInterval=1200
+    @Published private(set) var smartMovePaused=false
+    private let smartMove=PetSmartMove()
+    private var movementEnabled:Bool { autoMove && smartMove.allowsMovement }
     @Published var visible = true
     @Published var toolbarEnabled=false
     @Published private(set) var favoriteItems:Set<String>=[]
@@ -91,8 +96,12 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         simulationEnabled=smokeMode ? true:(defaults.object(forKey:"simulationEnabled") as? Bool ?? true)
         fixedMood=smokeMode ? .normal:(PetMood(rawValue:defaults.string(forKey:"fixedMood") ?? "") ?? .normal)
         interactionCycle=smokeMode ? 200:min(1000,max(30,defaults.object(forKey:"interactionCycle") as? Int ?? 200))
+        smartMoveEnabled = !smokeMode && defaults.bool(forKey:"smartMoveEnabled")
+        let interval=defaults.object(forKey:"smartMoveInterval") as? Int ?? 1200
+        smartMoveInterval=smokeMode ? 1200:(PetSmartMove.intervals.contains(interval) ? interval:1200)
     }
     func start() throws {
+        smartMove.configure(allowMove:autoMove,enabled:smartMoveEnabled,interval:smartMoveInterval)
         autonomy.setInteractionCycle(interactionCycle)
         size = size.isFinite ? min(500, max(150, size)) : 280
         let base: URL
@@ -125,7 +134,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         }
         petScene.onMovementLoop = { [weak self] in self?.movementLoop() ?? false }
         petScene.onMovementCompleted = { [weak self] in
-            guard let self,self.visible,!self.suspended,self.autoMove,!self.petView.isInteracting,
+            guard let self,self.visible,!self.suspended,self.movementEnabled,!self.petView.isInteracting,
                   self.needsEdgeRecovery,let screen=self.edgeScreen else { return false }
             return self.beginSideHide(screen:screen)
         }
@@ -146,6 +155,10 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         petPanel.contentView = petView
         petView.onPanelRequested = { [weak self] in self?.showControls() }
         petView.onPressBegin = { [weak self] in self?.petScene.discardSpeechStart();self?.engine.recordInteraction();self?.autonomy.reset() }
+        petView.onMovementInteraction = { [weak self] in
+            guard let self else { return }
+            self.smartMove.interactionEnded(raised:false);self.smartMovePaused=self.smartMove.isTimedOut
+        }
         petView.canPinch = { [weak self] point in
             guard let self,self.sideHidePlan == nil else { return false }
             return self.petScene.canPinch(at:point,mood:self.engine.presentationMood)
@@ -518,6 +531,8 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
     @objc private func quit() { NSApp.terminate(nil) }
     private func tick() {
         guard !suspended else { return }
+        smartMove.tick()
+        if smartMovePaused != smartMove.isTimedOut { smartMovePaused=smartMove.isTimedOut }
         let now = ProcessInfo.processInfo.systemUptime
         let delta = min(max(now - (lastTick ?? now), 0), 0.1); lastTick = now
         if speech.isVisible {
@@ -543,7 +558,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
                 if hovered != sideHideHovered { sideHideHovered=hovered;petScene.setSideHideHovered(hovered) }
             }
             if let plan=walkPlan {
-                if !autoMove || petView.isInteracting || !petScene.isMovementAnimation { endWalking() }
+                if !movementEnabled || petView.isInteracting || !petScene.isMovementAnimation { endWalking() }
                 else if petScene.currentPhase == .loop,let screen=edgeScreen {
                     if let frame=plan.advance(pet:petPanel.frame,screen:screen,seconds:delta) { petPanel.setFrame(frame,display:true) }
                     else {
@@ -552,7 +567,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
                 }
             }
             if let plan=climbPlan {
-                if !autoMove || petView.isInteracting || !petScene.isMovementAnimation || engine.presentationMood == .ill { endWalking() }
+                if !movementEnabled || petView.isInteracting || !petScene.isMovementAnimation || engine.presentationMood == .ill { endWalking() }
                 else if petScene.currentPhase == .loop,let screen=edgeScreen {
                     if !climbLocated { petPanel.setFrame(plan.located(pet:petPanel.frame,screen:screen),display:true);climbLocated=true }
                     if let frame=plan.advance(pet:petPanel.frame,screen:screen,seconds:delta) { petPanel.setFrame(frame,display:true) }
@@ -563,7 +578,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         let eligible = !manualTest && PetAutonomy.canStart(state:engine.state,action:petScene.requestedAction,visible:visible,interacting:petView.isInteracting,finishing:petScene.isFinishingActivity)
         if let entry=dialogue.automatic(state:engine.state,eligible:eligible && !speech.isVisible,mood:presentationMood) { showSpeech(entry.rendered(state:engine.state)) }
         let autonomyEligible = !manualTest && PetAutonomy.canStart(state:engine.state,action:petScene.requestedAction,visible:visible,interacting:petView.isInteracting,finishing:petScene.isFinishingActivity)
-        if let behavior = autonomy.poll(eligible:autonomyEligible,allowsMovement:autoMove,mood:engine.presentationMood,working:petScene.requestedAction == .activity) {
+        if let behavior = autonomy.poll(eligible:autonomyEligible,allowsMovement:movementEnabled,mood:engine.presentationMood,working:petScene.requestedAction == .activity) {
             switch behavior {
             case .walkLeft, .walkRight:
                 _ = chooseMovement()
@@ -602,6 +617,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         petScene.playMovement(.climb,graphID:plan.graphID,mood:engine.presentationMood)
     }
     @discardableResult private func chooseMovement(previous:PetMovementChoice?=nil) -> Bool {
+        guard movementEnabled else { return false }
         guard let screen=edgeScreen ?? petPanel.screen?.visibleFrame else { return false }
         let candidates=previous?.compatible(mood:engine.presentationMood,pet:petPanel.frame,screen:screen)
             ?? PetMovementChoice.candidates(mood:engine.presentationMood,pet:petPanel.frame,screen:screen)
@@ -625,7 +641,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         persistPosition()
     }
     private func movementLoop() -> Bool {
-        guard (walkPlan != nil || climbPlan != nil),visible,!suspended,autoMove,!petView.isInteracting,engine.presentationMood != .ill else { walkPlan=nil;climbPlan=nil;return false }
+        guard (walkPlan != nil || climbPlan != nil),visible,!suspended,movementEnabled,!petView.isInteracting,engine.presentationMood != .ill else { walkPlan=nil;climbPlan=nil;return false }
         if moveCycles.continueAfterLoop() { return true }
         let previous:PetMovementChoice?=climbPlan.map(PetMovementChoice.traversal) ?? walkPlan.map(PetMovementChoice.walk)
         if let previous,moveCycles.triesCompatibility(),chooseMovement(previous:previous) { return true }
@@ -683,7 +699,17 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         autonomy.setInteractionCycle(interactionCycle)
         if !smokeMode { UserDefaults.standard.set(interactionCycle,forKey:"interactionCycle") }
     }
+    func updateSmartMoveSettings() {
+        smartMove.configure(allowMove:autoMove,enabled:smartMoveEnabled,interval:smartMoveInterval)
+        smartMoveInterval=smartMove.interval;smartMovePaused=false
+        if walkPlan != nil || climbPlan != nil { endWalking() }
+        if !smokeMode {
+            UserDefaults.standard.set(smartMoveEnabled,forKey:"smartMoveEnabled")
+            UserDefaults.standard.set(smartMoveInterval,forKey:"smartMoveInterval")
+        }
+    }
     func updateAutoMove() {
+        updateSmartMoveSettings()
         if !smokeMode { UserDefaults.standard.set(autoMove, forKey: "autoMove") }
         if !autoMove && (walkPlan != nil || climbPlan != nil || (needsEdgeRecovery && sideHidePlan == nil)) { cancelMovement();restoreBaseAnimation(force:true);persistPosition() }
     }
@@ -704,8 +730,9 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         let frame=needsEdgeRecovery ? edgeScreen.map { PetClimbPlan.recovered(pet:petPanel.frame,screen:$0) } ?? petPanel.frame : petPanel.frame
         UserDefaults.standard.set(frame.minX, forKey: "petX"); UserDefaults.standard.set(frame.minY, forKey: "petY")
     }
-    private func suspend() { recordDiagnostic(.lifecycle,"系统即将睡眠，计时暂停且不补算。");keyboardSender.cancel(); cancelInventoryUse();petView.cancelInteraction();petScene?.discardSpeechStart();speech.hide();toolbar?.hide();dialogue.resetTiming();save(); suspended = true; cancelMovement(); autonomy.reset(); petView.isPaused = true; petScene.releaseTextures() }
+    private func suspend() { smartMove.pause();recordDiagnostic(.lifecycle,"系统即将睡眠，计时暂停且不补算。");keyboardSender.cancel(); cancelInventoryUse();petView.cancelInteraction();petScene?.discardSpeechStart();speech.hide();toolbar?.hide();dialogue.resetTiming();save(); suspended = true; cancelMovement(); autonomy.reset(); petView.isPaused = true; petScene.releaseTextures() }
     private func resume() {
+        smartMove.resume()
         recordDiagnostic(.lifecycle,"系统唤醒，重建计时基准。");
         engine.resetClock();dialogue.resetTiming(); lastTick = nil; lastSave = ProcessInfo.processInfo.systemUptime
         autonomy.reset(); suspended = false

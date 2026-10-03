@@ -67,6 +67,16 @@ struct ControlsView: View {
                 .font(.caption).foregroundStyle(.secondary)
             Toggle("随宠工具栏",isOn:$model.toolbarEnabled).onChange(of:model.toolbarEnabled) { model.updateToolbarPreference() }
             Toggle("自主移动",isOn:$model.autoMove).onChange(of:model.autoMove) { model.updateAutoMove() }
+            Toggle("智能移动：长时间未互动后暂停移动",isOn:$model.smartMoveEnabled)
+                .disabled(!model.autoMove).onChange(of:model.smartMoveEnabled) { model.updateSmartMoveSettings() }
+            Picker("停止移动前的等待时间",selection:$model.smartMoveInterval) {
+                ForEach(PetSmartMove.intervals,id:\.self) { seconds in
+                    Text(seconds<60 ? "\(seconds) 秒":"\(seconds/60) 分钟").tag(seconds)
+                }
+            }.disabled(!model.autoMove || !model.smartMoveEnabled)
+                .onChange(of:model.smartMoveInterval) { model.updateSmartMoveSettings() }
+            Text(model.smartMovePaused ? "移动已因长时间未互动而暂停。轻点角色后恢复；提起放下不会重置计时。":"智能移动只控制移动，不停止养成、待机或说话。默认等待20分钟；睡眠期间暂停计时，松开非提起互动后重新计时。")
+                .font(.caption).foregroundStyle(.secondary)
             HStack {
                 Text("自主互动周期")
                 Slider(value:Binding(get:{ Double(model.interactionCycle) },set:{ model.interactionCycle=Int($0.rounded()) }),in:30...1000,step:1)

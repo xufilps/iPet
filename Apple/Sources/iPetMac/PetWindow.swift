@@ -15,6 +15,7 @@ final class PetPanel: NSPanel {
     var canPinch:((CGPoint)->Bool)?
     var onPinchStart:(()->Void)?
     var onPressEnd:(()->Void)?
+    var onMovementInteraction:(()->Void)?
     var canLift: ((CGPoint) -> Bool)?
     var onTouch: ((String?) -> Void)?
     var raiseAnchor: (() -> RaiseAnchor?)?
@@ -99,7 +100,9 @@ final class PetPanel: NSPanel {
         logInput(event)
         lastViewPoint=convert(event.locationInWindow,from:nil)
         checkLongPress();pressTask?.cancel();pressTask=nil
+        let wasPressed=gesture.isPressed
         let released=gesture.release()
+        if wasPressed,released != .drop { onMovementInteraction?() }
         onPressEnd?()
         origin=nil;mouseOrigin=nil;lastViewPoint=nil;lastDragPoint=nil
         switch released {
