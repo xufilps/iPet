@@ -73,6 +73,7 @@ public struct PetManifest: Codable, Sendable {
     public let canvasWidth, canvasHeight: Double
     public let regions: [String: HitRegion]
     public let clips: [AnimationClip]
+    public var raiseAnchors: [String: RaiseAnchor]? = nil
     public static func load(from root: URL, checkFiles: Bool = true) throws -> PetManifest {
         let manifest = try JSONDecoder().decode(Self.self, from: Data(contentsOf: root.appendingPathComponent("manifest.json")))
         try manifest.validate(root: root, checkFiles: checkFiles)
@@ -85,6 +86,12 @@ public struct PetManifest: Codable, Sendable {
               regions["head"] != nil, regions["body"] != nil else { throw fail("资源清单缺少基础配置。") }
         for region in regions.values {
             guard [region.x, region.y, region.width, region.height].allSatisfy(\.isFinite), region.width > 0, region.height > 0 else { throw fail("互动区域无效。") }
+        }
+        for (key, anchor) in raiseAnchors ?? [:] {
+            guard PetMood(rawValue:key) != nil, anchor.x.isFinite, anchor.y.isFinite,
+                  (0...canvasWidth).contains(anchor.x), (0...canvasHeight).contains(anchor.y) else {
+                throw fail("提起锚点无效。")
+            }
         }
         var identifiers = Set<String>()
         for clip in clips {

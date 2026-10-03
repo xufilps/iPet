@@ -17,6 +17,7 @@ final class PetPanel: NSPanel {
     var onPressEnd:(()->Void)?
     var canLift: ((CGPoint) -> Bool)?
     var onTouch: ((String?) -> Void)?
+    var raiseAnchor: (() -> RaiseAnchor?)?
     var onDragStart: (() -> Void)?
     var onDragEnd: (() -> Void)?
     var onDragMotion: ((Double) -> Void)?
@@ -46,7 +47,17 @@ final class PetPanel: NSPanel {
             return
         }
         let allowed=lastViewPoint.map { canLift?(scenePoint($0)) == true } ?? false
-        if gesture.poll(time:ProcessInfo.processInfo.systemUptime,canLift:allowed) { onDragStart?() }
+        if gesture.poll(time:ProcessInfo.processInfo.systemUptime,canLift:allowed) { beginLift() }
+    }
+    private func beginLift() {
+        onDragStart?()
+        if let cursor=lastDragPoint { _ = alignRaise(at:cursor) }
+    }
+    private func alignRaise(at cursor:CGPoint) -> Bool {
+        guard let window,let petScene,let anchor=raiseAnchor?(),
+              let position=PetRaisePlacement.origin(cursor:cursor,frame:window.frame,canvas:petScene.size,anchor:anchor) else { return false }
+        window.setFrameOrigin(position)
+        return true
     }
     func cancelInteraction() {
         pressTask?.cancel();pressTask=nil
@@ -82,7 +93,7 @@ final class PetPanel: NSPanel {
             onDragMotion?((abs(current.x-previous.x)+abs(current.y-previous.y))*500/max(1,window.frame.width))
         }
         lastDragPoint=current
-        if gesture.isLifted { window.setFrameOrigin(NSPoint(x:origin.x+current.x-mouseOrigin.x,y:origin.y+current.y-mouseOrigin.y)) }
+        if gesture.isLifted, !alignRaise(at:current) { window.setFrameOrigin(NSPoint(x:origin.x+current.x-mouseOrigin.x,y:origin.y+current.y-mouseOrigin.y)) }
     }
     override func mouseUp(with event: NSEvent) {
         logInput(event)

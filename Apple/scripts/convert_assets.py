@@ -154,16 +154,25 @@ def convert(source, destination):
             clips.append({'action': action, 'mood': mode, 'stages': [{'phase': 'loop', 'layers': [layer(back, 0), layer(front, 2)], 'foodTrack': track}]})
     config = (source / 'pet/vup.lps').read_text(encoding='utf-8-sig')
     regions = {}
+    raise_anchors = {}
     for line in config.splitlines():
         if line.startswith(('touchhead:', 'touchbody:','pinch:')):
             f = fields(line)
             regions['head' if line.startswith('touchhead') else 'pinch' if line.startswith('pinch') else 'body'] = {'x': float(f['px']), 'y': float(f['py']), 'width': float(f['sw']), 'height': float(f['sh'])}
+        if line.startswith('raisepoint:'):
+            f = fields(line)
+            for mode in MODES:
+                x, y = float(f[mode.lower()+'_x']), float(f[mode.lower()+'_y'])
+                if not (0 <= x <= 500 and 0 <= y <= 500):
+                    raise ValueError('Invalid raise anchor: '+mode)
+                raise_anchors[mode] = {'x': x, 'y': y}
         if line.startswith('touchraised:'):
             f = fields(line)
             for mode in MODES:
                 prefix=mode.lower()+'_'
                 regions['raised:'+mode]={'x':float(f[prefix+'px']),'y':float(f[prefix+'py']),'width':float(f[prefix+'sw']),'height':float(f[prefix+'sh'])}
     manifest = {'version': 3, 'diagnostics': diagnostics, 'canvasWidth': 500, 'canvasHeight': 500, 'regions': regions, 'clips': clips}
+    if raise_anchors: manifest['raiseAnchors'] = raise_anchors
     write_if_changed(destination / 'manifest.json', (json.dumps(manifest, ensure_ascii=False, indent=2) + '\n').encode('utf-8'))
     write_if_changed(destination / 'sources.sha256.json', (json.dumps(records, indent=2, sort_keys=True) + '\n').encode('utf-8'))
     if not any(c['action'] == 'idle' and c['mood'] == 'Nomal' for c in clips):

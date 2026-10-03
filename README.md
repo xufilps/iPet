@@ -1,4 +1,4 @@
-> 当前检查点（2026-10-02）：第五阶段的本机功能开发与生态研究已收尾，按用户要求暂停，不进入第六阶段。整体实机验收和完整原版还原尚未完成；交付、证据、保留限制与恢复方法见[第五阶段交接](Apple/docs/PHASE-5-HANDOFF.md)，生态依赖见[研究说明](Apple/docs/ECOSYSTEM_RESEARCH.md)。
+> 当前检查点（2026-10-03）：恢复推进 macOS 原版体验，首批补齐提起锚点。第五阶段开发与研究交接仍作为历史证据，完整实机验收和原版还原尚未完成；iOS应用、发行与最终压力测试仍留后。详见[最新差异](Apple/docs/UPSTREAM_COMPARISON.md)、[剩余功能](Apple/docs/REMAINING-FEATURES.md)和[第五阶段交接](Apple/docs/PHASE-5-HANDOFF.md)。
 
 # iPet
 
@@ -8,7 +8,7 @@
 
 本项目复用原作萝莉斯角色与选定动画，保留部分原版养成规则，使用 AppKit、SpriteKit 和 SwiftUI 重新实现 Apple 平台的窗口、渲染及界面。它是派生项目，当前功能范围与 Windows 原版不同，也不是原作者发布的官方 Apple 平台版本。
 
-- 项目仓库：[xufilps/iPet](https://github.com/xufilps/iPet)
+- 项目仓库：[xufilps/iPet](https://github.com/xufilps/iPet)；默认展示/开发分支为 [`ipet-dev`](https://github.com/xufilps/iPet/tree/ipet-dev)，`main` 仅同步上游。
 - 原项目及作者：[LorisYounger/VPet](https://github.com/LorisYounger/VPet)
 - 代码许可证：[Apache License 2.0](LICENSE)，保留原许可证全文。
 - 素材授权：[动画与图片授权原文](Apple/ANIMATION_LICENSE.md)、[来源说明](Apple/ATTRIBUTION.md)；素材不应仅按代码许可证处理。
@@ -27,7 +27,7 @@
 ## 已实现的功能
 
 - 透明无边框桌宠窗口，不获取键盘主窗口焦点；通过菜单栏 🐾 管理应用。
-- 点击头部或身体进行抚摸，拖动角色时播放提起动画；按状态快走/慢走与爬行，边缘检查、左右爬墙和位置重置。
+- 点击头部或身体进行抚摸，拖动或长按提起时按原状态悬挂锚点跟随鼠标（真实输入待验）；按状态快走/慢走与爬行，边缘检查、左右爬墙和位置重置。
 - 待机、摸头、身体互动、提起、行走、休息、进食和饮水动画，保留逐帧时长及动作阶段。
 - 体力、饱腹、饮水、心情、健康状态，以及基础经验、好感和状态判断规则。
 - 13 项内置工作/学习/娱乐，金币收益与完成奖励；118 项物品、搜索分类商店、支持搜索/排序/收藏的背包和药品。
@@ -65,7 +65,7 @@
 ## 获取、构建与启动
 
 ```sh
-git clone https://github.com/xufilps/iPet.git
+git clone --branch ipet-dev https://github.com/xufilps/iPet.git
 cd iPet/Apple
 ./scripts/build.sh
 open build/Build/Products/Release/iPet.app

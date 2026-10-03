@@ -172,12 +172,19 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
             else if region == "body" { self?.command(.touchBody) }
             else { self?.sayClick() }
         }
+        petView.raiseAnchor = { [weak self] in
+            guard let self else { return nil }
+            return self.petScene.manifest.raiseAnchors?[self.engine.presentationMood.rawValue]
+        }
         petView.onDragStart = { [weak self] in
             guard let self else { return }
             self.toolbar?.hide()
             self.recordAcceptanceInput("drag-start")
             self.engine.recordInteraction(); self.autonomy.reset();
             self.cancelMovement(reposition:false); self.petScene.beginRaise(mood:self.engine.presentationMood)
+            if self.petScene.manifest.raiseAnchors?[self.engine.presentationMood.rawValue] == nil {
+                self.petScene.onDiagnostic?("资源缺少提起锚点，沿用点击处拖动。")
+            }
         }
         petView.onDragMotion = { [weak self] distance in self?.petScene.updateRaiseMotion(distance:distance) }
         petView.onDragEnd = { [weak self] in

@@ -67,6 +67,26 @@ class ConversionTests(unittest.TestCase):
         self.assertEqual(regions['raised:Nomal']['y'],50)
         self.assertEqual(regions['raised:Ill']['y'],200)
 
+    def test_raise_anchors_keep_original_state_coordinates(self):
+        self.config.write_text(self.config.read_text()+'raisepoint:'+''.join(
+            f'|{mode}_x#{225 if mode=="ill" else 290}:|{mode}_y#{115 if mode=="ill" else 128}:'
+            for mode in ['happy','nomal','poorcondition','ill'])+'\n')
+        self.run_conversion()
+        anchors=json.loads((self.output/'manifest.json').read_text())['raiseAnchors']
+        self.assertEqual(anchors['Nomal'],{'x':290,'y':128})
+        self.assertEqual(anchors['Ill'],{'x':225,'y':115})
+        self.assertEqual(set(anchors),{'Happy','Nomal','PoorCondition','Ill'})
+
+    def test_invalid_raise_anchor_does_not_replace_manifest(self):
+        original=(self.output/'manifest.json').read_bytes()
+        for value in ['nan','inf','-1','501']:
+            self.config.write_text('raisepoint:'+''.join(
+                f'|{mode}_x#{value}:|{mode}_y#128:'
+                for mode in ['happy','nomal','poorcondition','ill'])+'\n')
+            with self.assertRaisesRegex(ValueError,'raise anchor'):
+                self.run_conversion()
+            self.assertEqual((self.output/'manifest.json').read_bytes(),original)
+
     def test_default_alternatives_are_exported_and_validated(self):
         directory=self.source/'pet/vup/Default/Nomal/2'
         directory.mkdir(parents=True)
