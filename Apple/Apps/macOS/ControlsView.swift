@@ -123,6 +123,10 @@ struct ControlsView: View {
             Text("默认气泡点击穿透。开启后悬停保持文字、双击关闭，右键复制已显示文字或关闭；气泡不抢键盘焦点，也可从菜单栏关闭尚未显示的说话。")
                 .font(.caption).foregroundStyle(.secondary)
             Toggle("随宠工具栏",isOn:$model.toolbarEnabled).onChange(of:model.toolbarEnabled) { model.updateToolbarPreference() }
+            Toggle("工具栏离开后自动隐藏",isOn:$model.toolbarAutoHide).onChange(of:model.toolbarAutoHide) { model.updateToolbarPreference() }
+                .disabled(!model.toolbarEnabled)
+            Text("开启后离开桌宠和工具栏4秒隐藏；悬停桌宠重新显示，操作菜单时保持显示。默认常驻，自动隐藏不关闭工具栏。")
+                .font(.caption).foregroundStyle(.secondary)
             Toggle("自主移动",isOn:$model.autoMove).onChange(of:model.autoMove) { model.updateAutoMove() }
             Toggle("智能移动：长时间未互动后暂停移动",isOn:$model.smartMoveEnabled)
                 .disabled(!model.autoMove).onChange(of:model.smartMoveEnabled) { model.updateSmartMoveSettings() }

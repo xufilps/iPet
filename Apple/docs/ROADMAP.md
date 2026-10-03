@@ -212,3 +212,7 @@ PetLegacySavePreview已接statistics结果，但不应用到PetState，也未接
 ## 阶段3AK：随宠工具栏活动分组 — 2026-10-03
 
 工具栏“活动”新增工作/学习/娱乐分组（单层菜单），保留完整面板与倍率入口；13内置活动默认1倍，同ID标记停止，等级/疾病与保存/养成/批量/隐藏/睡眠门槛在投影和点击重新检查。无新结算路径、权限或JSON变化。384 Swift/27 Python与macOS/iOS共享模块构建/签名通过，独立审查无发现；实机发现二级菜单无法展开后改为单层分组；用户复核“全部正常”，确认菜单、文案启动/停止、高等级禁用与物理焦点通过。回滚代码重建即可。详见[规格](specs/PHASE-3AK.md)，自动隐藏与完整WorkTimer仍保留差异。
+
+## 阶段3AL：可选工具栏自动隐藏 — 2026-10-03
+
+原ToolBar.CloseTimer为4000ms单次计时、悬停停止、离开重启。iPet适配为本机可选4秒自动隐藏：角色或工具栏悬停恢复/保持，菜单跟踪保持；生命周期隐藏优先。默认保留常驻，与原默认展示方式不完全相同；关闭自动隐藏即可恢复常驻，宠物JSON v9/养成规则/资源不变。状态为“已适配，实机待验证”；依据1a06c598 ToolBar.xaml.cs CloseTimer/Show/MouseEnter/MouseLeave → PetToolbarVisibility、PetToolbarWindow和AppModel。完整WorkTimer、小标与其它工具栏细节仍有差异，详见[规格](specs/PHASE-3AL.md)。

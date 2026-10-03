@@ -7,7 +7,7 @@ iPet 是基于 [VPet / LorisYounger](https://github.com/LorisYounger/VPet) 的 S
 - macOS 14+，Swift 6，AppKit 桌面窗口、SpriteKit 动画、SwiftUI 功能面板。
 - 原生共享核心支持 iOS 17+编译；这不等于已交付 iOS 应用。
 - 开发及贡献分支为 **`ipet-dev`**，也是 GitHub 首页默认分支；`main` 仅同步原 Windows 项目。
-- 当前已恢复功能推进，阶段2D新增升级动画与通知、阶段3AK补随宠活动分组菜单，最近完成本机基本验收。实际完成与待验证项见 [交接](Apple/docs/HANDOFF.md)。
+- 当前已恢复功能推进，阶段2D新增升级动画与通知、阶段3AK补随宠活动分组菜单、3AL加入可选自动隐藏，最近完成本机基本验收。实际完成与待验证项见 [交接](Apple/docs/HANDOFF.md)。
 
 ## 快速构建
 
@@ -39,7 +39,7 @@ open Apple/build/Build/Products/Release/iPet.app
 
 组合数不是原版完整动画或功能数量。现有能力也不等于所有交互场景已通过实机验收；平台适配与原版差异逐项记录在 [对照矩阵](Apple/docs/UPSTREAM_COMPARISON.md)。
 
-菜单栏提供显示/隐藏、重置位置、休息与功能面板。桌宠本身不成为键盘主窗口；打开功能面板会正常激活应用。拖动暂停自主移动，隐藏暂停渲染；应用仍运行时养成继续。退出和系统睡眠不补算养成或活动收益，恢复后重建计时基准。
+菜单栏提供显示/隐藏、重置位置、休息与功能面板。随宠工具栏默认常驻，可在设置开启“离开后自动隐藏”：离开4秒隐藏、悬停桌宠恢复、菜单操作保持。桌宠本身不成为键盘主窗口；打开功能面板会正常激活应用。拖动暂停自主移动，隐藏暂停渲染；应用仍运行时养成继续。退出和系统睡眠不补算养成或活动收益，恢复后重建计时基准。
 
 ## 存档与恢复
 
@@ -81,7 +81,7 @@ bash Apple/scripts/verify.sh
 swift test --package-path Apple
 ```
 
-最近完整自动验证包含 **384项Swift、27项Python**，macOS Release、iOS Simulator共享模块和严格签名检查通过。GitHub自动检查见 [Actions](https://github.com/xufilps/iPet/actions)；日志生成于本机或runner的 `Apple/build/verification/`。自动测试、加速时钟模拟和短时观察不能代替真实使用。
+最近完整自动验证包含 **388项Swift、27项Python**，macOS Release、iOS Simulator共享模块和严格签名检查通过。GitHub自动检查见 [Actions](https://github.com/xufilps/iPet/actions)；日志生成于本机或runner的 `Apple/build/verification/`。自动测试、加速时钟模拟和短时观察不能代替真实使用。
 
 当前范围专注内置萝莉斯和本地养成。多角色与第三方数据型MOD留给未来独立的 **petloader**（尚未开发）；云存档/云同步与联机不做，不列为待补齐能力。本地存档、备份与导出恢复继续保留。
 

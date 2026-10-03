@@ -18,6 +18,8 @@ enum ToolbarAction { case startActivity(String),shortcut(Int),stopKeyboard,short
 private struct PetToolbarView:View {
     @ObservedObject var display:ToolbarPresentation
     let action:(ToolbarAction)->Void
+    let hoverChanged:(Bool)->Void
+    let menuChanged:(Bool)->Void
     private let columns=[GridItem(.flexible()),GridItem(.flexible()),GridItem(.flexible())]
     var body:some View {
         VStack(alignment:.leading,spacing:8) {
@@ -71,6 +73,9 @@ private struct PetToolbarView:View {
         }.padding(10).frame(width:264)
             .background(Color(nsColor:.windowBackgroundColor).opacity(0.97),in:RoundedRectangle(cornerRadius:12))
             .overlay(RoundedRectangle(cornerRadius:12).stroke(Color.primary.opacity(0.12),lineWidth:1))
+            .onHover(perform:hoverChanged)
+            .onReceive(NotificationCenter.default.publisher(for:NSMenu.didBeginTrackingNotification)) { _ in menuChanged(true) }
+            .onReceive(NotificationCenter.default.publisher(for:NSMenu.didEndTrackingNotification)) { _ in menuChanged(false) }
     }
     private func shortcut(_ title:String,_ kind:ToolbarAction) -> some View {
         Button(title) { action(kind) }.frame(maxWidth:.infinity)
@@ -83,15 +88,22 @@ private struct PetToolbarView:View {
     private let panel=PetPanel(contentRect:.zero,styleMask:[.borderless,.nonactivatingPanel],backing:.buffered,defer:false)
     private let display=ToolbarPresentation()
     private var hosting:NSHostingView<PetToolbarView>!
+    private var visibility=PetToolbarVisibility()
+    private var autoHideEnabled=false
+    private var hovered=false
+    private var menuTracking=false
     var visibleFrame:CGRect? { panel.isVisible ? panel.frame : nil }
     func setTopMost(_ value:Bool) { panel.level=value ? .floating:.normal }
     init(action:@escaping (ToolbarAction)->Void) {
         panel.title="iPet · 快捷工具栏";panel.isOpaque=false;panel.backgroundColor = .clear
         panel.hasShadow=true;panel.level = .floating;panel.hidesOnDeactivate=false
         panel.isReleasedWhenClosed=false;panel.collectionBehavior=[.canJoinAllSpaces,.fullScreenAuxiliary]
-        hosting=ToolbarHostingView(rootView:PetToolbarView(display:display,action:action));panel.contentView=hosting
+        hosting=ToolbarHostingView(rootView:PetToolbarView(display:display,action:action,
+            hoverChanged:{ [weak self] in self?.interactionChanged(hovered:$0) },
+            menuChanged:{ [weak self] in self?.interactionChanged(menuTracking:$0) }));panel.contentView=hosting
     }
-    func update(state:PetState,catalog:PetCatalog,message:String,growthNotice:String="",activitiesEnabled:Bool=true,shortcuts:[PetShortcutEntry]=[],petFrame:CGRect,screen:CGRect) {
+    func update(state:PetState,catalog:PetCatalog,message:String,growthNotice:String="",activitiesEnabled:Bool=true,autoHide:Bool=false,shortcuts:[PetShortcutEntry]=[],petFrame:CGRect,screen:CGRect) {
+        autoHideEnabled=autoHide
         display.name=state.name;display.mood=state.resting ? "休息中" : state.mood.title
         display.activities=PetActivityMenu.items(catalog:catalog,state:state,enabled:activitiesEnabled)
         display.resting=state.resting;display.message=message;display.growthNotice=growthNotice;display.shortcuts=shortcuts
@@ -99,7 +111,20 @@ private struct PetToolbarView:View {
         hosting.layoutSubtreeIfNeeded()
         let frame=SpeechPlacement.frame(pet:petFrame,bubble:hosting.fittingSize,screen:screen,preferBelow:true)
         if panel.frame != frame { panel.setFrame(frame,display:true) }
-        if !panel.isVisible { panel.orderFrontRegardless() }
+        let pointer=NSEvent.mouseLocation
+        let overToolbar=panel.isVisible && (hovered || panel.frame.contains(pointer))
+        let show=visibility.update(now:ProcessInfo.processInfo.systemUptime,autoHide:autoHide,
+                                   hovered:petFrame.contains(pointer) || overToolbar,menuTracking:menuTracking)
+        if show { if !panel.isVisible { panel.orderFrontRegardless() } }
+        else { panel.orderOut(nil);hovered=false }
     }
-    func hide() { panel.orderOut(nil) }
+    private func interactionChanged(hovered:Bool?=nil,menuTracking:Bool?=nil) {
+        if let hovered { self.hovered=hovered }
+        if let menuTracking { self.menuTracking=menuTracking }
+        // Apply even interactions shorter than the 250ms presentation refresh.
+        _=visibility.update(now:ProcessInfo.processInfo.systemUptime,autoHide:autoHideEnabled,
+                            hovered:self.hovered,menuTracking:self.menuTracking)
+    }
+    func resetVisibility() { visibility.reset() }
+    func hide() { panel.orderOut(nil);hovered=false;menuTracking=false;visibility.reset() }
 }

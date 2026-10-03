@@ -51,6 +51,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
     private var movementEnabled:Bool { autoMove && smartMove.allowsMovement }
     @Published var visible = true
     @Published var toolbarEnabled=false
+    @Published var toolbarAutoHide=false
     @Published private(set) var growthNotice=""
     private var pendingGrowthAnimation=false
     func clearGrowthNotice() { growthNotice="";refreshToolbar() }
@@ -104,6 +105,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
         size = defaults.object(forKey: "petSize") as? Double ?? 280
         autoMove = defaults.object(forKey: "autoMove") as? Bool ?? true
         toolbarEnabled = !smokeMode && defaults.bool(forKey:"toolbarEnabled")
+        toolbarAutoHide = !smokeMode && defaults.bool(forKey:"toolbarAutoHide")
         favoriteItems = smokeMode ? []:Set(defaults.stringArray(forKey:"favoriteItems") ?? [])
         favoriteActivities = smokeMode ? []:Set(defaults.stringArray(forKey:"favoriteActivities") ?? [])
         topMost=smokeMode ? true:(defaults.object(forKey:"topMost") as? Bool ?? true)
@@ -586,7 +588,11 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
     private var speechAnchor:CGRect { speechPlacement == .automatic ? toolbar?.visibleFrame.map { petPanel.frame.union($0) } ?? petPanel.frame : petPanel.frame }
     @objc func toggleToolbar() { toolbarEnabled.toggle();updateToolbarPreference() }
     func updateToolbarPreference() {
-        if !smokeMode { UserDefaults.standard.set(toolbarEnabled,forKey:"toolbarEnabled") }
+        if !smokeMode {
+            UserDefaults.standard.set(toolbarEnabled,forKey:"toolbarEnabled")
+            UserDefaults.standard.set(toolbarAutoHide,forKey:"toolbarAutoHide")
+        }
+        toolbar?.resetVisibility()
         menuToolbar?.state=toolbarEnabled ? .on : .off
         refreshToolbar()
     }
@@ -596,7 +602,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
     }
     private func refreshToolbar() {
         guard toolbarEnabled,visible,!suspended,petView?.isInteracting != true,let screen=companionScreen,engine != nil else { toolbar?.hide();return }
-        toolbar?.update(state:engine.state,catalog:catalog,message:message,growthNotice:growthNotice,activitiesEnabled:activityMenuAccess.allowsSelection,shortcuts:shortcuts.entries,petFrame:petPanel.frame,screen:screen)
+        toolbar?.update(state:engine.state,catalog:catalog,message:message,growthNotice:growthNotice,activitiesEnabled:activityMenuAccess.allowsSelection,autoHide:toolbarAutoHide,shortcuts:shortcuts.entries,petFrame:petPanel.frame,screen:screen)
     }
     private func toolbarAction(_ action:ToolbarAction) {
         switch action {
