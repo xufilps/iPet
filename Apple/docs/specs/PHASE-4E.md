@@ -28,8 +28,8 @@
 - 数量溢出、重复字段与诊断上限不可导致崩溃或悄悄丢数据。
 
 ## Task 1：原库库存证据
-- [ ] 扩展legacy_lps_oracle/Program.cs的--items模式，准确复制Item/Food属性继承与标注，覆盖基类/食物、null与字面/null、普通小数、负效果、枚举/布尔及大小写加载。
-- [ ] 用固定NuGet1.11.9生成legacy-item-fields.json，记录来源、生成命令、SHA256及观察；发现标签和实际加载不同则据库行为修订本文。
+- [x] 扩展legacy_lps_oracle/Program.cs的--items模式，准确复制Item/Food属性继承与标注，覆盖基类/食物、null与字面/null、普通小数、负效果、枚举/布尔及大小写加载。
+- [x] 用固定NuGet1.11.9生成legacy-item-fields.json，记录来源、生成命令、SHA256及观察；发现标签和实际加载不同则据库行为修订本文。
 
 ## Task 2：只读库存映射
 - [ ] 先新增PetLegacyInventoryPreviewTests.swift并观察RED，再实现PetLegacyInventoryPreview.swift；有序记录保留sourceLine、所有字段、可表示类型化参数和诊断，未知类型明确unsupported。
@@ -41,3 +41,6 @@
 
 ## 回滚与下一步
 本批只读API和测试可回滚，不改存档格式；原件无需恢复。下一批设计能保存自定义物品参数/元数据的原生库存模型，再映射统计和Data，最后整档预览与双原件备份确认导入。
+
+## Task 1实测裁定
+实际库证明派生Food的ItemType与Star继承标注生效，字段IgnoreCase在加载生效；Type枚举值严格大小写，但规范数字0…7可映射已定义项。bool数字0失败；rawInfo=/null代表null，/!null是字面字符串。后续映射须按此证据测试，不以仅命名枚举的简化替代。

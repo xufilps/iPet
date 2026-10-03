@@ -6,6 +6,20 @@ using System.Security.Cryptography;
 using LinePutScript;
 using LinePutScript.Converter;
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+if (args.Contains("--items")) {
+    var itemCases = new LegacyItemDTO[] {
+        new LegacyItemDTO {Name="测试道具",Image=null,Price=12.5,Count=3,Data="literal/null\n:|#",Desc="说明",Star=true,IsSingle=true,CanUse=false,Visibility=false},
+        new LegacyFoodDTO {Name="测试食物",Image="/null",Price=21.75,Count=4,Data="冷却/n",Desc="原始说明",Star=true,Type=LegacyFoodType.Drink,Exp=7,Strength=-1.25,StrengthFood=3.5,StrengthDrink=9.75,Feeling=2.25,Health=-0.5,Likability=1.125,Graph=null}
+    }.Select(value => {
+        var line=LPSConvert.SerializeObjectToLine<Line>(value,"item0");
+        LegacyItemDTO loaded=value is LegacyFoodDTO?LPSConvert.DeserializeObject<LegacyFoodDTO>(line):LPSConvert.DeserializeObject<LegacyItemDTO>(line);
+        return new {kind=value.GetType().Name,input=line.ToString(),original=value.Snapshot(),loaded=loaded.Snapshot()};
+    }).ToArray();
+    var loads = new[] {"itemX:|name#x:|itemtype#Food:|price#2.5:|count#2:|type#Drink:|star#True:|", "itemX:|name#x:|itemtype#Food:|Price#2.5:|Count#2:|Type#Drink:|Star#True:|", "itemX:|name#x:|itemtype#Food:|Type#drink:|", "itemX:|name#x:|itemtype#Food:|Type#4:|", "itemX:|name#x:|itemtype#Food:|CanUse#0:|", "itemX:|name#x:|itemtype#Food:|Image#/null:|", "itemX:|name#x:|itemtype#Food:|Image#/!null:|"}
+        .Select(input => { try { return new {input,outcome="accepted",loaded=(object?)LPSConvert.DeserializeObject<LegacyFoodDTO>(new Line(input)).Snapshot()}; } catch(Exception ex) { return new {input,outcome=ex.GetType().Name,loaded=(object?)null}; }}).ToArray();
+    Console.WriteLine(JsonSerializer.Serialize(new {library="LinePutScript",version="1.11.9",upstream="1a06c598",culture="Invariant",cases=itemCases,loads},new JsonSerializerOptions {WriteIndented=true}));
+    return;
+}
 if (args.Contains("--hashes")) {
     var serializations = new[] {"", ":|f#one:|text///note", "alone\nplain#info\nempty:|", "vpet#head/!n:|note#/n/id:|tail///comment", "vpet:|name#first:\r\n|second:|\r\nstatistics:|day#1:\n:2:|"}
         .Select(input => new {input,canonical=new LpsDocument(input).ToString()}).ToArray();
@@ -101,4 +115,36 @@ public static class HashOracle {
         }
         return new {path,scope=path=="legacyPetMD5"?"pet":"document",version,input=document.ToString(),canonical,expected=expected.ToString()};
     }
+}
+
+// Serialization DTOs preserve upstream property inheritance and annotations.
+// They intentionally omit WPF/UI methods; no plugin or user data is loaded.
+public class LegacyItemDTO {
+    [Line(ignoreCase:true)] public virtual string? Image {get;set;} = null;
+    [Line(name:"name")] public string Name {get;set;} = "";
+    [Line(name:"itemtype")] public virtual string ItemType {get;set;} = "Item";
+    [Line(ignoreCase:true)] public virtual double Price {get;set;}
+    [Line(ignoreCase:true)] public string Desc {get;set;} = "";
+    [Line(ignoreCase:true)] public virtual int Count {get;set;} = 1;
+    [Line(ignoreCase:true)] public virtual string Data {get;set;} = "";
+    [Line(ignoreCase:true)] public virtual bool CanUse {get;set;} = true;
+    [Line(ignoreCase:true)] public virtual bool Star {get;set;}
+    [Line(ignoreCase:true)] public virtual bool IsSingle {get;set;}
+    [Line(ignoreCase:true)] public virtual bool Visibility {get;set;} = true;
+    public virtual object Snapshot() => new {Image,Name,ItemType,Price,Desc,Count,Data,CanUse,Star,IsSingle,Visibility};
+}
+public enum LegacyFoodType {Food,Star,Meal,Snack,Drink,Functional,Drug,Gift}
+public class LegacyFoodDTO : LegacyItemDTO {
+    public override string ItemType => "Food";
+    public override bool Star {get;set;}
+    [Line(type:LPSConvert.ConvertType.ToEnum,ignoreCase:true)] public LegacyFoodType Type {get;set;}
+    [Line(ignoreCase:true)] public int Exp {get;set;}
+    [Line(ignoreCase:true)] public double Strength {get;set;}
+    [Line(ignoreCase:true)] public double StrengthFood {get;set;}
+    [Line(ignoreCase:true)] public double StrengthDrink {get;set;}
+    [Line(ignoreCase:true)] public double Feeling {get;set;}
+    [Line(ignoreCase:true)] public double Health {get;set;}
+    [Line(ignoreCase:true)] public double Likability {get;set;}
+    [Line(ignoreCase:true)] public string? Graph {get;set;}
+    public override object Snapshot() => new {Image,Name,ItemType,Price,Desc,Count,Data,CanUse,Star,IsSingle,Visibility,Type=Type.ToString(),Exp,Strength,StrengthFood,StrengthDrink,Feeling,Health,Likability,Graph};
 }

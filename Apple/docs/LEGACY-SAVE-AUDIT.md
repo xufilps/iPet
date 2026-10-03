@@ -45,3 +45,6 @@ UI先只读预览，列出准确保留、明确转换、未支持内容、原has
 ## 阶段4D：原hash路径与范围
 [PetLegacyIntegrity](../Sources/PetCore/PetLegacyIntegrity.swift)核对旧宠物MD5加权（仅宠物、优先）或根hash移除后的库序列化（ver2 SHA512；旧0/1 MD5后SHA512回退）。文档canonicalString按原StringBuilder序列化，不直接hash磁盘CRLF字节；字段顺序、原转义与注释按源处理。结果明确verified/mismatch/missing/unsupported、路径、范围及原值/计算值。仅宠物匹配不证明其它根行，缺hash不声称通过；-1标记仍按源算法比较。未知版本和重复路径明确不支持。
 只读预览已接该结果；不匹配/不支持为blocking，缺失/仅宠物范围明确说明。尚无整档确认写入，不修改源LPS，不把hash当来源签名；JSONv8与正式数据不变。库存参数/统计/Data/套餐/排程及主人称呼持久化仍未迁移。
+
+## 阶段4E Task 1：库存编码及合并审计
+实际库库存样例和来源见[夹具记录](../Tests/Fixtures/LEGACY-LPS-SOURCE.md)。物品普通Double与宠物固定点编码不同；Food继承序列化ItemType/Star有效，数字枚举4等价Drink，大小写错误枚举和布尔0拒绝，null图片与字面/null可区分。原ItemsAdd只按名称累加数量并保留首件参数；导入预览必须保留原记录、报告同名参数冲突，不能用当前商品目录覆盖。原Food加载另从设置重建收藏、从buytime重建Data，单个旧档不能证明收藏设置迁移。Swift类型化映射、冲突预览和导入窗口尚待Task 2，不改变JSONv8。

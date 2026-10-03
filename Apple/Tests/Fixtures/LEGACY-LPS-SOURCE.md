@@ -30,3 +30,11 @@ dotnet build Apple/scripts/legacy_lps_oracle/LegacyLPSOracle.csproj --configurat
 dotnet Apple/scripts/legacy_lps_oracle/bin/Release/net8.0/LegacyLPSOracle.dll --hashes > Apple/Tests/Fixtures/legacy-integrity.json
 ```
 完整性夹具SHA-256：`15bd106e2d1ae7d0d4ccb1e70ee4a8e2e6b5a88237d96d2f064a71192324d6d0`。先确认构建成功再运行生成器，避免旧二进制输出被误用。
+
+## 阶段4E库存序列化证据（Task 1）
+
+`legacy-item-fields.json`由同一固定NuGet1.11.9生成，SHA-256 `8b3d752fe78f73a18db592efe2010554b277b1d921f238e3a2529459f4872aa9`。生成命令：先成功构建Release，再运行 `legacy_lps_oracle/bin/Release/net8.0/LegacyLPSOracle.dll --items`；文化固定Invariant，连续两次输出逐字节相同。DTO复制1a06c598 Item/Food的属性类型、继承、默认值与Line标注，不含WPF方法、插件或用户数据；不能代替原SavesLoad整个过程。
+
+两个完整记录分别覆盖基类与派生食物，原对象/反序列化快照完全相同；Food未重复标注的ItemType/Star仍由实际库序列化。七个加载样例证明IgnoreCase字段能读取两种大小写，枚举Drink有效而drink拒绝，数字4映射Drink，布尔0拒绝，原始/null是null但/!null解码为字面/null。普通Double保存12.5/21.75和负效果，不能使用宠物FInt64缩放。
+
+MainWindow.ItemsAdd（3086行）仅按Name合并Count并保留首条参数，未检查ItemType/IsSingle或效果差异；Food.LoadSource按独立betterbuy/star重建收藏并按buytime重建Data。类型化Swift库存映射、冲突报告和整档导入仍未完成。
