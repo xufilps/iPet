@@ -18,10 +18,11 @@ import UIKit
     private func reachable(_ label:String) -> XCUIElement {
         let button=app.buttons[label].firstMatch
         _ = button.waitForExistence(timeout:2)
-        let top=app.navigationBars.firstMatch.frame.maxY
-        let bottom=app.tabBars.firstMatch.frame.minY
+        // iPad's adaptive tabs may not expose a TabBar accessibility element.
         // Navigation controls and sheet dismissal buttons are outside the Form.
-        let checkBounds=["预览消息","关闭"].contains(label) && bottom>top
+        let checkBounds=["预览消息","关闭"].contains(label)
+        let top=checkBounds && app.navigationBars.firstMatch.exists ? app.navigationBars.firstMatch.frame.maxY:app.frame.minY
+        let bottom=checkBounds && app.tabBars.firstMatch.exists ? app.tabBars.firstMatch.frame.minY:app.frame.maxY
         func visible() -> Bool {
             button.exists && button.isHittable && (!checkBounds || (button.frame.midY>top && button.frame.midY<bottom))
         }
