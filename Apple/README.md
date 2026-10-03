@@ -1,56 +1,34 @@
-# iPet · v0.2.0
+# iPet Apple 工程 · v0.2.0
 
-VPet 的 Swift 原生适配：macOS 14+ 桌宠，纯 Swift 养成核心及共享 SpriteKit 动画模块支持 iOS 17+。本版交付 macOS 应用，尚未包含 iOS 应用界面。
+macOS 14+原生桌宠，Swift 6共享核心及SpriteKit动画模块预留iOS 17+支持。当前交付macOS源码/自用构建，没有完整iOS应用或公证安装包。当前功能和验收以 [交接](docs/HANDOFF.md) 为准；目录职责见 [工程结构](docs/REPOSITORY-STRUCTURE.md)。
 
 ## 构建和启动
+需要 Xcode 16+（Swift 6）、Python 3和本仓库原始素材。没有第三方Swift依赖，不需要.NET、Steam或Windows工具。首次克隆包含较大原素材；只转换选用动作，原素材在 `../Assets/Upstream/VPet/Core/`。
 
-需要 Xcode 16+（Swift 6）及 Python 3，无第三方 Swift 依赖。原C#工程已从当前源码树移除，原项目见 https://github.com/LorisYounger/VPet；仓库仍须包含原版 `VPet-Simulator.Windows/mod/0000_core/pet/vup` 素材。
-
+从仓库根目录运行：
 ```sh
-cd Apple
-./scripts/build.sh
-open build/Build/Products/Release/iPet.app
+bash Apple/scripts/build.sh
+open Apple/build/Build/Products/Release/iPet.app
 ```
 
-也可先运行 `python3 scripts/convert_assets.py`，再用 Xcode 打开 `iPet.xcodeproj`、选择 `iPet` scheme 运行。Xcode 每次构建会重新转换内置素材；无需配置 Steam 或运行 Windows mklink。命令行脚本创建自用 ad-hoc 签名，并不构成 Developer ID 签名、公证或公开发行包。
+也可进入 `Apple/` 执行 `./scripts/build.sh`。Xcode打开 `Apple/iPet.xcodeproj`，选择共享 `iPet` scheme；构建前自动转换素材。命令行脚本创建自用ad-hoc签名，不构成Developer ID签名、公证或公开发行包。项目由 `python3 Apple/scripts/create_project.py` 生成，配置修改须同步生成器；本机用户状态不提交。
 
-## 使用
-
-菜单栏 🐾 提供状态与设置、活动、商店、背包、休息、显示/隐藏、重置位置和退出。点击头部或身体进行抚摸，拖动角色会播放提起动画，右键角色打开面板。设置窗口支持 ⌘,，退出支持 ⌘Q。窗口默认 280 点，可调整到 150–500 点；透明区域按当前帧 alpha 采样穿透，轮询频率 30 Hz。拖动期间保持鼠标捕获，桌宠窗口不能成为键盘主窗口；打开设置时会正常激活应用。
-
-13 项内置活动、118 项原物品已接入：工作赚金币，学习/娱乐积累经验；商店购买即用或入包，背包使用后生效。保留原低价赊账、完成奖金、药品代价和重复食用衰减，免费面包/饮料不再进入用户界面。休息与投喂可恢复状态；无离线扣减，退出和系统睡眠期间不补算养成。隐藏桌宠暂停渲染并释放纹理，应用仍在运行时养成继续。自主移动限定在显示器可见区域，首版不含爬墙、跨屏自主漫游或边缘隐藏。
-
-## 文件与恢复
-
-- `Sources/PetCore`：养成公式、输入命令、时钟/随机源、状态快照和版本化 JSON 保存。
-- `Sources/PetRendering`：资源清单、逻辑坐标、逐帧时长、动作阶段、图层和缓存。
-- `Sources/iPetMac`：AppKit 桌宠、SwiftUI 状态面板及菜单/生命周期。
-- `Resources/PetAssets`：构建生成并忽略的素材，仅包含选用动作；源码仍在原版目录中。
-
-正式存档位于 `~/Library/Application Support/VPetApple/`，主文件为 `pet.json`，上一份有效存档为 `pet.previous.json`。每 60 秒、关键互动、睡眠和正常退出保存。损坏主文件会保留为 `pet.corrupt-UUID.json` 并尝试加载备份；损坏备份在写入前另行保留。未来版本主文件或备份阻止保存；加载失败的会话明确提示并停止写入。需要手动恢复时先退出应用并复制整个目录，再用确认有效的备份替换主文件；不要删除未来版本或损坏证据来尝试“修复”。大小、位置和自主移动偏好存于应用 UserDefaults。
-
-本版不读取 Windows LPS 存档，不支持第三方 MOD、C# 插件、Steam、云同步、AI 对话或自动启动。代码和素材来源见 [ATTRIBUTION.md](ATTRIBUTION.md) 与 [ANIMATION_LICENSE.md](ANIMATION_LICENSE.md)，这些文件及 Apache LICENSE 随应用附带。
-
-## 验证
-
+## 共享模块与应用边界
 ```sh
-./scripts/verify.sh
-# 两小时真实渲染观察，前台保留桌宠和设置窗口；使用隔离测试存档
-python3 scripts/soak.py --seconds 7200 --output build/soak-2h.json
+swift test --package-path Apple
+bash Apple/scripts/verify.sh
 ```
 
-`verify.sh` 运行10项资源转换回归检查、转换素材、运行110项核心/渲染测试、构建 macOS 应用并对共享模块做 iOS Simulator 交叉编译。测试中的两小时养成模拟使用注入时钟，不代表真实运行两小时。`soak.py` 按墙钟时间持续切换动作/状态、隐藏恢复、模拟生命周期暂停恢复，记录每 5 秒 CPU 和 RSS；它不能替代真实系统睡眠或多显示器热插拔。
+`Package.swift` 是共享库唯一manifest，`Sources/PetCore`为纯Swift养成/保存，`Sources/PetRendering`为SpriteKit，`Sources/PetMacInput`为平台输入适配；对应回归在 `Tests/`。AppKit/SwiftUI应用源码独立放在 `Apps/macOS/`，由Xcode构建。生成的 `Resources/PetAssets/` 不提交；图标资源目录和 [母图来源](Design/README.md) 已提交。
 
-当前验证证据和剩余实机检查见 [docs/HANDOFF.md](docs/HANDOFF.md)，行为区别见 [docs/BEHAVIOR.md](docs/BEHAVIOR.md)。回滚只需回退 Apple 相关提交；原 C# 项目已从当前树移除，用户存档不应随代码回滚删除。
+`verify.sh` 验证目录入口、原README/LICENSE和上游归档完整性、文档链接、生成项目一致性，运行23项Python/372项Swift测试，构建macOS Release、交叉编译iOS Simulator共享模块并验证签名。日志在 `build/verification/`。本次本机通过不代表GitHub runner已通过；CI同样不会启动UI、修改用户存档或执行压力测试。
 
-## 图标与后续还原
+## 数据与恢复
+正式存档仍为 `~/Library/Application Support/VPetApple/`，当前JSON v9；主档 `pet.json`、上一份有效档 `pet.previous.json`。每60秒、关键互动、睡眠和退出保存。损坏原件保留并尝试备份，未来版本阻止覆盖；读取旧v1…v8后，首次升级写入前保留独立旧版本原件。
 
-像素风 AppIcon、母图及导出说明见 [Design/README.md](Design/README.md)；资源目录通过工程生成脚本同步接入。完整原版能力矩阵见 [UPSTREAM_COMPARISON.md](docs/UPSTREAM_COMPARISON.md)，先还原 macOS 玩法、后扩展 iOS 的阶段门槛见 [ROADMAP.md](docs/ROADMAP.md)。本轮养成升级见 [阶段2实施记录](docs/PHASE-2-EXECUTION.md)，JSON v1→v2 写入前保留独立原件；回滚前先复制整个存档目录，旧程序只能使用独立 v1 副本。
+回滚旧程序前退出并备份整个目录，移开v9主/previous，再用对应旧版本的 `pet.vN-before-upgrade-*.json` 副本恢复主档；不能修改版本头冒充降级。本次目录整理不改变存档版本或位置，回滚代码无需恢复档案。Windows LPS目前只有结构、宠物、库存、统计及hash只读预览，尚未开放整档导入。
 
-实机验收按用户决定暂缓，待验记录继续保留，不将自动构建视为两小时、输入、多屏或睡眠验收。原源码依据已改为上游固定版本链接；当前Windows命名目录仅用于保留构建素材，不包含原应用代码。
+## 使用、许可与验证边界
+菜单栏提供显示/隐藏、位置恢复和功能入口；现有中文原生面板、13项活动、118项物品、套餐/日程及本地统计见根 [README](../README.md)。窗口不抢桌宠键盘焦点，透明区按帧alpha穿透；真实睡眠、多屏、最低系统/Intel和两小时观察仍待最终验收。
 
-资源转换每次仍解析配置和校验源文件，仅跳过字节相同的输出写入；缺失或损坏输出重新生成。此优化减少重复写入，不承诺整体构建时间或运行时性能提升。转换器使用已有PNG签名/尺寸头检查，不做完整PNG解码。脚本检查日志为build/verification/conversion-tests.log。
-
-当前存档为JSON v5，支持v1...v5导出/确认恢复；活动倍率与历史保存，升级前独立保留v1/v2/v3/v4原件。回滚到v4程序前复制整个目录并恢复独立v4原件，禁止旧程序直接写回v5。倍率规则与排程前置依赖见[阶段5C规格](docs/specs/PHASE-5C.md)。
-
-阶段5D接入14项任务套餐签署/原退款与一次续费，JSON当前v6，支持v1...v6导出/确认恢复，升级前保留v5及更早迁移原件；回滚须对应独立v5原件。日程执行尚缺，手动活动无需套餐，抽成字段未增无源码扣款。详见[5D规格](docs/specs/PHASE-5D.md)。
+[署名](ATTRIBUTION.md)、[原动画授权](ANIMATION_LICENSE.md)、根LICENSE与NOTICE随应用附带。代码Apache 2.0不替代角色/动画授权；不执行C#插件。贡献流程见 [CONTRIBUTING](../CONTRIBUTING.md)，完整差异/缺口/路线见 [文档导航](docs/README.md)。此批为工程结构整理，后续功能开发保持暂停。

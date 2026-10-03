@@ -110,5 +110,5 @@ def convert_gameplay(source, destination):
 
 if __name__=='__main__':
     root=Path(__file__).resolve().parents[1]
-    parser=argparse.ArgumentParser();parser.add_argument('--source',type=Path,default=root.parent/'VPet-Simulator.Windows/mod/0000_core');parser.add_argument('--output',type=Path,default=root/'Resources/PetAssets');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--source',type=Path,default=root.parent/'Assets/Upstream/VPet/Core');parser.add_argument('--output',type=Path,default=root/'Resources/PetAssets');args=parser.parse_args()
     convert_gameplay(args.source,args.output)

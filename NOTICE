@@ -4,12 +4,12 @@ https://github.com/xufilps/iPet
 This project is derived from VPet / VPet-Simulator by LorisYounger and
 its contributors: https://github.com/LorisYounger/VPet
 Original source baseline: 1a06c5981330564bab05a098d2d7969a4b119dd3.
-Original authorship, copyright notices, source files and Git history are retained.
+Original authorship, copyright notices and Git history are retained; upstream source remains available in that history and at the upstream repository.
 
 Modifications by the iPet project (2026-10-01): added a native Swift
 implementation for macOS, reusable pet simulation and SpriteKit rendering
 modules, asset-conversion/build/test tooling, and iPet documentation/branding.
-The original C# implementation is retained. The original Simplified Chinese
+The original C# implementation is retained in Git history, not the current source tree. The original Simplified Chinese
 README is reproduced verbatim after the iPet documentation in README.md.
 Code continues to be distributed under the Apache License, Version 2.0;
 the original LICENSE is included unchanged.
@@ -35,3 +35,5 @@ Apache-2.0: https://github.com/LorisYounger/LinePutScript/tree/69ea42f7f213be266
 The Swift implementation is modified for bounded parsing and explicit numeric
 rejection. A development-only fixture generator uses the original NuGet library;
 the macOS application does not bundle or require the .NET library.
+
+Repository layout update (2026-10-03): unchanged upstream assets moved to Assets/Upstream/VPet/Core; original Windows documentation and configuration archived byte-for-byte in docs/upstream. Native app sources moved to Apple/Apps/macOS. Current Swift and community development guidance replaces the root Windows-specific contribution/configuration entries.

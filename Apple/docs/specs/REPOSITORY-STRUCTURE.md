@@ -22,3 +22,6 @@
 目录迁移风险集中于默认素材路径、工程引用、相对文档链接及CI工具链。新增结构检查用于防止入口失联，不为纯文件移动增加养成规则测试。CI只运行自动检查，不启动UI、不要求签名证书、不执行两小时压力；第三方Action固定提交，权限只读。原素材SHA256必须完全一致；未跟踪本机文件不纳入提交。回滚此批提交/目录移动即可，存档无需降级；原Windows资料可在归档或上游固定基线查阅。
 
 依据：[SwiftPM目标布局](https://docs.swift.org/package-manager/PackageDescription/PackageDescription.html)、[GitHub社区模板](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/about-issue-and-pull-request-templates)。Apple为包根并不违反SwiftPM布局；此次不宣称存在统一强制的GitHub工程目录标准。
+
+## 本机完成记录
+目录移动、当前指南与社区配置已完成；原素材6495份和归档文件9份逐字节核对，372Swift/23Python/macOS Release/iOS共享模块/签名及结构检查通过。独立审查的安全联系入口问题与两个小项已在一次修复中处理，最终日志Apple/build/verification/repository-layout-final.log。远端CI结果单独记录，不宣称已在GitHub验证。功能/存档未变，交付后继续暂停。

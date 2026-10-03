@@ -59,7 +59,7 @@
 
 - macOS，安装 Xcode 16 或更高版本并启用 Swift 6 工具链。
 - Python 3，用于构建前转换内置素材；Git，用于获取源码。
-- 原始角色文件位于 `VPet-Simulator.Windows/mod/0000_core/pet/vup`，请保留此目录。
+- 原始角色文件位于 `Assets/Upstream/VPet/Core/pet/vup`，请保留此目录。
 - 本地测试使用 arm64 Mac；最低版本 macOS 14 及 Intel Mac 尚未实机验收。
 
 若终端尚未选择完整 Xcode，可运行 `sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer`。请先完成 Xcode 正常的首次启动配置。
@@ -124,14 +124,15 @@ Apple/
 ├── Sources/
 │   ├── PetCore/                    # 平台无关养成、命令、时钟、随机源、存档
 │   ├── PetRendering/               # 资源清单、SpriteKit、动作阶段、alpha 命中
-│   └── iPetMac/                    # AppKit 窗口、SwiftUI 面板、菜单、生命周期
+│   └── PetMacInput/                # macOS 输入适配
+├── Apps/macOS/                    # AppKit 窗口、SwiftUI 面板、菜单、生命周期
 ├── Tests/                         # 核心规则、保存保护与渲染测试
 ├── scripts/                       # 转换、构建、验证与真实运行观察工具
 ├── Resources/PetAssets/            # 构建生成，Git 忽略
 └── docs/                          # 计划、行为对照、验证证据与交接
 ```
 
-原 C# 工程与 `VPet.sln` 已从当前源码树移除，源码和完整 Windows 项目见 [原仓库](https://github.com/LorisYounger/VPet)，行为对照固定在上游基线 `1a06c598`。`VPet-Simulator.Windows/` 目前仅保留 `mod/0000_core` 原素材与配置，供构建前转换使用；它不再包含 Windows 应用源码。Git 历史仍可恢复原文件，未重写历史，因此此次清理不会消除历史对象或让整个克隆体积等比例缩小。共享核心不依赖 AppKit/UIKit/SpriteKit，动画层不直接修改养成数据；平台窗口和应用生命周期由 macOS 应用处理。后续 iOS 将复用共享模块，单独实现触摸界面和前后台策略。
+原 C# 工程与 `VPet.sln` 已从当前源码树移除，源码和完整 Windows 项目见 [原仓库](https://github.com/LorisYounger/VPet)，行为对照固定在上游基线 `1a06c598`。原素材与配置已集中在 `Assets/Upstream/VPet/Core/`，供构建前转换使用；当前跟踪目录不再保留 Windows 应用工程。Git 历史仍可恢复原文件，未重写历史，因此此次清理不会消除历史对象或让整个克隆体积等比例缩小。共享核心不依赖 AppKit/UIKit/SpriteKit，动画层不直接修改养成数据；平台窗口和应用生命周期由 macOS 应用处理。后续 iOS 将复用共享模块，单独实现触摸界面和前后台策略。
 
 养成关闭时停止定时变化，退出当前活动，恢复后不补算；可选择固定显示状态，实际属性保留。购买即用只预览动画，但库存使用仍扣库存并生效，买入背包仍扣款；设置页和商店会提示这些区别。
 
@@ -178,7 +179,7 @@ python3 Apple/scripts/soak.py --seconds 7200 --output Apple/build/soak-2h.json
 
 **原作内置动画与图片**具有单独授权，版权归虚拟主播模拟器制作组。非商用使用需向用户告知来源并提供原项目链接；分发动画时必须告知授权信息、提供原项目链接，且禁止收费分发动画。商业使用须遵循原声明的醒目来源告知、页面链接、联系作者及其他要求，不能仅凭 Apache 2.0 推定素材可任意商用。Zip 照片图库禁止商用，iPet 本版不包含该图库。
 
-[原动画与图片授权全文](Apple/ANIMATION_LICENSE.md)按当前仓库原 README 的声明保留，来源链接为 [LorisYounger/VPet](https://github.com/LorisYounger/VPet)。构建出的应用附带 `LICENSE`、`NOTICE`、`ATTRIBUTION.md` 和 `ANIMATION_LICENSE.md`，设置面板也提供原项目与授权链接。原版 `CONTRIBUTING.md` 与 README 的部分商用授权措辞存在差异；需要商用时应联系原权利方确认，不将旧措辞视为扩大授权。
+[原动画与图片授权全文](Apple/ANIMATION_LICENSE.md)按当前仓库原 README 的声明保留，来源链接为 [LorisYounger/VPet](https://github.com/LorisYounger/VPet)。构建出的应用附带 `LICENSE`、`NOTICE`、`ATTRIBUTION.md` 和 `ANIMATION_LICENSE.md`，设置面板也提供原项目与授权链接。归档的原版 `docs/upstream/CONTRIBUTING.md` 与 README 的部分商用授权措辞存在差异；需要商用时应联系原权利方确认，不将旧措辞视为扩大授权。
 
 感谢 LorisYounger、VPet 原项目贡献者，以及虚拟主播模拟器制作组提供的原始代码、角色和动画。本仓库使用原 Git 历史保留来源，iPet 改动集中在 Apple 原生实现、构建工具及文档。
 
@@ -188,7 +189,7 @@ python3 Apple/scripts/soak.py --seconds 7200 --output Apple/build/soak-2h.json
 
 当前采用参考原版形象生成的像素风图标，母图、小尺寸导出、来源和重建方法见 [图标记录](Apple/Design/README.md)。保留原项目图标；新图标不改变原角色及动画授权。
 
-问题反馈和贡献请使用 [iPet Issues](https://github.com/xufilps/iPet/issues) 与 Pull Requests。涉及 Swift 版的改动应执行 `Apple/scripts/verify.sh`，说明行为变化和验证边界；新增或替换素材需明确来源与授权。对原项目贡献，请遵循下方原 README 和原 `CONTRIBUTING.md` 的流程。
+问题反馈和贡献请使用 [iPet Issues](https://github.com/xufilps/iPet/issues) 与 Pull Requests。涉及 Swift 版的改动应执行 `Apple/scripts/verify.sh`，说明行为变化和验证边界；新增或替换素材需明确来源与授权。当前贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)，原 Windows 指南见 [上游文档归档](docs/upstream/README.md)。
 
 ---
 
@@ -219,6 +220,10 @@ Windows LPS 导入正在推进：已验证原库格式的解码层与只读宠�
 背包现已独立保存物品效果、标记与收藏；新买入冻结当前参数，使用已有库存不受同ID商品改动影响。未知类型保留但不可执行；Windows旧档整体导入仍未开放。v9及回滚说明见 [阶段4F规格](Apple/docs/specs/PHASE-4F.md)。
 
 阶段4G已完成旧统计的类型化只读预览，保留精确Int64和未知原值，拒绝静默归零/截断；尚未开放Windows整档导入，JSON仍v9。本批交付后按用户要求暂停，当前缺口见[剩余功能](Apple/docs/REMAINING-FEATURES.md)，证据与回滚见[交接](Apple/docs/HANDOFF.md)。
+
+## 开发与社区入口
+
+共享Swift包保留 `Apple/Package.swift` 及标准Sources/Tests结构，macOS应用源码移至 `Apple/Apps/macOS/`，原素材集中在 `Assets/Upstream/VPet/Core/`。入口见 [工程结构](Apple/docs/REPOSITORY-STRUCTURE.md)、[文档导航](Apple/docs/README.md)、[贡献指南](CONTRIBUTING.md)与[支持说明](SUPPORT.md)。GitHub问题/PR模板及macOS CI位于 `.github/`；生成资源、本机状态与构建产物不提交。本次不改变养成、JSON v9或存档目录，后续功能开发仍暂停。
 
 ## 原项目 README.md（原文保留）
 

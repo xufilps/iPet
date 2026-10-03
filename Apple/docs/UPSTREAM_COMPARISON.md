@@ -81,7 +81,7 @@
 - U12：[MainPlugin](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/MainPlugin.cs)、[IMainWindow](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/IMainWindow.cs)。
 - U13：[排程](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/ScheduleTask.cs)、[统计](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/Statistics.cs)、[活动日志](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/ActivityLog.cs)。
 - U14：[工坊验证客户端](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows/Function/WorkshopVerificationClient.cs)、[联机接口](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/MutiPlayer)。
-- A1：[AppModel](../Sources/iPetMac/AppModel.swift)、[PetWindow](../Sources/iPetMac/PetWindow.swift)、[ControlsView](../Sources/iPetMac/ControlsView.swift)。
+- A1：[AppModel](../Apps/macOS/AppModel.swift)、[PetWindow](../Apps/macOS/PetWindow.swift)、[ControlsView](../Apps/macOS/ControlsView.swift)。
 - A2：[PetEngine](../Sources/PetCore/PetEngine.swift)、[PetState](../Sources/PetCore/PetState.swift)、[PetSaveStore](../Sources/PetCore/PetSaveStore.swift)；具体保留公式见 [BEHAVIOR.md](BEHAVIOR.md)。
 - A3：[PetScene](../Sources/PetRendering/PetScene.swift)、[Manifest](../Sources/PetRendering/Manifest.swift)。
 - A4：[资源转换器](../scripts/convert_assets.py)、[玩法目录转换](../scripts/convert_gameplay.py)，生成清单不等同完整LPS解析器。
@@ -99,13 +99,13 @@
 
 ## 阶段3D文本与气泡
 
-已接入ClickText/v2/v3和LowText，625条点击、46条提醒，按原时段、模式、标签、活动/睡眠及属性范围筛选。原文件一条多行文本损坏，连同孤立尾部明确排除；160条Tags拼写按原Tag序列化默认all处理并诊断，未擅自修正原逻辑。转换目录v1独立于动画v3与存档v2。源码见[PetDialogue](../Sources/PetCore/PetDialogue.swift)、[转换工具](../scripts/convert_dialogue.py)、[气泡窗口](../Sources/iPetMac/PetSpeechWindow.swift)，规格见[PHASE-3D](specs/PHASE-3D.md)。
+已接入ClickText/v2/v3和LowText，625条点击、46条提醒，按原时段、模式、标签、活动/睡眠及属性范围筛选。原文件一条多行文本损坏，连同孤立尾部明确排除；160条Tags拼写按原Tag序列化默认all处理并诊断，未擅自修正原逻辑。转换目录v1独立于动画v3与存档v2。源码见[PetDialogue](../Sources/PetCore/PetDialogue.swift)、[转换工具](../scripts/convert_dialogue.py)、[气泡窗口](../Apps/macOS/PetSpeechWindow.swift)，规格见[PHASE-3D](specs/PHASE-3D.md)。
 
 点击严格超过20秒后可结算文本属性/金币，按原即时/缓释规则；睡眠文本不唤醒。自动提醒只在空闲、可见且没有气泡时触发，不自动购买、不给休息/活动插入饥渴动作。SelectText、语音、Say动画、消息队列/流式显示尚未迁移；未做Windows同条件实机对照。
 
 ## 阶段3E随宠工具栏
 
-原版ToolBar提供状态与工作/学习/娱乐等入口，WorkTimer显示活动时间、收益及停止反馈。iPet使用独立非激活小面板，状态/活动/商店/背包/休息/对话快捷入口和活动进度、剩余分钟、已获收益、暂停/继续/结束已接入；菜单栏或设置页启用，默认关闭。现有活动页与工具栏共用只读[ActivityFeedback](../Sources/PetCore/ActivityFeedback.swift)，操作复用原核心事务，不重复结算奖励。状态为“部分实现”：原多级菜单、鼠标自动隐藏、小标、DIY入口、完整计时/统计仍缺，详见[规格](specs/PHASE-3E.md)与[窗口实现](../Sources/iPetMac/PetToolbarWindow.swift)。
+原版ToolBar提供状态与工作/学习/娱乐等入口，WorkTimer显示活动时间、收益及停止反馈。iPet使用独立非激活小面板，状态/活动/商店/背包/休息/对话快捷入口和活动进度、剩余分钟、已获收益、暂停/继续/结束已接入；菜单栏或设置页启用，默认关闭。现有活动页与工具栏共用只读[ActivityFeedback](../Sources/PetCore/ActivityFeedback.swift)，操作复用原核心事务，不重复结算奖励。状态为“部分实现”：原多级菜单、鼠标自动隐藏、小标、DIY入口、完整计时/统计仍缺，详见[规格](specs/PHASE-3E.md)与[窗口实现](../Apps/macOS/PetToolbarWindow.swift)。
 
 下方优先并按可见屏幕约束，拖动期间暂隐藏；气泡参照桌宠和工具栏的联合范围定位。新增toolbarEnabled偏好，不改JSON v2、动画v3或文本v1；物理焦点、睡眠、多屏和长期运行仍需最终验收。
 

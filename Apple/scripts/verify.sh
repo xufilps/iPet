@@ -2,6 +2,7 @@
 set -euo pipefail
 apple_root="$(cd "$(dirname "$0")/.." && pwd)"
 mkdir -p "$apple_root/build/verification"
+/usr/bin/python3 "$apple_root/scripts/verify_repository.py"
 /usr/bin/python3 -m unittest discover -s "$apple_root/scripts/tests" -v > "$apple_root/build/verification/conversion-tests.log" 2>&1
 /usr/bin/python3 "$apple_root/scripts/export_icon.py" --check
 /usr/bin/python3 "$apple_root/scripts/convert_assets.py"

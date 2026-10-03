@@ -1,0 +1,37 @@
+name: Swift and macOS verification
+on:
+  push:
+    branches: [ipet-dev]
+  pull_request:
+    branches: [ipet-dev]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, pinned 2026-10-03
+        with:
+          persist-credentials: false
+      - name: Record toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          /usr/bin/python3 --version
+      - name: Verify structure, tests and Apple builds
+        run: bash Apple/scripts/verify.sh
+      - name: Show verification logs on failure
+        if: failure()
+        run: |
+          for file in Apple/build/verification/*.log; do
+            test -f "$file" || continue
+            echo "::group::$file"
+            tail -n 120 "$file"
+            echo '::endgroup::'
+          done

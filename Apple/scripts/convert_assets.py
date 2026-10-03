@@ -182,7 +182,7 @@ def convert(source, destination):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--source', type=Path, default=Path(__file__).resolve().parents[2] / 'VPet-Simulator.Windows/mod/0000_core')
+    parser.add_argument('--source', type=Path, default=Path(__file__).resolve().parents[2] / 'Assets/Upstream/VPet/Core')
     parser.add_argument('--output', type=Path, default=Path(__file__).resolve().parents[1] / 'Resources/PetAssets')
     args = parser.parse_args()
     convert(args.source.resolve(), args.output.resolve())

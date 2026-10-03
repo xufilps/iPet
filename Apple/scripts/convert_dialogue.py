@@ -83,4 +83,4 @@ def convert_dialogue(source,destination):
     print(f'Dialogue: {len(entries)} rows, {len(diagnostics)} source diagnostics')
 if __name__=='__main__':
     root=Path(__file__).resolve().parents[1]
-    parser=argparse.ArgumentParser();parser.add_argument('--source',type=Path,default=root.parent/'VPet-Simulator.Windows/mod/0000_core');parser.add_argument('--output',type=Path,default=root/'Resources/PetAssets');args=parser.parse_args();convert_dialogue(args.source,args.output)
+    parser=argparse.ArgumentParser();parser.add_argument('--source',type=Path,default=root.parent/'Assets/Upstream/VPet/Core');parser.add_argument('--output',type=Path,default=root/'Resources/PetAssets');args=parser.parse_args();convert_dialogue(args.source,args.output)

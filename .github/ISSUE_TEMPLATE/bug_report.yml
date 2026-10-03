@@ -1,0 +1,32 @@
+name: 问题报告
+description: 报告 iPet 的可复现问题（安全问题请先阅读 SECURITY.md）
+title: '[Bug] '
+body:
+  - type: markdown
+    attributes:
+      value: 请先查阅已知缺口。不要公开提交完整存档、私人路径或安全漏洞利用细节。
+  - type: input
+    id: environment
+    attributes:
+      label: 环境与版本
+      description: macOS、芯片、Xcode/Swift版本（构建问题）、iPet提交号
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 从启动开始，列出能重复出现问题的操作。
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: 预期与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 日志或截图（可选）
+      description: 分享前清除个人数据；请区分真实实机观察与自动测试结果。

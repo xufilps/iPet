@@ -6,7 +6,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from convert_gameplay import convert_gameplay, normalize_work, normalize_package
 
-SOURCE = Path(__file__).resolve().parents[3] / 'VPet-Simulator.Windows/mod/0000_core'
+SOURCE = Path(__file__).resolve().parents[3] / 'Assets/Upstream/VPet/Core'
 class GameplayTests(unittest.TestCase):
     def test_catalog_counts_source_values_and_stable_outputs(self):
         with tempfile.TemporaryDirectory() as tmp:

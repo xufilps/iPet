@@ -13,3 +13,5 @@
 当前像素风应用图标通过 OpenAI imagegen 参考原项目 vpeticon.png 生成，是原形象的新演绎；不是原作者新作，也不宣称独立于原角色的原创权利。生成来源、母图与导出记录见源码 Apple/Design/README.md，原角色和动画授权保持不变。
 
 原C#工程代码不再随当前源码树提供；原项目完整源码与Windows工程请访问上述原仓库。构建所需原素材仍单独保留，Apache许可证、原署名和图片/动画授权仍随iPet附带。
+
+原始构建素材现位于 Assets/Upstream/VPet/Core，原Windows贡献/翻译/开发文档原样归档于 docs/upstream。本次只移动资源，不改变其来源或授权；详情见 Apple/docs/REPOSITORY-STRUCTURE.md。

@@ -1,0 +1,17 @@
+name: 请求私密安全联系
+description: 仅请求维护者提供私密联系渠道，不公开漏洞或个人数据
+title: '[Security contact] 请求私密联系渠道'
+body:
+  - type: markdown
+    attributes:
+      value: |
+        此表单是公开Issue，只用于请求私密渠道。
+        不要填写漏洞细节、利用步骤、存档、私人路径、联系方式或其它个人数据。
+        维护者提供私密渠道后再发送资料。一般运行错误请使用问题报告。
+  - type: checkboxes
+    id: contact_only
+    attributes:
+      label: 仅请求联系
+      options:
+        - label: 我希望维护者提供私密安全联系渠道，此Issue不包含漏洞或个人数据。
+          required: true

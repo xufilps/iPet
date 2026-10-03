@@ -1,0 +1,21 @@
+name: 功能或原版差异
+description: 提出具体使用需求或有源码依据的原版行为差异
+title: '[Feature] '
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: 使用场景与缺口
+      description: 当前遇到什么问题？希望达到什么可观察结果？
+    validations:
+      required: true
+  - type: textarea
+    id: reference
+    attributes:
+      label: 原版依据或建议
+      description: 可附上游源码链接、版本或实际体验；不要将计划当作已完成功能。
+  - type: textarea
+    id: constraints
+    attributes:
+      label: 平台、数据与素材限制
+      description: 是否涉及 macOS/iOS、存档兼容、第三方资源或插件？
