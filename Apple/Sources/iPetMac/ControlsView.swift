@@ -37,6 +37,7 @@ struct ControlsView: View {
             metric("饮水",model.state.drink); metric("心情",model.state.feeling); metric("健康",model.state.health)
             HStack {
                 Button(model.state.resting ? "起床" : "休息") { model.command(.toggleRest) }
+                Button("关闭说话") { model.closeSpeech() }
                 Button("聊一句") { model.sayClick() }.help("本地原版文本可能带少量属性或金币变化，每20秒可聊一次。")
             }
             Text("工作赚取金币，学习与娱乐积累经验。状态会影响活动收益；饥渴或体力不足时先休息、补充食物。生病时可在商店选择药品，免费应急药也会带来属性代价。")
@@ -65,6 +66,9 @@ struct ControlsView: View {
             }
             Button("恢复窗口默认设置") { model.resetWindowPreferences() }
             Text("默认只让透明区域穿透。全部穿透时角色不能点击或拖动，可从菜单栏恢复默认；独立工具栏仍可操作，不透明度仅影响角色。")
+                .font(.caption).foregroundStyle(.secondary)
+            Toggle("说话气泡可交互",isOn:$model.speechInteractive).onChange(of:model.speechInteractive) { model.updateSpeechInteraction() }
+            Text("默认气泡点击穿透。开启后悬停保持文字、双击关闭，右键复制已显示文字或关闭；气泡不抢键盘焦点，也可从菜单栏关闭尚未显示的说话。")
                 .font(.caption).foregroundStyle(.secondary)
             Toggle("随宠工具栏",isOn:$model.toolbarEnabled).onChange(of:model.toolbarEnabled) { model.updateToolbarPreference() }
             Toggle("自主移动",isOn:$model.autoMove).onChange(of:model.autoMove) { model.updateAutoMove() }

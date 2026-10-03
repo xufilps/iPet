@@ -56,4 +56,29 @@ final class PetSpeechPlaybackTests:XCTestCase {
         cancelled.cancel();XCTAssertFalse(cancelled.advance(by:100))
     }
 
+    func testHoveredRevealContinuesThenHoldingWaits() {
+        var speech=PetSpeechPlayback(text:"你好世界")
+        speech.setHovered(true);XCTAssertTrue(speech.advance(by:100))
+        XCTAssertEqual(speech.displayedText,"你好世界");XCTAssertEqual(speech.phase,.holding)
+        speech.advance(by:100);XCTAssertEqual(speech.phase,.holding)
+        speech.setHovered(false);speech.advance(by:4.1);XCTAssertEqual(speech.phase,.fading)
+    }
+    func testHoverPreservesRemainingHoldAndRestartsFade() {
+        var speech=PetSpeechPlayback(text:"你好")
+        speech.advance(by:0.3+2);speech.setHovered(true);speech.advance(by:100)
+        speech.setHovered(false);speech.advance(by:2.1);XCTAssertEqual(speech.phase,.fading)
+        speech.advance(by:0.5);XCTAssertLessThan(speech.opacity,0.8)
+        speech.setHovered(true);XCTAssertEqual(speech.opacity,0.8,accuracy:0.00001)
+        speech.advance(by:100);XCTAssertEqual(speech.phase,.fading)
+        speech.setHovered(false);speech.advance(by:1.95);XCTAssertEqual(speech.phase,.finished)
+    }
+    func testHoverCannotReviveCancelledOrFinishedText() {
+        var cancelled=PetSpeechPlayback(text:"你好")
+        cancelled.cancel();cancelled.setHovered(true);XCTAssertFalse(cancelled.advance(by:100))
+        XCTAssertEqual(cancelled.phase,.finished)
+        var ended=PetSpeechPlayback(text:"你好")
+        ended.advance(by:100);ended.setHovered(true)
+        XCTAssertEqual(ended.phase,.finished)
+    }
+
 }

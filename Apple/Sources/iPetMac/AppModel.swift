@@ -36,6 +36,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
     var presentationMood:PetMood { engine?.presentationMood ?? state.mood }
     @Published var interactionCycle=200
     @Published var autoMove = UserDefaults.standard.object(forKey: "autoMove") as? Bool ?? true
+    @Published var speechInteractive=false
     @Published var autoChangeScreen=false
     private var activeScreenID:String?
     @Published var movementAreaMode:PetMovementAreaMode = .current
@@ -104,6 +105,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         simulationEnabled=smokeMode ? true:(defaults.object(forKey:"simulationEnabled") as? Bool ?? true)
         fixedMood=smokeMode ? .normal:(PetMood(rawValue:defaults.string(forKey:"fixedMood") ?? "") ?? .normal)
         interactionCycle=smokeMode ? 200:min(1000,max(30,defaults.object(forKey:"interactionCycle") as? Int ?? 200))
+        speechInteractive = !smokeMode && defaults.bool(forKey:"speechInteractive")
         autoChangeScreen = !smokeMode && (defaults.object(forKey:"autoChangeScreen") as? Bool ?? false)
         activeScreenID=smokeMode ? nil:PetScreenChange.persistedIdentity(defaults.string(forKey:"activeScreenID"))
         movementAreaMode=smokeMode ? .current:(PetMovementAreaMode(rawValue:defaults.string(forKey:"movementAreaMode") ?? "") ?? .current)
@@ -138,6 +140,8 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         petScene = PetScene(manifest: try PetManifest.load(from: root), assetRoot: root)
         petScene.onDiagnostic = { [weak self] text in self?.recordDiagnostic(.rendering,text);NSLog("%@",text) }
         petScene.play(state.resting ? .sleep : .idle, mood: presentationMood)
+        speech.setInteractive(speechInteractive)
+        speech.onCloseRequested = { [weak self] in self?.closeSpeech() }
         speech.onRevealFinished = { [weak self] in self?.petScene.finishSpeech() }
         petScene.onIdleCycle = { [weak self] in self?.autonomy.recordIdleCycle() }
         petScene.onPinchLoop = { [weak self] in
@@ -267,6 +271,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         shortcutMenu=NSMenu(title:"自定义快捷");shortcutMenu?.autoenablesItems=false;custom.submenu=shortcutMenu;menu.addItem(custom)
         rebuildShortcutMenu()
         menu.addItem(item("聊一句", #selector(sayClick)))
+        menu.addItem(item("关闭说话", #selector(closeSpeech)))
         menuToolbar=item("随宠工具栏",#selector(toggleToolbar));menuToolbar.state=toolbarEnabled ? .on : .off;menu.addItem(menuToolbar)
         menu.addItem(item("休息 / 起床", #selector(rest)))
         menuVisibility = item("隐藏桌宠", #selector(toggleVisibility)); menu.addItem(menuVisibility)
@@ -506,6 +511,13 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         }
         petScene.setPlaybackMood(presentationMood)
         showSpeech(entry.rendered(state:state))
+    }
+    @objc func closeSpeech() {
+        petScene?.discardSpeechStart();petScene?.finishSpeech();speech.hide()
+    }
+    func updateSpeechInteraction() {
+        speech.setInteractive(speechInteractive)
+        if !smokeMode { UserDefaults.standard.set(speechInteractive,forKey:"speechInteractive") }
     }
     private func showSpeech(_ text:String) {
         guard visible,!suspended,companionScreen != nil else { return }
