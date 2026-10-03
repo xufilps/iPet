@@ -67,6 +67,13 @@ struct ControlsView: View {
             Button("恢复窗口默认设置") { model.resetWindowPreferences() }
             Text("默认只让透明区域穿透。全部穿透时角色不能点击或拖动，可从菜单栏恢复默认；独立工具栏仍可操作，不透明度仅影响角色。")
                 .font(.caption).foregroundStyle(.secondary)
+            Picker("说话位置",selection:$model.speechPlacement) {
+                Text("自动避让（既有默认）").tag(SpeechPlacement.Mode.automatic)
+                Text("角色内，下方对齐").tag(SpeechPlacement.Mode.inside)
+                Text("角色外，优先下方").tag(SpeechPlacement.Mode.outside)
+            }.onChange(of:model.speechPlacement) { model.updateSpeechPlacement() }
+            Text("长文字在气泡中自动滚动；启用气泡交互后也可手动滚动。外置空间不足时改放上方，调整位置不会重新输出或触发文案奖励。")
+                .font(.caption).foregroundStyle(.secondary)
             Toggle("说话气泡可交互",isOn:$model.speechInteractive).onChange(of:model.speechInteractive) { model.updateSpeechInteraction() }
             Text("默认气泡点击穿透。开启后悬停保持文字、双击关闭，右键复制已显示文字或关闭；气泡不抢键盘焦点，也可从菜单栏关闭尚未显示的说话。")
                 .font(.caption).foregroundStyle(.secondary)

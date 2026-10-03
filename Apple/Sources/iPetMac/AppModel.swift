@@ -36,6 +36,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
     var presentationMood:PetMood { engine?.presentationMood ?? state.mood }
     @Published var interactionCycle=200
     @Published var autoMove = UserDefaults.standard.object(forKey: "autoMove") as? Bool ?? true
+    @Published var speechPlacement:SpeechPlacement.Mode = .automatic
     @Published var speechInteractive=false
     @Published var autoChangeScreen=false
     private var activeScreenID:String?
@@ -105,6 +106,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         simulationEnabled=smokeMode ? true:(defaults.object(forKey:"simulationEnabled") as? Bool ?? true)
         fixedMood=smokeMode ? .normal:(PetMood(rawValue:defaults.string(forKey:"fixedMood") ?? "") ?? .normal)
         interactionCycle=smokeMode ? 200:min(1000,max(30,defaults.object(forKey:"interactionCycle") as? Int ?? 200))
+        speechPlacement=smokeMode ? .automatic:(SpeechPlacement.Mode(rawValue:defaults.string(forKey:"speechPlacement") ?? "") ?? .automatic)
         speechInteractive = !smokeMode && defaults.bool(forKey:"speechInteractive")
         autoChangeScreen = !smokeMode && (defaults.object(forKey:"autoChangeScreen") as? Bool ?? false)
         activeScreenID=smokeMode ? nil:PetScreenChange.persistedIdentity(defaults.string(forKey:"activeScreenID"))
@@ -140,6 +142,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         petScene = PetScene(manifest: try PetManifest.load(from: root), assetRoot: root)
         petScene.onDiagnostic = { [weak self] text in self?.recordDiagnostic(.rendering,text);NSLog("%@",text) }
         petScene.play(state.resting ? .sleep : .idle, mood: presentationMood)
+        speech.setPlacement(speechPlacement)
         speech.setInteractive(speechInteractive)
         speech.onCloseRequested = { [weak self] in self?.closeSpeech() }
         speech.onRevealFinished = { [weak self] in self?.petScene.finishSpeech() }
@@ -519,6 +522,11 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         speech.setInteractive(speechInteractive)
         if !smokeMode { UserDefaults.standard.set(speechInteractive,forKey:"speechInteractive") }
     }
+    func updateSpeechPlacement() {
+        speech.setPlacement(speechPlacement)
+        if speech.isVisible,let screen=companionScreen { speech.updatePosition(petFrame:speechAnchor,screen:screen) }
+        if !smokeMode { UserDefaults.standard.set(speechPlacement.rawValue,forKey:"speechPlacement") }
+    }
     private func showSpeech(_ text:String) {
         guard visible,!suspended,companionScreen != nil else { return }
         petScene.discardSpeechStart();speech.hide()
@@ -531,7 +539,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         speech.show(text:text,name:engine.state.name,petFrame:speechAnchor,screen:screen)
     }
     private var companionScreen:CGRect? { petPanel?.screen?.visibleFrame ?? NSScreen.screens.first?.visibleFrame }
-    private var speechAnchor:CGRect { toolbar?.visibleFrame.map { petPanel.frame.union($0) } ?? petPanel.frame }
+    private var speechAnchor:CGRect { speechPlacement == .automatic ? toolbar?.visibleFrame.map { petPanel.frame.union($0) } ?? petPanel.frame : petPanel.frame }
     @objc func toggleToolbar() { toolbarEnabled.toggle();updateToolbarPreference() }
     func updateToolbarPreference() {
         if !smokeMode { UserDefaults.standard.set(toolbarEnabled,forKey:"toolbarEnabled") }
