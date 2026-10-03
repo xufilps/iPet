@@ -17,7 +17,7 @@ MainWindow.SavesLoad创建GameSave_v2（或叠加已有旧数据），取其Game
 | vpet/StoreStrength、StoreStrengthFood、StoreStrengthDrink | 缓释队列，可含负值 | 固定点字段/负值/边界已在合成LPS预览验证，源字节保留 | 部分实现 |
 | vpet/money | 钱包，ToFloat编码 | 固定点钱包预览保留原值，非法数值阻断，原溢出补偿未迁移 | 部分实现 |
 | vpet/mode | 保存的原可变模式 | 原模式名读取与重算差异已报告；未知名称阻断 | 部分实现 |
-| itemN | Item/Food包含name、count、itemtype、参数及Star/Data/CanUse等 | 已有只读完整参数/标记/Data预览、同名冲突及原合并数量报告；尚无原生自定义参数持久化或整档导入 | 部分实现 |
+| itemN | Item/Food包含name、count、itemtype、参数及Star/Data/CanUse等 | 已有只读完整参数/标记/Data预览和同名冲突报告，v9已支持原生参数持久化/使用；尚无整档确认导入 | 部分实现 |
 | statistics | SortedDictionary统计键/SetObject及多种值类型 | counters仅有限Double；日期/字符串、原名称键映射和重复键需单列 | 待实现 |
 | Data中的套餐/排程/日期/自定义值 | GameSave_v2保留未识别行，插件可扩展 | 必须逐项核对结构，不能仅转vpet就宣称完整旧档兼容 | 待审计 |
 | hash（ver=2）及vpet/hash旧路径 | 原完整性/反修改标志，两种hash路径 | hash不是存档总版本；不能忽略后声称验证成功，阶段4D已实现原根SHA512/MD5及宠物MD5，范围与缺失/不匹配/不支持状态明确 | 已实现只读校验 |
@@ -53,3 +53,5 @@ UI先只读预览，列出准确保留、明确转换、未支持内容、原has
 
 ## 阶段4F Task1：原生元数据模型检查点
 [PetInventoryMetadata](../Sources/PetCore/PetInventoryMetadata.swift)可Codable往返保存数量以外的旧物品参数，保留普通负价、收藏/可用/单件/可见标记、Image和Data及Food完整效果。数量只由inventory拥有，不在此模型重复保存。未知类型仅作为数据保留；原图片/Graph为不执行的来源字符串，不授权读取任意路径。原生承载上限、已定义类别/Int32经验和未来嵌套版本通过显式validate检查，失败不截断。5项新回归通过；PetState/实际JSON仍v8，元数据尚未进入正式保存/使用。Task2将接v9原件升级与版本保护，Task3接原生UI；详见[规格](specs/PHASE-4F.md)。
+
+阶段4F已接v9库存参数持久化与使用，保存/恢复的输出大小及未来嵌套版本在改文件前校验。统计/Data/主人与完整LPS导入仍待实现，源档不写；回滚须用独立v8原件，不改版本头。详见[规格](specs/PHASE-4F.md)。

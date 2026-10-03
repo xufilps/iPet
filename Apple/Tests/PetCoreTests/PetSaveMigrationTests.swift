@@ -17,12 +17,12 @@ final class PetSaveMigrationTests: XCTestCase {
         let copy=try XCTUnwrap(store.migrationBackupURL);XCTAssertEqual(try Data(contentsOf:copy),data)
         XCTAssertEqual(try store.load()?.money,123)
         let header=try JSONSerialization.jsonObject(with:Data(contentsOf:store.primary)) as! [String:Any]
-        XCTAssertEqual(header["version"] as? Int,8)
+        XCTAssertEqual(header["version"] as? Int,9)
         try store.save(state);XCTAssertEqual(try Data(contentsOf:copy),data)
     }
     func testFutureBackupAndCatalogNeverOverwrittenDuringMigration() throws {
         let store=try store(), data=try legacy();try data.write(to:store.primary)
-        let future=Data("{\"version\":99}".utf8);try future.write(to:store.backup)
+        let future=Data("{\"version\":109}".utf8);try future.write(to:store.backup)
         let state=try XCTUnwrap(store.load());XCTAssertThrowsError(try store.save(state))
         XCTAssertEqual(try Data(contentsOf:store.primary),data);XCTAssertEqual(try Data(contentsOf:store.backup),future)
         let other=try self.store();var unknown=PetState();unknown.catalogVersion=99

@@ -57,7 +57,7 @@ final class PetEvaluationTests:XCTestCase {
         XCTAssertEqual(progress.counters?["eval_study_started"],1);XCTAssertEqual(progress.counters?["eval_study_total_exp"],7)
         var state=PetState();state.progress=progress
         let decoded=try JSONDecoder().decode(PetSaveDocument.self,from:JSONEncoder().encode(PetSaveDocument(state:state)))
-        XCTAssertEqual(decoded.state.progress,progress);XCTAssertEqual(decoded.version,8)
+        XCTAssertEqual(decoded.state.progress,progress);XCTAssertEqual(decoded.version,9)
     }
     func testRestoredActivityDoesNotCountNewStartAndLongNamesRemainSavable() throws {
         var progress=PetProgress()

@@ -426,7 +426,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
         }
     }
     func useInventory(id:String,count:Int) {
-        guard inventoryUseTask == nil,count>0,catalog.item(id) != nil else { return }
+        guard inventoryUseTask == nil,count>0,engine.state.canUseInventory(id,catalog:catalog) else { return }
         guard writable else { message="存档写入已暂停，暂不能批量使用。";return }
         let total=min(count,engine.state.inventory[id,default:0])
         guard total>0 else { return }
@@ -452,18 +452,26 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
         inventoryUseTask?.cancel()
         if inventoryUseTask != nil { message="已停止剩余使用，完成部分已保存。" }
     }
+    func isFavoriteItem(_ id:String) -> Bool { favoriteItems.contains(id) || state.inventoryMetadata?[id]?.star == true }
     func toggleFavorite(id:String) {
-        if favoriteItems.contains(id) { favoriteItems.remove(id) } else { favoriteItems.insert(id) }
+        guard writable,!packageWriteFailed,inventoryUseTask == nil else { message="请先恢复存档写入或完成批量使用，再修改收藏。";return }
+        let favorite = !isFavoriteItem(id)
+        if state.inventoryMetadata?[id] != nil || catalog.item(id) != nil {
+            let result=engine.setInventoryFavorite(id:id,favorite:favorite);message=result.message
+            guard result.accepted else { return }
+            state=engine.state
+        }
+        if favorite { favoriteItems.insert(id) } else { favoriteItems.remove(id) }
         if !smokeMode { UserDefaults.standard.set(favoriteItems.sorted(),forKey:"favoriteItems") }
+        save()
     }
     func toggleFavoriteActivity(id:String) {
         guard catalog.activity(id) != nil else { return }
         if favoriteActivities.contains(id) { favoriteActivities.remove(id) } else { favoriteActivities.insert(id) }
         if !smokeMode { UserDefaults.standard.set(favoriteActivities.sorted(),forKey:"favoriteActivities") }
     }
-    func itemMultiplier(id: String) -> Double {
-        guard let item=catalog.item(id) else { return 0 }
-        return PetItemRules.multiplier(category:item.category,expiry:state.itemCooldowns[id],now:Date())
+    func itemMultiplier(_ item:ItemDefinition) -> Double {
+        PetItemRules.multiplier(item:item,expiry:state.itemCooldowns[item.id],now:Date())
     }
     @discardableResult private func consumeEvents() -> Bool {
         var usedItem = false, stopped = false, scheduleChanged=false
@@ -482,7 +490,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
             }
         }
         if let id=lastUsed {
-                if let item=catalog.item(id) {
+                if let item=engine.lastUsedItem, item.id==id {
                     usedItem = true
                     petScene.setFoodImage(path:item.imagePath)
                     let action: PetAction = item.graphID.lowercased() == "drink" ? .drink : item.graphID.lowercased() == "gift" ? .gift : .eat
@@ -926,8 +934,8 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
             let data=try Data(contentsOf:url),preview=try store.previewImport(data)
             let alert=NSAlert();alert.messageText="恢复此存档？"
             let quantity=preview.inventory.values.reduce(0,+)
-            let unknown=preview.inventory.keys.filter { catalog.item($0) == nil }.count
-            alert.informativeText="\(preview.name) · 等级 \(preview.level) · 金币 \(preview.money.formatted(.number.precision(.fractionLength(2))))\n库存 \(quantity) 件，未知物品 \(unknown) 种；导入活动保持暂停。\n当前最新状态和导入原件会独立保留在存档目录。快捷入口列表不随此恢复改变。Windows LPS不支持。"
+            let unknown=preview.inventory.keys.filter { !preview.canUseInventory($0,catalog:catalog) }.count
+            alert.informativeText="\(preview.name) · 等级 \(preview.level) · 金币 \(preview.money.formatted(.number.precision(.fractionLength(2))))\n库存 \(quantity) 件，当前不可用物品 \(unknown) 种；导入活动保持暂停。\n当前最新状态和导入原件会独立保留在存档目录。快捷入口列表不随此恢复改变。Windows LPS不支持。"
             if preview.schedule?.isRunning == true { alert.informativeText += "\n导入日程将保持暂停，不自动续费或执行。" }
             if let session=preview.activity { alert.informativeText += "\n导入活动倍率：\(session.effectiveMultiplier)倍。" }
             if !simulationEnabled,preview.activity != nil { alert.informativeText += "\n养成当前关闭，导入活动会按该设置结束；原始会话仍保留在导入原件。" }

@@ -32,6 +32,7 @@ public struct PetState: Codable, Equatable, Sendable {
     public var resting = false
     public var money = 100.0
     public var inventory: [String: Int] = [:]
+    public var inventoryMetadata: [String:PetInventoryMetadata]?
     public var itemCooldowns: [String: Date] = [:]
     public var catalogVersion = 1
     public var progress:PetProgress?
@@ -39,6 +40,18 @@ public struct PetState: Codable, Equatable, Sendable {
     public var schedule:PetSchedule?
     public var workPackage,studyPackage:PetSignedPackage?
     public init() {}
+    /// An explicit opaque/invalid record must never fall back to a same-ID catalog food.
+    public func inventoryDefinition(_ id:String,catalog:PetCatalog) -> ItemDefinition? {
+        if let owned=inventoryMetadata?[id] { return owned.definition(id:id) }
+        return catalog.item(id)
+    }
+    public func canUseInventory(_ id:String,catalog:PetCatalog) -> Bool {
+        guard inventory[id,default:0]>0 else { return false }
+        if let owned=inventoryMetadata?[id] {
+            return owned.canUse && owned.itemType.utf8.elementsEqual("Food".utf8) && owned.food != nil && (try? owned.validate()) != nil
+        }
+        return catalog.item(id) != nil
+    }
     public var level: Int { growth?.level ?? (Int(sqrt(max(0, min(experience, 1e12))) / 10) + 1) }
     public var strengthMax:Double { growth?.strengthMax ?? 100 }
     public var feelingMax:Double { growth?.feelingMax ?? 100 }
@@ -52,6 +65,15 @@ public struct PetState: Codable, Equatable, Sendable {
         return feeling / 100 <= happy / 2 ? .poor : .normal
     }
     public func validate() throws {
+        if let metadata=inventoryMetadata {
+            // Future parameters must surface before ordinary state errors so their files stay protected.
+            if let future=metadata.values.first(where: { $0.version>1 }) { throw PetSaveError.unsupportedInventoryVersion(future.version) }
+            guard metadata.count<=10000 else { throw PetSaveError.invalidState }
+            for (id,item) in metadata {
+                guard !id.isEmpty,id.count<=300,inventory[id] != nil else { throw PetSaveError.invalidState }
+                do { try item.validate() } catch { throw PetSaveError.invalidState }
+            }
+        }
         try growth?.validate()
         if let growth, growth.experience != experience { throw PetSaveError.invalidState }
         try progress?.validate()

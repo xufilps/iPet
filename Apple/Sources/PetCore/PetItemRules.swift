@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import Foundation
 public enum PetItemRules {
+    public static func multiplier(item:ItemDefinition,expiry:Date?,now:Date) -> Double {
+        multiplier(category:item.category,expiry:expiry,now:now)
+    }
     public static func multiplier(category: ItemCategory, expiry: Date?, now: Date) -> Double {
         let hours=max(0,(expiry?.timeIntervalSince(now) ?? 0)/3600)
         return max(0.5,1-hours*hours*(category == .gift ? 0.01 : 0.02))

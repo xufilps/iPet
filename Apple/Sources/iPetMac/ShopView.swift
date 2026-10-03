@@ -43,7 +43,7 @@ struct ItemRow<Actions:View>: View {
                 } else { Image(systemName:"shippingbox").frame(width:48,height:48) }
                 VStack(alignment:.leading,spacing:4) {
                     Text("\(item.name) · \(item.category.title)").font(.headline)
-                    Text("\(item.price.formatted(.number.precision(.fractionLength(0...2)))) 金币 · 当前效果 ×\(model.itemMultiplier(id:item.id).formatted(.number.precision(.fractionLength(2))))").font(.caption)
+                    Text("\(item.price.formatted(.number.precision(.fractionLength(0...2)))) 金币 · 当前效果 ×\(model.itemMultiplier(item).formatted(.number.precision(.fractionLength(2))))").font(.caption)
                     Text(item.effectDescription).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()

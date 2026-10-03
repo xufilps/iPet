@@ -31,14 +31,18 @@ PetState可选inventoryMetadata字典用于向后解码；解析未知metadata�
 - [x] 用原库记录验证Codable往返、全部参数/标记/Data保留、数量不进入JSON、未知类型、负价、非法/未来版本及字符串边界。
 
 ## Task 2：v9与使用规则
-- [ ] RED后接入PetState metadata/解析器、版本v9/原件迁移保护和元数据未来版本错误；测试当前v8迁移、v1…v7保持已有增长转换，future10及nested保护各写路径。
-- [ ] RED后接入库存解析/逐件使用，商店购买继续catalog。验证同ID不同效果/目录变更、拒用/未知、标记、最后一件与再购、保存后重启一致和失败事务回滚。
+- [x] RED后接入PetState metadata/解析器、版本v9/原件迁移保护和元数据未来版本错误；测试当前v8迁移、v1…v7保持已有增长转换，future10及nested保护各写路径。
+- [x] RED后接入库存解析/逐件使用，商店购买继续catalog。验证同ID不同效果/目录变更、拒用/未知、标记、最后一件与再购、保存后重启一致和失败事务回滚。
 
 ## Task 3：原生UI与交付
-- [ ] 库存查询/显示/价格/动画/批量入口使用库存解析，商店保持目录；收藏在存档元数据中持久化，旧本机偏好兼容。JSON恢复摘要准确区分可用/未知。
-- [ ] 源码对照/README/交接/恢复说明；全套Swift/Python/macOS/iOS共享编译/签名、工程再生/许可原文检查，独立6.1-sol整批审查和必要一次RED→GREEN修复，推送ipet-dev。
+- [x] 库存查询/显示/价格/动画/批量入口使用库存解析，商店保持目录；收藏在存档元数据中持久化，旧本机偏好兼容。JSON恢复摘要准确区分可用/未知。
+- [x] 源码对照/README/交接/恢复说明；全套Swift/Python/macOS/iOS共享编译/签名、工程再生/许可原文检查，独立6.1-sol整批审查和必要一次RED→GREEN修复，推送ipet-dev。
 
 ## 回滚
 Task1纯类型可直接回滚；v9接入后退出并备份整个存档目录，移开v9主/previous，恢复独立v8-before-upgrade原件；不得只编辑版本头冒充旧档。v9原件保留但旧版不读取。WindowsLPS完整导入仍需统计/Data/主人映射及双原件确认流程，不因元数据能保存而开放半档导入。
 
 Task1检查点：纯PetInventoryMetadata与Food Codable/Equatable已实现，5项新增回归RED→GREEN。PetState/实际存档仍v8；没有导入或运行时切换，也不表示v9已完成。下一步Task2接入状态、未来嵌套版本保护及原件升级，再验证购买/使用不同路径。
+
+任务2/3实现裁定：旧本机收藏与保存Star取并集，未有metadata的未知旧ID仍只有本机收藏；已有v8库存无历史参数则目录回退，新入包或已知收藏操作才冻结当前参数。Food源Data保留，倍率动态显示；原名称冷却与本机ID冷却差异保留。resourceImagePath是独立安全本机相对图片，源Image不赋予访问权。无法精确表示Int32经验的目录入包拒绝而不扣款。审查两项Important一次RED→GREEN修复，摘要准确性按绑定规格同批修正。
+
+最终交付验证：363 Swift/23 Python/macOS Release/iOS共享模块/严格签名通过，原文与许可/工程再生/链接及diff检查通过。没有Windows整档导入、真实UI/压力或阶段6完成声明；回滚v8依上述独立原件合同。

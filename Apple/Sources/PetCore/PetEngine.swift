@@ -15,6 +15,7 @@ public struct SeededPetRandom: PetRandom {
 }
 /// Serial simulation owner. Call from a single executor (the app uses MainActor).
 public final class PetEngine {
+    public private(set) var lastUsedItem:ItemDefinition?
     public private(set) var state: PetState
     public private(set) var simulationEnabled=true
     public private(set) var fixedMood:PetMood = .normal
@@ -133,10 +134,24 @@ public final class PetEngine {
         updateProgress { PetEvaluation.started(progress:&$0,work:work) }
         return result(true,"开始\(work.name)（\(multiplier)倍）。")
     }
+    public func setInventoryFavorite(id:String,favorite:Bool) -> PetCommandResult {
+        guard state.inventory[id,default:0]>0 else { return result(false,"背包没有该物品。") }
+        var next=state
+        do {
+            var owned:PetInventoryMetadata
+            if let existing=next.inventoryMetadata?[id] { owned=existing }
+            else if let item=catalog.item(id) { owned=try PetInventoryMetadata(definition:item) }
+            else { return result(false,"未知物品只有本机收藏偏好，暂无可保存参数。") }
+            owned.star=favorite
+            if next.inventoryMetadata==nil { next.inventoryMetadata=[:] }
+            next.inventoryMetadata?[id]=owned;try next.validate()
+        } catch { return result(false,"无法完整保存收藏参数，状态未改变。") }
+        state=next;return result(true,favorite ? "已收藏物品。":"已取消收藏。")
+    }
     /// Applies each unit through the same rule path as a single inventory use.
     public func useItems(id:String,count:Int) -> (used:Int,message:String) {
         guard count>0 else { return (0,"请选择正数数量。") }
-        guard catalog.item(id) != nil else { return (0,"未知物品，操作已拒绝。") }
+        guard state.canUseInventory(id,catalog:catalog) else { return (0,"该库存物品当前无法使用。") }
         let available=state.inventory[id,default:0]
         guard available>0 else { return (0,"背包没有该物品。") }
         var used=0
@@ -148,9 +163,10 @@ public final class PetEngine {
         return (used,"已使用 \(used) 件。")
     }
     private func transactItem(id: String, purchase: Bool, mode: PurchaseMode) -> PetCommandResult {
-        guard let item=catalog.item(id) else { return result(false,"未知物品，操作已拒绝。") }
+        guard let item=purchase ? catalog.item(id):state.inventoryDefinition(id,catalog:catalog) else { return result(false,"未知物品，操作已拒绝。") }
+        if !purchase,!state.canUseInventory(id,catalog:catalog) { return result(false,"该库存物品当前无法使用。") }
         if purchase,mode == .useImmediately,!simulationEnabled {
-            events.append(.itemUsed(id:id));return result(true,"养成已关闭，仅预览：\(item.name)。")
+            lastUsedItem=item;events.append(.itemUsed(id:id));return result(true,"养成已关闭，仅预览：\(item.name)。")
         }
         var next=state
         if purchase {
@@ -158,11 +174,21 @@ public final class PetEngine {
             next.money -= item.price
             if mode == .inventory {
                 guard (next.inventory[id] ?? 0) < 1000000 else { return result(false,"背包数量达到上限。") }
+                if next.inventory[id,default:0]==0 || next.inventoryMetadata?[id]==nil {
+                    do {
+                        let parameters=try PetInventoryMetadata(definition:item)
+                        if next.inventoryMetadata==nil { next.inventoryMetadata=[:] }
+                        next.inventoryMetadata?[id]=parameters
+                    } catch { return result(false,"物品参数无法完整保存，未扣款或入包。") }
+                }
                 next.inventory[id,default:0] += 1
             }
         } else {
             guard let count=next.inventory[id], count > 0 else { return result(false,"背包没有该物品。") }
-            if count == 1 { next.inventory.removeValue(forKey:id) } else { next.inventory[id]=count-1 }
+            if count == 1 {
+                next.inventory.removeValue(forKey:id);next.inventoryMetadata?.removeValue(forKey:id)
+                if next.inventoryMetadata?.isEmpty==true { next.inventoryMetadata=nil }
+            } else { next.inventory[id]=count-1 }
         }
         if mode == .useImmediately { PetItemRules.apply(item,to:&next,now:wallClock.now) }
         var progress=next.progress ?? PetProgress()
@@ -172,6 +198,7 @@ public final class PetEngine {
         do { try next.validate() } catch { return result(false,"操作将产生不合法数据，已拒绝且未扣款。") }
         state=next
         if mode == .useImmediately {
+            lastUsedItem=item
             lastInteraction=activeSeconds
             if state.mood == .ill, let session=state.activity, catalog.activity(for:session) != nil { stopActivity(.stateFailed) }
             events.append(.itemUsed(id:id))

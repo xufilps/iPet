@@ -114,8 +114,8 @@ final class PetScheduleTests:XCTestCase {
         let legacy=try JSONSerialization.data(withJSONObject:historicalSaveObject(object));try legacy.write(to:store.primary)
         let old=try XCTUnwrap(store.load());XCTAssertNil(old.schedule);try store.save(old)
         XCTAssertEqual(try Data(contentsOf:XCTUnwrap(store.migrationBackupURL)),legacy)
-        XCTAssertEqual(PetSaveDocument(state:old).version,8)
-        let future=Data(#"{"version":9}"#.utf8);try future.write(to:store.primary)
+        XCTAssertEqual(PetSaveDocument(state:old).version,9)
+        let future=Data(#"{"version":10}"#.utf8);try future.write(to:store.primary)
         XCTAssertThrowsError(try store.save(old));XCTAssertEqual(try Data(contentsOf:store.primary),future)
     }
     func testInvalidOwnershipRejectedAndDisabledSimulationStopsSchedule() throws {

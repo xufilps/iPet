@@ -19,13 +19,14 @@ public struct PetInventoryQuery:Sendable {
     public init(search:String="",category:ItemCategory?=nil,favoritesOnly:Bool=false,sort:PetInventorySort = .catalog,ascending:Bool=true) {
         self.search=search;self.category=category;self.favoritesOnly=favoritesOnly;self.sort=sort;self.ascending=ascending
     }
-    public func evaluate(inventory:[String:Int],catalog:PetCatalog,favorites:Set<String>=[]) -> PetInventoryResult {
-        let items=Dictionary(uniqueKeysWithValues:catalog.items.map { ($0.id,$0) })
+    public func evaluate(inventory:[String:Int],catalog:PetCatalog,favorites:Set<String>=[],metadata:[String:PetInventoryMetadata]=[:]) -> PetInventoryResult {
+        var items=Dictionary(uniqueKeysWithValues:catalog.items.map { ($0.id,$0) })
+        for (id,owned) in metadata { items[id]=owned.definition(id:id) }
         let order=Dictionary(uniqueKeysWithValues:catalog.items.enumerated().map { ($0.element.id,$0.offset) })
         let all=inventory.keys.filter { inventory[$0,default:0]>0 }
         let needle=search.trimmingCharacters(in:.whitespacesAndNewlines)
         let ids=all.filter { id in
-            (!favoritesOnly || favorites.contains(id)) && (category == nil || items[id]?.category == category) &&
+            metadata[id]?.visibility != false && (!favoritesOnly || favorites.contains(id) || metadata[id]?.star == true) && (category == nil || items[id]?.category == category) &&
             (needle.isEmpty || (items[id]?.name ?? id).localizedCaseInsensitiveContains(needle))
         }.sorted { a,b in
             var comparison:ComparisonResult = .orderedSame

@@ -21,8 +21,8 @@ public extension ActivityDefinition {
         return "满状态参考：\(unit) +\(number(max(0,moneyBase*0.05*1.7)))/15秒；基础需求：饱腹 \(number(strengthFood*0.05))、饮水 \(number(strengthDrink*0.05))/15秒；\(mood)。实际收益和消耗受状态与体力替代影响。"
     }
 }
-public enum ItemCategory: String, Codable, Sendable, CaseIterable { case food, meal, snack, drink, functional, drug, gift
-    public var title: String { switch self { case .food: "食物"; case .meal: "正餐"; case .snack: "零食"; case .drink: "饮料"; case .functional: "功能性"; case .drug: "药品"; case .gift: "礼品" } }
+public enum ItemCategory: String, Codable, Sendable, CaseIterable { case food, meal, snack, drink, functional, drug, gift, star, item
+    public var title: String { switch self { case .star: "收藏分类"; case .item: "物品"; case .food: "食物"; case .meal: "正餐"; case .snack: "零食"; case .drink: "饮料"; case .functional: "功能性"; case .drug: "药品"; case .gift: "礼品" } }
 }
 public struct ItemDefinition: Codable, Equatable, Sendable, Identifiable {
     public var id, name, description, graphID: String

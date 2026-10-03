@@ -10,7 +10,7 @@ struct InventoryView: View {
     @State private var ascending=true
     private var result:PetInventoryResult {
         PetInventoryQuery(search:search,category:category,favoritesOnly:favoritesOnly,sort:sort,ascending:ascending)
-            .evaluate(inventory:model.state.inventory,catalog:model.catalog,favorites:model.favoriteItems)
+            .evaluate(inventory:model.state.inventory,catalog:model.catalog,favorites:model.favoriteItems,metadata:model.state.inventoryMetadata ?? [:])
     }
     var body: some View {
         let inventory=result
@@ -44,7 +44,7 @@ struct InventoryView: View {
                             .foregroundStyle(.secondary)
                     }
                     ForEach(inventory.ids,id:\.self) { id in
-                        if let item=model.catalog.item(id) {
+                        if let item=model.state.inventoryDefinition(id,catalog:model.catalog) {
                             ItemRow(model:model,item:item) {
                                 favoriteButton(id:id)
                                 InventoryUseControls(model:model,id:id)
@@ -62,8 +62,8 @@ struct InventoryView: View {
     }
     private func favoriteButton(id:String) -> some View {
         Button { model.toggleFavorite(id:id) } label: {
-            Image(systemName:model.favoriteItems.contains(id) ? "star.fill":"star")
-        }.accessibilityLabel(model.favoriteItems.contains(id) ? "取消收藏":"收藏物品")
+            Image(systemName:model.isFavoriteItem(id) ? "star.fill":"star")
+        }.accessibilityLabel(model.isFavoriteItem(id) ? "取消收藏":"收藏物品")
     }
 }
 
@@ -78,7 +78,7 @@ private struct InventoryUseControls:View {
             TextField("数量",value:$quantity,format:.number).frame(width:60).accessibilityLabel("使用数量")
             Stepper("数量",value:$quantity,in:1...max(1,available)).labelsHidden()
             Button("使用所选") { model.useInventory(id:id,count:min(max(1,quantity),available)) }
-        }.disabled(model.inventoryUseProgress != nil)
+        }.disabled(model.inventoryUseProgress != nil || !model.state.canUseInventory(id,catalog:model.catalog))
             .onChange(of:available) { _,newValue in quantity=min(max(1,quantity),max(1,newValue)) }
     }
 }

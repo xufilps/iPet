@@ -61,7 +61,7 @@ final class PetDesktopRuntimeTests:XCTestCase {
         XCTAssertEqual(try Data(contentsOf:store.primary),data)
         let loaded=try XCTUnwrap(store.load());try store.save(loaded)
         XCTAssertEqual(try Data(contentsOf:XCTUnwrap(store.migrationBackupURL)),data)
-        XCTAssertEqual(try store.load(),loaded);XCTAssertEqual(PetSaveDocument(state:loaded).version,8)
+        XCTAssertEqual(try store.load(),loaded);XCTAssertEqual(PetSaveDocument(state:loaded).version,9)
     }
     func testCumulativeV7MigrationAndPrestigeConversion() throws {
         let store=try store();let s=try store.previewImport(oldData(experience:8150,affection:2))
@@ -82,7 +82,7 @@ final class PetDesktopRuntimeTests:XCTestCase {
         var state=object["state"] as! [String:Any];state["strength"]=102;object["state"]=state
         XCTAssertThrowsError(try store.previewImport(JSONSerialization.data(withJSONObject:object)))
         let data=try oldData();try data.write(to:store.primary);let loaded=try XCTUnwrap(store.load())
-        let future=Data(#"{"version":9}"#.utf8);try future.write(to:store.backup)
+        let future=Data(#"{"version":10}"#.utf8);try future.write(to:store.backup)
         XCTAssertThrowsError(try store.save(loaded));XCTAssertEqual(try Data(contentsOf:store.primary),data);XCTAssertEqual(try Data(contentsOf:store.backup),future)
         try future.write(to:store.primary);XCTAssertThrowsError(try store.load())
     }
