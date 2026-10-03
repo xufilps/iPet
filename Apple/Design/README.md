@@ -19,3 +19,7 @@
 已实际查看 16、32、64、128 像素导出：16 像素仍可辨认蓝底与浅色头像，发饰/表情细节不清晰；32 像素可见眼睛及粉色衣服；64/128 像素保留主要人物轮廓。小尺寸是简化的整体识别，不承诺全部细节保留。校验和见 [SHA256SUMS](SHA256SUMS)，最终工程验证记录见 [交接](../docs/HANDOFF.md)。回退本轮图标提交即可恢复此前工程配置，不删除原版图标或用户存档。
 
 工程采用 Apple 的 [AppIcon资源目录配置方式](https://developer.apple.com/documentation/xcode/configuring-your-app-icon)，不依赖Icon Composer。
+
+## iOS 图标版式 — 2026-10-03
+
+`ipet-icon-ios-v1-source.png` 为imagegen参照现有像素风母图生成的独立全幅方形版：保持灰发角色、蓝天和白星，去除预圆角与外部透明留白，将背景延伸到四边。生成原件1254×1254，导出到 `Resources/iOSAssets.xcassets/AppIcon.appiconset/icon-1024.png` 为1024×1024不带alpha的RGB。系统负责图标形状，未改macOS原图标。导出与验证由export_icon.py管理；这是品牌图标的生成来源，不是原角色/动画的新授权。

@@ -3,7 +3,7 @@
 iPet 是 VPet 的 Swift 原生适配，当前维护入口为 `ipet-dev`；`main` 仅同步上游，不接受 iPet 功能修改。请向 `ipet-dev` 提交 Pull Request。原 Windows 项目的贡献指南逐字节归档于 [docs/upstream](docs/upstream/README.md)，其 Steam/C#/WPF 流程不适用于本工程。
 
 ## 开发环境与入口
-需要 macOS 26+、Xcode 26+ / Swift 6 和系统 Python 3；共享模块最低支持iOS／iPadOS 26。共享包位于 `Apple/Package.swift`，macOS 应用位于 `Apple/Apps/macOS/`；目录职责见 [结构说明](Apple/docs/REPOSITORY-STRUCTURE.md)。无需 .NET 即可构建应用；`legacy_lps_oracle` 仅用于生成固定版本原库证据。
+需要 macOS 26+、Xcode 26+ / Swift 6 和系统 Python 3；共享模块最低支持iOS／iPadOS 26。共享包位于 `Apple/Package.swift`，macOS 应用位于 `Apple/Apps/macOS/`，iOS应用位于 `Apple/Apps/iOS/`；完整验证还需安装iOS26+ iPhone Simulator runtime，iOS模型测试使用独立临时存档；目录职责见 [结构说明](Apple/docs/REPOSITORY-STRUCTURE.md)。无需 .NET 即可构建应用；`legacy_lps_oracle` 仅用于生成固定版本原库证据。
 
 ```sh
 git switch ipet-dev

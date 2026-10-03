@@ -1,6 +1,6 @@
 # 阶段6A：iOS 原生应用首版设计
 
-日期：2026-10-03。基线：iPet `1cefd697`。状态：设计待审阅，尚未实现 iOS 应用。此前的 iOS 证据仅为共享模块 Simulator 编译，不能视为应用或真机验收。
+日期：2026-10-03。基线：iPet `1cefd697`。状态：用户已批准并执行首版；应用、模型测试和Simulator启动已交付，真实触摸/26系统/真机及性能验收待补。此前只有共享模块编译，本批证据单独记录。
 
 ## 目标与明确边界
 
@@ -60,3 +60,11 @@
 范围：Package.swift平台声明、create_project.py与生成工程、verify.sh的Simulator目标、README与交接入口。只提高系统要求，不修改养成、存档、动画或窗口行为，也不宣称已有完整iOS应用。检查工程重新生成一致、全套现有回归、macOS Release的LSMinimumSystemVersion为26.0、iOS共享模块26.0编译。当前主机macOS27与Simulator SDK27，只能提供该环境构建证据，macOS26/iOS26运行验收仍待对应系统。回滚该配置提交可恢复旧最低版本，用户JSON无需迁移。
 
 前置交付验证完成：403项Swift/28项Python、macOS Release/iOS 26最低目标共享模块编译、签名和工程生成一致性通过。Package实际解析为macOS26.0/iOS26.0；应用Info.plist的LSMinimumSystemVersion与双架构Mach-O最低系统均为26.0，SDK27.0。日志为本地忽略目录 `Apple/build/verification/platform-26.log` 与 `platform-26-package.json`。CI配置改为[GitHub提供的macOS26环境](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)，尚未取得本次远程工作流执行结果。
+
+## 首版实施结果
+
+五个原生页面、固定SpriteKit舞台/区域触摸、13活动/118物品、实际食物贴图、消息和本机字体参数、独立JSONv9存档/错误保护已接入。设置页消息预览直接播放，不依赖未挂载舞台的Say动画；仅养宠页触发自动消息。保存失败暂停规则/消息/操作，恢复保存重置时钟不补算；两项缺陷都有先失败后通过的应用模型回归。
+
+408共享Swift（303核心/99渲染/6输入）、8 iOS模型、28 Python，全套macOS/iOS应用/共享模块构建、资源闭包、双图标、签名与工程生成通过。独立6.1-sol发现保存失败仍推进的问题，已在唯一修复轮次解决并全套回归；设置页预览缺陷由作者验证修复。iPhone18Pro/iPad mini(A17Pro) iOS27 Simulator实际启动截图见[说明](../IOS.md)，不是所有按钮和动效验收，也不等于26运行时或真机。Simulator应用本机占用约715.63MiB，是分配磁盘口径，不是RSS/IPA；最终性能/长期压力仍待验。
+
+原始验证位于本地忽略目录Apple/build/verification/ios-final.log、ios-app-tests.log与ios-test-summary.json；重要场景的RED证据ios-save-failure-red.log/ios-preview-red.log。应用MinimumOSVersion=26.0/UIDeviceFamily=[1,2]，图标为全幅1024RGB，系统负责外形。具体构建、安装/恢复和功能缺口见[IOS.md](../IOS.md)，阶段计划见[计划](../plans/PHASE-6A-IOS.md)。

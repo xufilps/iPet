@@ -23,7 +23,7 @@ CONTRIBUTING.md             iPet贡献约定
 LICENSE、NOTICE             原代码许可与修改署名
 ```
 
-`Apple/` 是SwiftPM包根，标准 `Sources/<Target>` / `Tests/<Target>Tests` 均相对于该目录；根目录不重复定义manifest。macOS应用由Xcode构建，不作为共享包库目标。当前无iOS App目录，避免将目录存在误当成已交付应用。
+`Apple/` 是SwiftPM包根，标准 `Sources/<Target>` / `Tests/<Target>Tests` 均相对于该目录；根目录不重复定义manifest。macOS应用由Xcode构建，不作为共享包库目标。iOS应用源码在Apps/iOS，共享scheme iPet-iOS；Tests/iOSAppTests为应用模型测试，独立于SwiftPM测试目标。iOSApp依赖PetCore/PetRendering，不链接PetMacInput；构建/运行证据与真机验收分别记录。
 
 从仓库根目录运行 `swift test --package-path Apple`、`bash Apple/scripts/build.sh` 或 `bash Apple/scripts/verify.sh`；也可在Apple下使用原命令。工程配置以 `scripts/create_project.py` 为源，修改后运行生成器并提交项目及scheme；本机用户状态不提交。开发用.NET Oracle保留在scripts中，不进入运行时或CI依赖。
 

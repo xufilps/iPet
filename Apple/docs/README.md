@@ -4,6 +4,7 @@
 
 | 用途 | 文档 |
 | --- | --- |
+| iOS首版、构建与存档 | [iOS说明](IOS.md)、[规格](specs/PHASE-6A-IOS.md)、[实施计划](plans/PHASE-6A-IOS.md) |
 | 工程入口与目录职责 | [构建](../README.md)、[结构](REPOSITORY-STRUCTURE.md)、[体积](PROJECT-SIZE.md)、[贡献](../../CONTRIBUTING.md) |
 | 原作差异与行为依据 | [对照矩阵](UPSTREAM_COMPARISON.md)、[行为](BEHAVIOR.md) |
 | 当前交接与缺口 | [交接](HANDOFF.md)、[剩余功能](REMAINING-FEATURES.md) |

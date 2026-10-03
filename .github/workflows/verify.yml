@@ -1,4 +1,4 @@
-name: Swift and macOS verification
+name: Apple native verification
 on:
   push:
     branches: [ipet-dev]
