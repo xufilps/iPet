@@ -590,14 +590,21 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
         menuToolbar?.state=toolbarEnabled ? .on : .off
         refreshToolbar()
     }
+    private var activityMenuAccess:PetActivityMenuAccess {
+        PetActivityMenuAccess(writable:writable,saveFailed:packageWriteFailed,busy:inventoryUseTask != nil,
+                              simulationEnabled:simulationEnabled,visible:visible,suspended:suspended)
+    }
     private func refreshToolbar() {
         guard toolbarEnabled,visible,!suspended,petView?.isInteracting != true,let screen=companionScreen,engine != nil else { toolbar?.hide();return }
-        toolbar?.update(state:engine.state,catalog:catalog,message:message,growthNotice:growthNotice,shortcuts:shortcuts.entries,petFrame:petPanel.frame,screen:screen)
+        toolbar?.update(state:engine.state,catalog:catalog,message:message,growthNotice:growthNotice,activitiesEnabled:activityMenuAccess.allowsSelection,shortcuts:shortcuts.entries,petFrame:petPanel.frame,screen:screen)
     }
     private func toolbarAction(_ action:ToolbarAction) {
         switch action {
         case .status: selectedPage = .status;showControls()
         case .activity: showActivities()
+        case .startActivity(let id):
+            guard activityMenuAccess.allowsSelection else { message="活动快捷操作暂不可用，请检查养成、显示和存档写入状态。";refreshToolbar();return }
+            perform(.startActivity(id))
         case .shop: showShop()
         case .inventory: showInventory()
         case .shortcuts: showShortcuts()

@@ -4,9 +4,10 @@ import SwiftUI
 import PetCore
 import PetRendering
 
-enum ToolbarAction { case shortcut(Int),stopKeyboard,shortcuts, status,activity,shop,inventory,rest,talk,pauseOrResume,stop,close }
+enum ToolbarAction { case startActivity(String),shortcut(Int),stopKeyboard,shortcuts, status,activity,shop,inventory,rest,talk,pauseOrResume,stop,close }
 @MainActor private final class ToolbarPresentation:ObservableObject {
     @Published var shortcuts:[PetShortcutEntry]=[]
+    @Published var activities:[PetActivityMenuItem]=[]
     @Published var name=""
     @Published var mood=""
     @Published var message=""
@@ -27,7 +28,23 @@ private struct PetToolbarView:View {
                     .buttonStyle(.plain).accessibilityLabel("关闭随宠工具栏").help("关闭随宠工具栏")
             }
             LazyVGrid(columns:columns,spacing:6) {
-                shortcut("状态",.status);shortcut("活动",.activity);shortcut("商店",.shop)
+                shortcut("状态",.status)
+                Menu("活动") {
+                    ForEach(ActivityKind.allCases,id:\.self) { kind in
+                        let choices=display.activities.filter { $0.kind == kind }
+                        if !choices.isEmpty {
+                            Section(kind.title) {
+                                ForEach(choices) { item in
+                                    Button(item.name+(item.isCurrent ? " · 停止当前活动":" · 等级\(item.levelLimit)+")) { action(.startActivity(item.id)) }
+                                        .disabled(!item.isEnabled)
+                                }
+                            }
+                        }
+                    }
+                    Divider()
+                    Button("活动面板与倍率…") { action(.activity) }
+                }.frame(maxWidth:.infinity)
+                shortcut("商店",.shop)
                 shortcut("背包",.inventory);shortcut(display.resting ? "起床" : "休息",.rest);shortcut("聊一句",.talk)
                 Menu("自定义") {
                     ForEach(display.shortcuts) { entry in Button(entry.name) { action(.shortcut(entry.id)) }.disabled(entry.kind == .windowsKeys) }
@@ -74,8 +91,9 @@ private struct PetToolbarView:View {
         panel.isReleasedWhenClosed=false;panel.collectionBehavior=[.canJoinAllSpaces,.fullScreenAuxiliary]
         hosting=ToolbarHostingView(rootView:PetToolbarView(display:display,action:action));panel.contentView=hosting
     }
-    func update(state:PetState,catalog:PetCatalog,message:String,growthNotice:String="",shortcuts:[PetShortcutEntry]=[],petFrame:CGRect,screen:CGRect) {
+    func update(state:PetState,catalog:PetCatalog,message:String,growthNotice:String="",activitiesEnabled:Bool=true,shortcuts:[PetShortcutEntry]=[],petFrame:CGRect,screen:CGRect) {
         display.name=state.name;display.mood=state.resting ? "休息中" : state.mood.title
+        display.activities=PetActivityMenu.items(catalog:catalog,state:state,enabled:activitiesEnabled)
         display.resting=state.resting;display.message=message;display.growthNotice=growthNotice;display.shortcuts=shortcuts
         display.feedback=state.activity.map { ActivityFeedback(session:$0,activity:catalog.activity($0.activityID),mood:state.mood) }
         hosting.layoutSubtreeIfNeeded()
