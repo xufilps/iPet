@@ -20,10 +20,16 @@
 ## Task 1：资源、渲染与衔接
 Files: Assets/Upstream/VPet/Core/pet/vup/LevelUP; scripts/convert_assets.py; Sources/PetCore/PetState.swift; Sources/PetRendering/PetScene.swift; Apps/macOS/AppModel.swift; scripts/tests; Tests/PetRenderingTests.
 Interfaces: PetAction.levelUp; PetScene.playLevelUp(mood:PetMood)->Bool.
-- [ ] 写缺少新动作/转换分支的失败测试，覆盖单次完成/缺Ill/活动拒播，恢复源码帧。
-- [ ] 转换保留自然排序、125ms逐帧时长，有限播放，AppModel空闲消费待播/生命周期清理。
-- [ ] 完整378+新增Swift、26+新增Python、macOS/iOS构建与资源闭包；隔离99经验投喂后有限播放与基础恢复。
-- [ ] 独立6.1-sol审查、文档/资源大小更新、提交并推送ipet-dev。
+- [x] 写缺少新动作/转换分支的失败测试，覆盖单次完成/缺Ill/活动拒播，恢复源码帧。
+- [x] 转换保留自然排序、125ms逐帧时长，有限播放，AppModel空闲消费待播/生命周期清理。
+- [x] 完整378+新增Swift、26+新增Python、macOS/iOS构建与资源闭包；隔离99经验投喂后有限播放与基础恢复。
+- [x] 独立6.1-sol审查、文档/资源大小更新、提交并推送ipet-dev。
 
 ## 恢复与交付
 回滚本批代码/资源后重新转换构建，无存档版本改变；无正式数据用于验收。系统睡眠、多屏与两小时压力仍待后续，工具注入不替代物理输入。
+
+## 完成证据与限制
+
+转换测试先因没有levelUp组合失败，渲染测试先因没有动作/接口失败；实现后3项渲染及新增转换回归通过。最终381 Swift=277核心+98渲染+6输入、27 Python、macOS Release、iOS共享模块、签名/工程/资源闭包通过。独立6.1-sol审查无阻断，补充3.625秒结束边界及Ill诊断检查。AppModel待播/生命周期暂无自动化隔离测试，此缺口保留。
+
+隔离99经验库存投喂后，实际AppKit进程记录升级动画开始16:20:50.675、结束16:20:54.307（约3.632秒），两条均桌宠key=0；无回退/缺图/失败日志。窗口截图仅捕获待机帧，未捕获升级动画中间帧，视觉复核仍待用户确认；不把日志当逐帧视觉验收。测试正常退出，日常实例恢复，正式数据未用于测试。原始记录Apple/build/verification/levelup/、levelup-final.log，构建缓存/原始日志忽略不推送。

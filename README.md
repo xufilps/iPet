@@ -7,7 +7,7 @@ iPet 是基于 [VPet / LorisYounger](https://github.com/LorisYounger/VPet) 的 S
 - macOS 14+，Swift 6，AppKit 桌面窗口、SpriteKit 动画、SwiftUI 功能面板。
 - 原生共享核心支持 iOS 17+编译；这不等于已交付 iOS 应用。
 - 开发及贡献分支为 **`ipet-dev`**，也是 GitHub 首页默认分支；`main` 仅同步原 Windows 项目。
-- 当前已恢复功能推进，阶段2C新增升级/突破原生通知，最近完成本机基本验收。实际完成与待验证项见 [交接](Apple/docs/HANDOFF.md)。
+- 当前已恢复功能推进，阶段2D新增内置升级动画与原生通知，最近完成本机基本验收。实际完成与待验证项见 [交接](Apple/docs/HANDOFF.md)。
 
 ## 快速构建
 
@@ -30,7 +30,7 @@ open Apple/build/Build/Products/Release/iPet.app
 | 范围 | 已实现内容 |
 | --- | --- |
 | 桌面互动 | 透明桌宠、按帧alpha穿透、抚摸、长按捏脸、提起/拖动、隐藏/显示与位置恢复；可选随宠工具栏 |
-| 动作与反馈 | 151个动作/Graph/状态组合、4393张选用PNG帧；待机/特殊待机、状态过渡、说话、进食、休息、移动与边缘动作 |
+| 动作与反馈 | 154个动作/Graph/状态组合、4475张选用PNG帧；待机/特殊待机、状态过渡、说话、进食、休息、移动与边缘动作 |
 | 养成 | 体力、饱腹、口渴、心情、健康、好感；桌面剩余经验/等级突破与动态上限，抚摸、分次投喂、休息和疾病状态判断 |
 | 活动与经济 | 13项工作/学习/娱乐，收益与完成奖励、倍率、暂停/继续/停止；118项物品与原图片，购买即用/入包、库存检索/收藏/批量使用、药品与重复食用衰减 |
 | 日程与本地记录 | 14项活动套餐、日程队列及循环控制；购买/使用/活动统计、结束历史、陪伴时间及活跃日评价 |
@@ -70,7 +70,7 @@ docs/upstream/             原Windows贡献/开发证据归档
 LICENSE、NOTICE             代码许可与来源告知
 ```
 
-原素材已裁剪为4534文件、约578MiB，移除约433MiB未使用内容，不降低图片质量或减少当前功能。完整Git历史仍保留原件，普通完整克隆不会同步缩小；恢复路径和缓存口径见 [体积说明](Apple/docs/PROJECT-SIZE.md)。原完整Windows源码、README及翻译请在 [上游固定基线](https://github.com/LorisYounger/VPet/tree/1a06c5981330564bab05a098d2d7969a4b119dd3) 或Git历史查阅，不在当前树重复提供。
+原素材按当前功能保留4616文件、约591MiB；此前移除约433MiB未使用内容，本批为升级动画恢复约13MiB，净减少约420MiB，不降低图片质量。完整Git历史仍保留原件，普通完整克隆不会同步缩小；恢复路径和缓存口径见 [体积说明](Apple/docs/PROJECT-SIZE.md)。原完整Windows源码、README及翻译请在 [上游固定基线](https://github.com/LorisYounger/VPet/tree/1a06c5981330564bab05a098d2d7969a4b119dd3) 或Git历史查阅，不在当前树重复提供。
 
 ## 验证与已知限制
 
@@ -81,7 +81,7 @@ bash Apple/scripts/verify.sh
 swift test --package-path Apple
 ```
 
-最近完整自动验证包含 **378项Swift、26项Python**，macOS Release、iOS Simulator共享模块和严格签名检查通过。GitHub自动检查见 [Actions](https://github.com/xufilps/iPet/actions)；日志生成于本机或runner的 `Apple/build/verification/`。自动测试、加速时钟模拟和短时观察不能代替真实使用。
+最近完整自动验证包含 **381项Swift、27项Python**，macOS Release、iOS Simulator共享模块和严格签名检查通过。GitHub自动检查见 [Actions](https://github.com/xufilps/iPet/actions)；日志生成于本机或runner的 `Apple/build/verification/`。自动测试、加速时钟模拟和短时观察不能代替真实使用。
 
 当前范围专注内置萝莉斯和本地养成。多角色与第三方数据型MOD留给未来独立的 **petloader**（尚未开发）；云存档/云同步与联机不做，不列为待补齐能力。本地存档、备份与导出恢复继续保留。
 

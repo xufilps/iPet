@@ -52,6 +52,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
     @Published var visible = true
     @Published var toolbarEnabled=false
     @Published private(set) var growthNotice=""
+    private var pendingGrowthAnimation=false
     func clearGrowthNotice() { growthNotice="";refreshToolbar() }
     @Published private(set) var favoriteItems:Set<String>=[]
     @Published private(set) var favoriteActivities:Set<String>=[]
@@ -171,6 +172,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
             if [.walkLeft,.walkRight,.climb].contains(action) {
                 self.cancelMovement(reposition:false);self.needsEdgeRecovery=false;self.edgeScreen=nil;self.persistPosition()
             } else if action == .sideHide { self.cancelMovement();self.persistPosition() }
+            if action == .levelUp { self.recordAcceptanceInput("growth-animation-finished") }
             self.restoreBaseAnimation()
         }
         petPanel = PetPanel(contentRect: NSRect(x: 0, y: 0, width: size, height: size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
@@ -488,7 +490,9 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
                 let reasonText=reason == .completed ? "完成" : reason == .manual ? "结束" : "因状态不佳停止"
                 message="\(title)\(reasonText)，已获\(earned.formatted(.number.precision(.fractionLength(2))))\(unit)，完成奖励\(bonus.formatted(.number.precision(.fractionLength(2))))。"
             case .scheduleChanged(let notice): scheduleChanged=true;message=notice
-            case .growthChanged(let change): growthNotice=change.message(name:engine.state.name)
+            case .growthChanged(let change):
+                growthNotice=change.message(name:engine.state.name)
+                pendingGrowthAnimation=visible && !suspended
             case .itemUsed: break
             }
         }
@@ -634,6 +638,11 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
             _ = petScene.playMoodTransition(from:oldMood,to:engine.presentationMood)
         }
         if visible {
+            if pendingGrowthAnimation,sideHidePlan == nil,!petView.isInteracting,
+               !engine.state.resting,engine.state.activity == nil,petScene.requestedAction == .idle {
+                pendingGrowthAnimation=false;cancelMovement();autonomy.reset()
+                if petScene.playLevelUp(mood:engine.presentationMood) { recordAcceptanceInput("growth-animation-started") }
+            }
             petPanel.ignoresMouseEvents = windowBehavior.ignoresMouse(interacting:petView.isInteracting,opaque:petView.opaqueUnderMouse())
             if sideHidePlan != nil,!passThrough,!petView.isInteracting {
                 let hovered=petPanel.frame.contains(NSEvent.mouseLocation)
@@ -751,6 +760,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
         stopMovementPosition();walkPlan=nil;climbPlan=nil;persistPosition();return false
     }
     @objc func toggleVisibility() {
+        pendingGrowthAnimation=false
         keyboardSender.cancel()
         petView.cancelInteraction()
         petScene?.discardSpeechStart();speech.hide();toolbar?.hide();dialogue.resetTiming()
@@ -890,7 +900,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
         let frame=needsEdgeRecovery ? edgeScreen.map { PetClimbPlan.recovered(pet:petPanel.frame,screen:$0) } ?? petPanel.frame : petPanel.frame
         UserDefaults.standard.set(frame.minX, forKey: "petX"); UserDefaults.standard.set(frame.minY, forKey: "petY")
     }
-    private func suspend() { smartMove.pause();recordDiagnostic(.lifecycle,"系统即将睡眠，计时暂停且不补算。");keyboardSender.cancel(); cancelInventoryUse();petView.cancelInteraction();petScene?.discardSpeechStart();speech.hide();toolbar?.hide();dialogue.resetTiming();save(); suspended = true; cancelMovement(); autonomy.reset(); petView.isPaused = true; petScene.releaseTextures() }
+    private func suspend() { pendingGrowthAnimation=false;smartMove.pause();recordDiagnostic(.lifecycle,"系统即将睡眠，计时暂停且不补算。");keyboardSender.cancel(); cancelInventoryUse();petView.cancelInteraction();petScene?.discardSpeechStart();speech.hide();toolbar?.hide();dialogue.resetTiming();save(); suspended = true; cancelMovement(); autonomy.reset(); petView.isPaused = true; petScene.releaseTextures() }
     private func resume() {
         smartMove.resume()
         recordDiagnostic(.lifecycle,"系统唤醒，重建计时基准。");
@@ -946,7 +956,7 @@ enum ControlPage: String, CaseIterable { case conversation="对话",diagnostics=
             guard alert.runModal() == .alertFirstButtonReturn,canManageSave() else { return }
             let restored=try store.restore(data,currentState:engine.state)
             petView.cancelInteraction();cancelMovement();petScene?.discardSpeechStart();speech.hide();dialogue.resetTiming();autonomy.reset()
-            growthNotice=""
+            growthNotice="";pendingGrowthAnimation=false
             engine=PetEngine(state:restored,catalog:catalog)
             engine.configureSimulation(enabled:simulationEnabled,fixedMood:fixedMood)
             state=engine.state;lastTick=nil;lastSave=ProcessInfo.processInfo.systemUptime

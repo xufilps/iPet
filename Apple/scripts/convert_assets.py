@@ -56,7 +56,7 @@ def convert(source, destination):
     clips = []
     diagnostics = []
     roots = [(action,subtree,subtree.split("/")[-1] if action in ("walkLeft","walkRight") else "raised.static" if action=="raised" else None) for action,subtree in ACTIONS.items()]
-    roots += [('pinch','Pinch',None)]
+    roots += [('pinch','Pinch',None),('levelUp','LevelUP','levelup')]
     roots += [('say','Say/'+name,'say.'+name.lower()) for name in ['Self','Serious','Shining','Shy']]
     roots += [('raised','Raise/Raised_Dynamic','raised.dynamic')]
     roots += [(action,'MOVE/'+graph,graph) for action,side in [('walkLeft','left'),('walkRight','right')] for graph in ['walk.'+side+'.faster','walk.'+side+'.slow','crawl.'+side]]
@@ -108,7 +108,7 @@ def convert(source, destination):
             if not matching:
                 continue  # Renderer explicitly falls back to Nomal/idle.
             stages = []
-            if action in ('idle','stateUp','stateDown') or graph=='raised.dynamic':
+            if action in ('idle','stateUp','stateDown','levelUp') or graph=='raised.dynamic':
                 stage = {'phase': 'loop', 'layers': [layer(matching[0], 0)], 'foodTrack': []}
                 if (action == 'idle' or graph=='raised.dynamic') and len(matching)>1:
                     stage['variants'] = [[layer(path,0)] for path in matching[1:]]

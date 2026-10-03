@@ -44,6 +44,22 @@ class ConversionTests(unittest.TestCase):
                 os.utime(p, ns=(1_600_000_000_000_000_000, 1_600_000_000_000_000_000))
         return {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in self.output.rglob('*') if p.is_file()}
 
+    def test_levelup_single_stage_preserves_order_duration_and_exact_modes(self):
+        for mood in ['Happy','Nomal','PoorCondition']:
+            folder=self.source/'pet/vup/LevelUP'/mood
+            folder.mkdir(parents=True)
+            for frame in [10,2,1]:
+                (folder/f'level_{frame}_125.png').write_bytes(png(frame))
+        self.run_conversion()
+        clips=[c for c in json.loads((self.output/'manifest.json').read_text())['clips'] if c['action']=='levelUp']
+        self.assertEqual({c['mood'] for c in clips},{'Happy','Nomal','PoorCondition'})
+        for clip in clips:
+            self.assertEqual(clip['graphID'],'levelup')
+            self.assertEqual(len(clip['stages']),1)
+            frames=clip['stages'][0]['layers'][0]['frames']
+            self.assertEqual([f['path'].split('/')[-1] for f in frames],['level_1_125.png','level_2_125.png','level_10_125.png'])
+            self.assertEqual([f['duration'] for f in frames],[0.125]*3)
+
     def test_upstream_numeric_only_filename_uses_final_numeric_milliseconds(self):
         directory=self.source/'pet/vup/IDEL/Squat/C_Happy'
         directory.mkdir(parents=True)

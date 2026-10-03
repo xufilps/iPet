@@ -138,6 +138,13 @@ import PetCore
         timeline = AnimationTimeline(clip: clip.selectingVariants(random:&random), looping: [.idle, .sleep, .raised, .walkLeft, .walkRight, .climb, .pinch].contains(action))
         installTimeline()
     }
+    @discardableResult public func playLevelUp(mood:PetMood)->Bool {
+        guard requestedAction == .idle else { return false }
+        guard manifest.clips.contains(where:{ $0.action == .levelUp && $0.mood == mood && !$0.stages.isEmpty }) else {
+            onDiagnostic?("当前状态无升级动画：\(mood.rawValue)，仅保留升级文字。");return false
+        }
+        play(.levelUp,mood:mood);return true
+    }
     public func discardSpeechStart() {
         if speechReady != nil,requestedAction == .say { finishSpeech() }
         else { speechReady=nil }

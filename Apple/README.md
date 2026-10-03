@@ -31,8 +31,8 @@ bash Apple/scripts/verify.sh
 ## 使用、许可与验证边界
 菜单栏提供显示/隐藏、位置恢复和功能入口；现有中文原生面板、13项活动、118项物品、套餐/日程及本地统计见根 [README](../README.md)。窗口不抢桌宠键盘焦点，透明区按帧alpha穿透；真实睡眠、多屏、最低系统/Intel和两小时观察仍待最终验收。
 
-[署名](ATTRIBUTION.md)、[原动画授权](ANIMATION_LICENSE.md)、根LICENSE与NOTICE随应用附带。代码Apache 2.0不替代角色/动画授权；不执行C#插件。贡献流程见 [CONTRIBUTING](../CONTRIBUTING.md)，完整差异/缺口/路线见 [文档导航](docs/README.md)。此批为工程结构整理，后续功能开发保持暂停。
+[署名](ATTRIBUTION.md)、[原动画授权](ANIMATION_LICENSE.md)、根LICENSE与NOTICE随应用附带。代码Apache 2.0不替代角色/动画授权；不执行C#插件。贡献流程见 [CONTRIBUTING](../CONTRIBUTING.md)，完整差异/缺口/路线见 [文档导航](docs/README.md)。当前继续推进本地内置角色体验，最近补齐升级通知与动画。
 
-当前原素材已按实际依赖裁剪为578.05MiB，转换输出不变；体积边界、浅克隆和缓存恢复见[PROJECT-SIZE](docs/PROJECT-SIZE.md)。
+当前原素材按实际依赖保留591.19MiB，含本批恢复的升级动画；体积边界、浅克隆和缓存恢复见[PROJECT-SIZE](docs/PROJECT-SIZE.md)。
 
 GitHub不会显示Apple/build：应用与日志在本机执行脚本后生成，当前可运行产物为iPet.app；旧VPetApple.app已清理，历史用户存档目录名仍保留。根README已改为当前项目说明，原README/翻译转为上游及Git历史查阅。
