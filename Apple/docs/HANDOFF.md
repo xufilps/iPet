@@ -1,5 +1,7 @@
 # 当前交接入口 — 2026-10-02 / v0.2.0
 
+2026-10-03范围调整（优先于下文历史计划）：当前iPet专注内置萝莉斯与本地养成，不接入多角色或第三方数据型MOD；这些能力留给以后独立开发的 `petloader`，其协议、仓库与实施规格尚未确定，也未开始开发。云存档/云同步与联机不纳入当前项目路线，不再作为待补齐项。本地JSON保存、备份、导出恢复及旧LPS只读兼容研究保留；本次不改运行时或存档格式，功能开发仍暂停。
+
 当前最新交付为新版README与旧应用清理（2026-10-03），功能/JSONv9不变。用户本次允许删除旧README，已用当前iPet说明替换根入口并删除旧翻译/跳转页；原文仍在上游/Git历史，原LICENSE/NOTICE/素材授权保留。旧本机VPetApple.app已删除，当前iPet.app与用户数据目录保持不变。最近完整验证为前批372Swift/26Python、Apple构建及远端CI通过；本批仅文档/验证规则与旧产物清理，具体检查见文末。继续暂停功能开发，历史原文保留要求与验收记录属于当时状态。
 
 ---
@@ -430,3 +432,7 @@ PetLegacySavePreview已接statistics结果，但不应用到PetState，也未接
 已确认旧产物为Apple/build/Build/Products/Release/VPetApple.app，bundleIdentifier org.xufilps.VPetApple，未运行后删除65.86MiB。保留当前iPet.app、全部日志/资源和Application Support/VPetApple用户数据；历史存档目录名不随旧app删除。清理明细Apple/build/verification/obsolete-app-cleanup.json。
 实施前本地与GitHub ipet-dev同为9292ee08，已跟踪工作区干净。Apple/build、Apple/.build、Resources/PetAssets为忽略生成输出，GitHub缺少这些目录是预期，不是源码未同步；build.sh可再生成当前应用。无需提交601MiB的app或本机缓存/日志到源码仓库。本批无Swift行为或存档变更，验证当前链接/许可/归档哈希、资源依赖、生成工程及现有应用严格签名，未为纯文档重建全套编译缓存。最近完整测试372Swift/26Python及CI37101400063成功仍是前批证据。
 回滚文档提交可恢复旧README；旧app如需可从历史代码重建，不删除/降级用户存档。main继续作为上游镜像不改，提交推送ipet-dev后核对远端。
+
+## 2026-10-03 产品范围收敛
+
+按用户要求更新README、差异矩阵、路线、剩余功能及生态研究入口；历史研究和已交付旧档解码保留，不建立petloader占位模块，不删除现有本地保存能力。本批仅文档，JSON v9及现有功能保持。回滚本次文档提交即可恢复原路线表述。

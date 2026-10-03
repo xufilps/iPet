@@ -83,11 +83,13 @@ swift test --package-path Apple
 
 最近完整自动验证包含 **372项Swift、26项Python**，macOS Release、iOS Simulator共享模块和严格签名检查通过。GitHub自动检查见 [Actions](https://github.com/xufilps/iPet/actions)；日志生成于本机或runner的 `Apple/build/verification/`。自动测试、加速时钟模拟和短时观察不能代替真实使用。
 
+当前范围专注内置萝莉斯和本地养成。多角色与第三方数据型MOD留给未来独立的 **petloader**（尚未开发）；云存档/云同步与联机不做，不列为待补齐能力。本地存档、备份与导出恢复继续保留。
+
 主要未完成项：
 - 真实系统睡眠、多显示器、最低系统/Intel及两小时连续运行验收。
-- 多角色、数据型MOD、主题/本地化及Windows整档导入。
+- 原生主题/本地化及Windows整档导入。
 - 部分原动画变体、工具栏/消息设置、语音与完整调试功能。
-- Steam/工坊/云同步/联网生态及C#插件替代；Swift不能直接运行原插件。
+- Steam/工坊及C#插件替代仍保留限制；Swift不能直接运行原插件。
 - 完整iOS应用、真机验证、Developer ID签名、公证及正式安装包。
 
 完整缺口与阶段标准见 [剩余功能](Apple/docs/REMAINING-FEATURES.md) 和 [路线](Apple/docs/ROADMAP.md)。没有同条件Windows性能对比，不声称更省资源或已完成长期稳定性验收。
