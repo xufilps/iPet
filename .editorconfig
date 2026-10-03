@@ -27,8 +27,8 @@ end_of_line = unset
 insert_final_newline = unset
 trim_trailing_whitespace = unset
 
-# Root README embeds protected upstream text; LICENSE is an unmodified original.
-[{README.md,LICENSE}]
+# LICENSE is an unmodified original.
+[LICENSE]
 charset = unset
 end_of_line = unset
 insert_final_newline = unset

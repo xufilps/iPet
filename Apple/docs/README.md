@@ -12,4 +12,4 @@
 | 每批规格与历史验证 | [规格目录](specs)、[原库夹具来源](../Tests/Fixtures/LEGACY-LPS-SOURCE.md) |
 | 原作与图标来源 | [署名](../ATTRIBUTION.md)、[授权](../ANIMATION_LICENSE.md)、[图标](../Design/README.md)、[上游归档](../../docs/upstream/README.md) |
 
-根README原文段和上游归档不是当前Swift构建指南；阶段记录原路径不批量重写。新文档需给出范围、依据、可观察结果、验证边界及恢复方法。
+上游开发证据归档不是当前Swift构建指南；原README改为上游/历史链接，根README仅描述iPet；阶段记录原路径不批量重写。新文档需给出范围、依据、可观察结果、验证边界及恢复方法。

@@ -18,7 +18,7 @@ Apple/
   docs/                    当前导航、交接、规格及历史证据
   build/、.build/          本机生成输出（忽略）
 docs/upstream/             原Windows文档/配置的原字节归档
-README.md                  iPet入口，末尾保留原简体README
+README.md                  当前iPet入口，原README通过上游/历史查阅
 CONTRIBUTING.md             iPet贡献约定
 LICENSE、NOTICE             原代码许可与修改署名
 ```

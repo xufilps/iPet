@@ -11,8 +11,6 @@ import subprocess
 from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parents[2]
-ORIGINAL_README_BYTES = 7775
-ORIGINAL_README_SHA256 = 'bab2da8bddefeee26414b1a3a08200be88fb24a7fa34d302aeee019a2899469d'
 LICENSE_SHA256 = 'c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4'
 
 
@@ -31,9 +29,6 @@ def verify():
     for relative in required:
         if not (ROOT / relative).exists():
             errors.append(f'Missing entry point: {relative}')
-    suffix = (ROOT / 'README.md').read_bytes()[-ORIGINAL_README_BYTES:]
-    if hashlib.sha256(suffix).hexdigest() != ORIGINAL_README_SHA256:
-        errors.append('The original README suffix has changed.')
     if hashlib.sha256((ROOT / 'LICENSE').read_bytes()).hexdigest() != LICENSE_SHA256:
         errors.append('The upstream LICENSE has changed.')
     for line in (ROOT / 'docs/upstream/SHA256SUMS').read_text().splitlines():
@@ -46,12 +41,9 @@ def verify():
         ROOT / 'CONTRIBUTING.md', ROOT / 'SUPPORT.md', ROOT / 'SECURITY.md',
         ROOT / 'CODE_OF_CONDUCT.md', ROOT / 'Assets/Upstream/README.md',
         ROOT / 'docs/upstream/README.md', ROOT / 'README.md',
-        ROOT / 'README_en.md', ROOT / 'README_ja.md', ROOT / 'README_zht.md',
     ]
     for path in documents:
         content = path.read_text()
-        if path == ROOT / 'README.md':
-            content = path.read_bytes()[:-ORIGINAL_README_BYTES].decode('utf-8')
         for target in re.findall(r'\]\(([^)]+)\)', content):
             if '://' in target or target.startswith('#'):
                 continue

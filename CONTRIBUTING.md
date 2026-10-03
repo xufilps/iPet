@@ -22,4 +22,4 @@ bash Apple/scripts/verify.sh
 ## Pull Request 内容
 说明解决的问题、可观察行为、验证结果与未验证部分；涉及存档时列版本变化、备份和回滚方法。新增素材说明来源、授权和是否可分发。提交前运行 `git diff --check`；避免把无关格式化与功能修改混为同一PR。
 
-原 `LICENSE` 不改，根 README 末尾的原版简体中文内容保持逐字节一致。代码采用 Apache 2.0，原角色/动画另有授权，见 [素材授权](Apple/ANIMATION_LICENSE.md)；不能用代码许可代替图片分发许可。安全问题遵循 [SECURITY.md](SECURITY.md)，一般使用问题见 [SUPPORT.md](SUPPORT.md)。
+原 `LICENSE` 不改，保留适用的原作者署名、NOTICE及素材授权。原README在Git历史/上游可查，当前根README以iPet实际行为为准。代码采用 Apache 2.0，原角色/动画另有授权，见 [素材授权](Apple/ANIMATION_LICENSE.md)；不能用代码许可代替图片分发许可。安全问题遵循 [SECURITY.md](SECURITY.md)，一般使用问题见 [SUPPORT.md](SUPPORT.md)。

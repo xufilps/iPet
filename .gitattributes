@@ -2,6 +2,5 @@
 Assets/Upstream/** -text -whitespace linguist-vendored
 # The archive contains original Windows Markdown/configuration, not maintained native code.
 docs/upstream/** -text -whitespace
-# Root README embeds the verbatim upstream suffix; LICENSE is the original license.
-README.md -text
+# LICENSE is the unmodified original license.
 LICENSE -text

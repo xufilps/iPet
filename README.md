@@ -1,412 +1,103 @@
-> 当前检查点（2026-10-03）：恢复推进 macOS 原版体验，已补提起锚点、Happy放下变体、说话栏节奏、四组待机说话表情、智能移动超时设置、自定义移动范围、边缘检查自动换屏、主动边缘放置保护、可选说话气泡交互、内/外置长文布局及189条原版选择式对话。第五阶段开发与研究交接仍作为历史证据，完整实机验收和原版还原尚未完成；iOS应用、发行与最终压力测试仍留后。详见[最新差异](Apple/docs/UPSTREAM_COMPARISON.md)、[剩余功能](Apple/docs/REMAINING-FEATURES.md)和[第五阶段交接](Apple/docs/PHASE-5-HANDOFF.md)。
-
 # iPet
 
-<img src="Apple/Design/ipet-icon-pixel-v1-master.png" alt="iPet 像素风图标" width="128">
+<img src="Apple/Resources/Assets.xcassets/AppIcon.appiconset/icon-128.png" width="96" alt="iPet 像素风图标">
 
-**iPet 是基于 [VPet / VPet-Simulator](https://github.com/LorisYounger/VPet) 的 Swift 原生桌宠适配项目。** 当前版本 v0.2.0 提供 macOS 基础桌宠；共享养成核心与动画模块已支持 iOS 构建，iOS 应用界面将在后续阶段实现。
+iPet 是基于 [VPet / LorisYounger](https://github.com/LorisYounger/VPet) 的 Swift 原生桌宠，优先还原 macOS 日常养宠体验，再扩展 iOS 应用内养宠。当前版本为 **v0.2.0 开发版**，提供源码与自用构建，尚无正式公证安装包或完整 iOS 应用。
 
-本项目复用原作萝莉斯角色与选定动画，保留部分原版养成规则，使用 AppKit、SpriteKit 和 SwiftUI 重新实现 Apple 平台的窗口、渲染及界面。它是派生项目，当前功能范围与 Windows 原版不同，也不是原作者发布的官方 Apple 平台版本。
+- macOS 14+，Swift 6，AppKit 桌面窗口、SpriteKit 动画、SwiftUI 功能面板。
+- 原生共享核心支持 iOS 17+编译；这不等于已交付 iOS 应用。
+- 开发及贡献分支为 **`ipet-dev`**，也是 GitHub 首页默认分支；`main` 仅同步原 Windows 项目。
+- 当前功能开发暂停在阶段4G，最近改动为目录、资源体积与文档整理。实际完成与待验证项见 [交接](Apple/docs/HANDOFF.md)。
 
-- 项目仓库：[xufilps/iPet](https://github.com/xufilps/iPet)；默认展示/开发分支为 [`ipet-dev`](https://github.com/xufilps/iPet/tree/ipet-dev)，`main` 仅同步上游。
-- 原项目及作者：[LorisYounger/VPet](https://github.com/LorisYounger/VPet)
-- 代码许可证：[Apache License 2.0](LICENSE)，保留原许可证全文。
-- 素材授权：[动画与图片授权原文](Apple/ANIMATION_LICENSE.md)、[来源说明](Apple/ATTRIBUTION.md)；素材不应仅按代码许可证处理。
-- 原项目简体中文 README **原文完整保留在本文后半部分**；原多语言 README 继续保留；原 C# 工程源码已从当前目录移除，可到原仓库查阅。
+## 快速构建
 
-## 当前状态
+需要 macOS、Xcode 16+（Swift 6）及 Python 3，没有第三方 Swift 依赖。不需要 Steam、Windows 或 .NET；开发用原库证据生成器另行使用 .NET，不参与应用构建。
 
-| 项目 | 当前情况 |
-| --- | --- |
-| macOS | 原生基础版，最低部署目标 macOS 14 |
-| iOS | 共享模块以 iOS 17 为最低目标，Simulator 交叉编译通过；尚无可安装 iOS 应用 |
-| 语言与框架 | Swift 6、AppKit、SpriteKit、SwiftUI；Swift 模块无第三方包依赖 |
-| 分发 | 源码可自行构建；构建脚本生成自用 ad-hoc 签名应用，尚无公证发行包 |
-| 完整度 | 已实现基础陪伴与养成，尚未达到 Windows 原版功能完整度 |
-
-旧档兼容审计发现桌面版使用的保存类与共享 Core 不同，等级、属性上限和负经验行为仍需纠偏；当前应用不宣称完整养成等价。原公式模型已独立验证，运行时与保存升级将随后接入，详见[旧存档审计](Apple/docs/LEGACY-SAVE-AUDIT.md)。
-
-## 已实现的功能
-
-- 透明无边框桌宠窗口，不获取键盘主窗口焦点；通过菜单栏 🐾 管理应用。
-- 点击头部或身体进行抚摸，拖动或长按提起时按原状态悬挂锚点跟随鼠标（真实输入待验）；按状态快走/慢走与爬行，边缘检查、左右爬墙和位置重置。
-- 待机、摸头、身体互动、提起、行走、休息、进食和饮水动画，保留逐帧时长及动作阶段。
-- 体力、饱腹、饮水、心情、健康状态，以及基础经验、好感和状态判断规则。
-- 13 项内置工作/学习/娱乐，金币收益与完成奖励；118 项物品、搜索分类商店、支持搜索/排序/收藏的背包和药品。
-- 休息/起床、中文状态/对话/活动/日程/商店/背包/统计/快捷/诊断/设置十页面、大小调整、自主移动开关、智能移动等待时间、互动周期及养成开关/固定显示状态，主屏幕/检测屏幕/自定义移动区域与边缘检查自动换屏，以及智能移动超时、置顶、角色穿透与不透明度设置。
-- 原版离线点击文案与饥渴提醒、显示角色名的原生气泡；每150ms显示两个完整字符，按原标点规则停留后淡出；普通待机时先播放随机表情开始段，文字输出期间循环，输出完播放结束段；菜单栏或状态页点击“聊一句”或关闭说话；可启用气泡交互，悬停保持、双击关闭、右键复制已显示文字；支持自动避让/角色内/角色外位置和长文滚动；“选择话题”提供最多五个状态相关选项、后续话题和原属性效果，十分钟刷新，每次选择将原期限延长五分钟。
-- 可选随宠快捷工具栏，显示活动进度与已获收益，可暂停、继续或结束活动。
-- 本地 JSON 存档、自动保存、上一份有效备份、损坏文件保留及未来版本写入保护。
-- 睡眠/唤醒与显示器变化的生命周期处理；隐藏时暂停渲染并释放纹理。
-
-所选动画包含 **151 个动作/Graph/状态组合、4393 个唯一 PNG 帧，约 576.9 MiB**。它们只是原角色动画的一部分；构建工具从仓库中的原素材生成所需资源，不要求在运行时加载完整角色目录。
-
-## 与原版的区别与未实现部分
-
-| 内容 | Windows 原版 | iPet v0.2.0 |
-| --- | --- | --- |
-| 桌面技术 | C# / .NET / WPF | Swift / AppKit / SpriteKit / SwiftUI |
-| 活动 | 丰富随机互动、移动、爬墙、边缘隐藏等 | 状态步行/爬行、左右/顶部爬墙、斜向下落、侧挂/探头/回正；内置完整移动池及双轴衔接已接入，智能移动超时和自定义范围已接入，边缘检查自动换屏已适配，原25%回正阈值与主动放置保护已适配，实机跨屏仍待核对 |
-| 养成与经济 | 桌面版剩余经验、等级突破、动态属性上限；工作、购物等 | 活动、购物、药品及日程已有；桌面剩余经验、突破和动态上限已接入，升级动画与Windows旧档导入仍缺 |
-| 内容扩展 | 创意工坊、数据 MOD、C# 插件 | 暂不支持第三方 MOD、原版插件或 Steam |
-| 存档 | 原版 LPS 存档及保存体系 | 独立 JSON 格式，不导入或改写 Windows 存档 |
-| 云端与对话 | 原项目/插件生态提供相关能力 | 本版不含云同步、AI 对话或网络服务 |
-| 手机体验 | 本仓库保留的原版基于 Windows | iOS 界面尚未开发，后续按应用内养宠设计 |
-
-保留的规则包括原版状态阈值、抚摸消耗、食物分次生效、基础日常与休息公式。v0.2.0 已用原物品目录及 PNG 图像替代用户界面的免费面包/饮料和 emoji；旧免费命令仅保留给兼容测试。活动按原默认平衡配置，保留效率、收益、食用衰减及低价赊账边界；动作变体选择和平台生命周期仍属于适配，不能视为完整玩法等价。完整能力矩阵、源码依据及迁移状态见 [原版差异说明](Apple/docs/UPSTREAM_COMPARISON.md)，公式细节见 [行为对照](Apple/docs/BEHAVIOR.md)。
-
-## 环境要求
-
-- macOS，安装 Xcode 16 或更高版本并启用 Swift 6 工具链。
-- Python 3，用于构建前转换内置素材；Git，用于获取源码。
-- 原始角色文件位于 `Assets/Upstream/VPet/Core/pet/vup`，请保留此目录。
-- 本地测试使用 arm64 Mac；最低版本 macOS 14 及 Intel Mac 尚未实机验收。
-
-若终端尚未选择完整 Xcode，可运行 `sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer`。请先完成 Xcode 正常的首次启动配置。
-
-## 获取、构建与启动
-
-```sh
-git clone --branch ipet-dev https://github.com/xufilps/iPet.git
-cd iPet/Apple
-./scripts/build.sh
-open build/Build/Products/Release/iPet.app
-```
-
-构建脚本会转换内置素材、编译 Release 应用并创建自用 ad-hoc 签名。应用位于 `Apple/build/Build/Products/Release/iPet.app`。此签名不等同 Developer ID 签名或 Apple 公证；正式发行需要另外完成这些流程。
-
-也可使用 Xcode：
-
-```sh
-cd iPet/Apple  # 如果你还位于仓库外
-python3 scripts/convert_assets.py
-open iPet.xcodeproj
-```
-
-在 Xcode 中选择 **iPet** scheme 和 **My Mac**，然后运行。工程每次构建都会执行素材转换，无需 Steam、Windows `mklink.bat` 或第三方项目生成器。`scripts/create_project.py` 是确定性工程生成工具，只在维护工程结构时使用；通常直接使用已提交的 Xcode 工程。
-
-## 使用方式
-
-应用启动后，桌宠出现在屏幕可见区域，菜单栏显示 🐾。点击菜单可打开状态与设置、活动、商店、背包、休息/起床、显示/隐藏、重置位置及退出。
-
-点击角色头部或身体进行抚摸；移动超过拖动阈值后进入提起动作，拖动期间暂停自主移动。右键角色打开设置。桌宠大小支持 150–500 点，默认 280 点；设置窗口支持 ⌘,，退出支持 ⌘Q。
-
-透明区域按当前帧 alpha 采样处理鼠标穿透，轮询频率为 30 Hz；快速移入后立即点击仍需进一步实机验证。桌宠本身不获取键盘焦点，主动打开设置时应用正常激活。
-
-活动页支持原版活动倍率：按等级选择倍率，需求与门槛增加，收益依原平衡公式重算，时长与正常完成奖励比例保持；当前活动倍率会保存，切换倍率需先结束再开始。活动页支持名称搜索、类别/收藏筛选及默认/名称/时长/等级排序，收藏保存在本机偏好，暂不随存档迁移；可开始、暂停、继续或提前结束活动，工作赚金币，学习/娱乐获得经验；提前结束不发完成奖金。商店可购买即用或放入背包，背包可选择数量逐件使用，批量执行可停止剩余部分；可按名称检索、分类、收藏筛选与排序，总价值始终统计全部已知库存，未知物品保留并显示未计价数量。收藏保存在本机偏好，暂不随存档迁移。重复食用同一物品会衰减全部属性增量，原负面效果也会保留。低价低经验增量物品可赊账；价格或物品经验增量≥1000 时，余额必须高于售价。
-
-休息、食物与药品可以恢复状态；免费的应急药也有经验、体力、好感代价，先看商品效果。退出应用和系统睡眠期间不补算状态消耗；隐藏桌宠会暂停动画，但应用运行期间养成继续。隐藏后可从菜单栏重新显示；位置异常时使用“重置位置”。
-
-## 存档、偏好与恢复
-
-为兼容更名前的原生测试版，正式存档目录继续使用历史路径：
-
-```text
-~/Library/Application Support/VPetApple/
-├── pet.json                  # 主存档
-├── pet.previous.json         # 上一份有效存档
-├── pet.v1-before-upgrade-UUID.json # v1 升级前独立原件
-└── pet.corrupt-UUID.json      # 检测到损坏时保留的原文件
-```
-
-每 60 秒、关键互动、系统睡眠及正常退出时保存。存档采用带版本号的 Codable JSON 和原子写入；损坏主文件被保留后尝试恢复备份。遇到不支持的未来版本主文件或备份，程序拒绝覆盖；加载失败的会话会明确提示并停止写入。
-
-恢复前先退出应用，复制整个存档目录，再用确认有效的备份替换主文件。保留未来版本或损坏证据，不要直接删除所有文件来尝试修复。设置面板提供“打开存档目录”入口。该目录与 Windows 原版存档相互独立。
-
-大小、位置和自主移动开关存于 UserDefaults。iPet bundle ID 为 `org.xufilps.iPet`；更名前 `org.xufilps.VPetApple` 中已有的偏好，只在新标识缺少对应值时导入，原偏好不删除。
-
-## 源码结构
-
-```text
-Apple/
-├── Package.swift                  # PetCore / PetRendering 共享库
-├── iPet.xcodeproj/                 # macOS 应用工程与 iPet scheme
-├── Sources/
-│   ├── PetCore/                    # 平台无关养成、命令、时钟、随机源、存档
-│   ├── PetRendering/               # 资源清单、SpriteKit、动作阶段、alpha 命中
-│   └── PetMacInput/                # macOS 输入适配
-├── Apps/macOS/                    # AppKit 窗口、SwiftUI 面板、菜单、生命周期
-├── Tests/                         # 核心规则、保存保护与渲染测试
-├── scripts/                       # 转换、构建、验证与真实运行观察工具
-├── Resources/PetAssets/            # 构建生成，Git 忽略
-└── docs/                          # 计划、行为对照、验证证据与交接
-```
-
-原 C# 工程与 `VPet.sln` 已从当前源码树移除，源码和完整 Windows 项目见 [原仓库](https://github.com/LorisYounger/VPet)，行为对照固定在上游基线 `1a06c598`。原素材与配置已集中在 `Assets/Upstream/VPet/Core/`，供构建前转换使用；当前跟踪目录不再保留 Windows 应用工程。Git 历史仍可恢复原文件，未重写历史，因此此次清理不会消除历史对象或让整个克隆体积等比例缩小。共享核心不依赖 AppKit/UIKit/SpriteKit，动画层不直接修改养成数据；平台窗口和应用生命周期由 macOS 应用处理。后续 iOS 将复用共享模块，单独实现触摸界面和前后台策略。
-
-养成关闭时停止定时变化，退出当前活动，恢复后不补算；可选择固定显示状态，实际属性保留。购买即用只预览动画，但库存使用仍扣库存并生效，买入背包仍扣款；设置页和商店会提示这些区别。
-
-活动页的“任务套餐”区域提供14项原版工作/学习套餐、签署等级与全价、授权等级、有效期、替换确认和原公式退款；可开启一次到期续费并主动检查。原版基线未实际扣取套餐抽成，当前也不另扣手动收益。续费沿原规则按已授权等级重新报价并关闭开关，0级授权不执行负价格续费。日程队列、执行、存档与原生页面已接入，手动活动无需套餐。保存失败会暂停后续套餐操作，重试仅保存当前状态，不重放扣款。
-
-日程页支持添加活动/倍率、追加和前插等待、分钟数编辑、排序与删除，以及开始循环、暂停、继续和停止；显示当前与下一项。运行期间禁编辑，保存失败后锁定启动与修改，重试只写当前状态、不重放扣款或自动继续。停止日程保留当前活动，半程与30秒衔接沿原规则。新增界面和保存失败路径仍待实机验证，日程汇总沿原版基础分钟与娱乐整数均分显示配置工作比例，另列含倍率/衔接的一轮参考时长；它不是实际执行进度。见 [阶段5E规格](Apple/docs/specs/PHASE-5E.md)。
-
-诊断页保存当前运行最近200条合并记录，可查看动画缺图／回退、保存和快捷错误、按键状态及睡眠恢复。报告须先预览，再导出本机文本；默认仅含版本、资源数量、运行状态及事件次数，不附宠物存档、快捷目标或原始日志，只有勾选后才附内存日志（可能含本机路径）。导出内容与预览一致，不自动上传，也不使用原版 Steam 反馈服务；关闭应用后内存日志不保留。完整原版动画调试控制台尚未迁移。见[阶段5J规格](Apple/docs/specs/PHASE-5J.md)。
-
-统计页提供升级后开始的每日／每月、最近7／30天陪伴时长、活跃与连续天数、最长会话和逐项目启动计数。启动应用即登记活跃日，时长按养成采样累计，睡眠与退出不补算；日期采用本地公历，修改系统日期或时区可能影响连续记录。原版评价口径把娱乐归入学习，完成率是“自然完成次数／启动次数”（含进行中项目），结束收益完成时含奖金；原有三分类活动统计仍独立显示。旧历史不回填，统计不上传 Steam。见[阶段5I规格](Apple/docs/specs/PHASE-5I.md)。
-
-快捷页可添加、编辑、删除和置顶/置底自定义入口，菜单栏与随宠“自定义”菜单按该顺序直接打开链接、macOS 应用、文件和文件夹。系统接受打开请求不代表目标应用已完成加载；路径失效或无对应URL处理器时保留记录并报告失败，不运行 shell 或猜测 Windows 按键。快捷入口独立保存在存档目录的 `shortcuts.json`（配置 v2；可读取 v1）和 `shortcuts.previous.json`，不随宠物 JSON 恢复。损坏或未来版本文件保留并禁止覆盖；可打开配置目录检查、重新读取或确认恢复有效备份，恢复前另存当前原件。没有有效备份时，先退出应用并保留原文件，再移开损坏配置以重新创建空列表。原 SendKeys、多开、C# 插件入口与原 DIY 配置导入尚未适配。首次改写 v1 配置前会保留逐字节的 `shortcuts.v1-before-upgrade-*.json`；未来 v3 配置或未来版本的嵌套按键计划禁止覆盖。回滚旧版时先退出、备份整个目录，移开 v2 主档与 previous，再恢复独立 v1 原件。原生组合键与文本可在快捷页逐步录制、排序和保存。只有点击“申请系统按键发送权限”才申请授权；保存后切到目标应用，从菜单栏或随宠工具栏显式发送。编辑窗口前台时拒绝发送，目标切换、隐藏、睡眠和退出会取消剩余步骤；已发送内容无法撤回，状态仅表示投递请求，没有执行回执。原 Windows SendKeys 语法不自动转换，物理键录制依赖布局，部分应用的 Unicode 文本与系统快捷键响应仍待实机验证。见 [阶段5G规格](Apple/docs/specs/PHASE-5G.md)和[阶段5H规格](Apple/docs/specs/PHASE-5H.md)。
-
-统计页记录本版本实际购买/使用、活动时间/收益与最近200条结束历史，旧历史不估算。存档升级为 JSON v9，首次写入前独立保留 v1～v8 迁移原件；未来版本仍停止写入。回滚旧程序前退出并备份整个目录，移开 v9 主档/previous，再复制对应 `pet.v8-before-upgrade-*.json` 原件为 `pet.json`；更早程序需对应版本原件，不可修改版本号冒充降级。
-
-设置页可导出原生 JSON 快照，或选择 JSON 查看摘要后确认恢复。恢复会独立保留当前最新状态与导入原件，活动暂停，不补算离线；当前关闭养成时活动按该设置结束，预览会说明。支持本项目 v1～v9，Windows LPS、Steam 与多档列表尚未兼容。
-
-## 测试与验证边界
-
-```sh
-cd Apple
-./scripts/verify.sh
-```
-
-脚本运行素材转换、核心/渲染测试、macOS Release 构建、签名校验，以及共享模块的 iOS Simulator 交叉编译。完整日志保存在 `Apple/build/verification/`，生成内容不提交到 Git。
-
-资源转换共有 10 项 Python 回归检查，覆盖未变化输出不重写、源图/配置更新、缺失/损坏输出恢复，以及无效源和配置仍被拒绝；每次仍校验源内容，不依赖修改时间跳过检查。该优化减少构建时重复写入，不改变养成或存档。
-
-当前 Swift 自动测试包含 271 项核心测试、95 项渲染测试及 6 项 macOS 按键适配测试，覆盖原版公式边界、确定性模拟、分次投喂、损坏恢复、未来版本保护、经验下降后的历史好感、帧顺序与时长、动作阶段、缺文件、逻辑坐标、alpha 命中和缓存释放。
-
-真实两小时观察可运行：
-
-```sh
-python3 Apple/scripts/soak.py --seconds 7200 --output Apple/build/soak-2h.json
-```
-
-该工具使用隔离临时存档，按墙钟时间切换动作与状态、隐藏恢复，并采样 CPU 与 RSS；结束后关闭测试实例。应用内模拟暂停/恢复不等同让整台 Mac 真正睡眠。v0.1曾有两分钟真实动作压力测试通过，v0.2尚无新增长期实机证据；测试中的“两小时养成模拟”使用注入时钟，**不能代替真实两小时运行观察**。
-
-按当前用户决定，实机验收暂缓：真实两小时长期稳定性、实际拖动焦点、快速点击穿透、多屏热插拔、不同屏幕倍率和系统睡眠唤醒仍未完成；这不等于已经通过，也不阻止继续推进可自动验证的改进。没有与 Windows 原版做同条件性能比较，因此不声称 iPet 更省资源或更稳定。完整证据见 [交接文档](Apple/docs/HANDOFF.md)。
-
-## 许可证、素材与派生说明
-
-**代码**继续遵守 [Apache License 2.0](LICENSE)，原 `LICENSE` 全文保持不变；原作者署名、版权说明和历史保留。新增 Swift 实现与更名修改在 [NOTICE](NOTICE)、源码注释和 Git 历史中标识。发布代码时应保留许可证和适用的署名/告知文件。
-
-**原作内置动画与图片**具有单独授权，版权归虚拟主播模拟器制作组。非商用使用需向用户告知来源并提供原项目链接；分发动画时必须告知授权信息、提供原项目链接，且禁止收费分发动画。商业使用须遵循原声明的醒目来源告知、页面链接、联系作者及其他要求，不能仅凭 Apache 2.0 推定素材可任意商用。Zip 照片图库禁止商用，iPet 本版不包含该图库。
-
-[原动画与图片授权全文](Apple/ANIMATION_LICENSE.md)按当前仓库原 README 的声明保留，来源链接为 [LorisYounger/VPet](https://github.com/LorisYounger/VPet)。构建出的应用附带 `LICENSE`、`NOTICE`、`ATTRIBUTION.md` 和 `ANIMATION_LICENSE.md`，设置面板也提供原项目与授权链接。归档的原版 `docs/upstream/CONTRIBUTING.md` 与 README 的部分商用授权措辞存在差异；需要商用时应联系原权利方确认，不将旧措辞视为扩大授权。
-
-感谢 LorisYounger、VPet 原项目贡献者，以及虚拟主播模拟器制作组提供的原始代码、角色和动画。本仓库使用原 Git 历史保留来源，iPet 改动集中在 Apple 原生实现、构建工具及文档。
-
-## 后续方向与贡献
-
-按 [分阶段还原路线](Apple/docs/ROADMAP.md) 先验证 macOS 稳定性，再依次推进养成经济、动作与原生界面、数据兼容、扩展集成，最后扩展 iOS 与发行。每阶段动工前形成具体规格，以可观察行为和验证记录验收，不设无依据日期。C# 插件、Steam/工坊和受授权限制素材独立研究，不预先承诺完全兼容。
-
-当前采用参考原版形象生成的像素风图标，母图、小尺寸导出、来源和重建方法见 [图标记录](Apple/Design/README.md)。保留原项目图标；新图标不改变原角色及动画授权。
-
-问题反馈和贡献请使用 [iPet Issues](https://github.com/xufilps/iPet/issues) 与 Pull Requests。涉及 Swift 版的改动应执行 `Apple/scripts/verify.sh`，说明行为变化和验证边界；新增或替换素材需明确来源与授权。当前贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)，原 Windows 指南见 [上游文档归档](docs/upstream/README.md)。
-
----
-
-
-
-
-## v0.2.0 首次养成升级（历史记录）
-
-旧原生 JSON v1 加载保留原属性，首次升级补入 1000 金币、空背包与食用历史；写 v2 前保留独立 v1 原件，不随日常备份轮换覆盖。未知物品和活动 ID 保留，无法使用的条目明确显示；加载中的活动暂停，用户决定继续或结束，退出/睡眠不追补活动时长和收益。食用衰减按墙钟到期，这与离线养成扣减不同。
-
-回滚到 v0.1 时先退出并复制整个存档目录，移开 v2 主档和 previous 备份，再复制独立 v1 原件为 pet.json；不要让旧程序覆盖新档或删除未来版本证据。Windows LPS 导入仍未实现。
-
-本阶段自动验证涵盖 32 项核心测试、8 项渲染测试、10 项 Python 检查、macOS Release 构建及 ad-hoc 签名检查、iOS Simulator 共享模块编译。预期值由原 C# 源码独立推导，尚未运行 Windows 程序作同条件对比。原生界面、两小时资源观察、输入、睡眠、多屏和 Intel/最低系统实机验收按用户决定暂缓。详见 [阶段2规格](Apple/docs/specs/PHASE-2.md)、[实施记录](Apple/docs/PHASE-2-EXECUTION.md) 和 [交接](Apple/docs/HANDOFF.md)。
-
-
-
-## 当前养成与旧档兼容
-
-当前养成已切换为原桌面 `GameSave_VPet` 模型：经验表示本级剩余经验，负经验不降级，等级突破影响属性上限，好感上限独立保存，新建金币100。旧JSON累计经验自动转换，既有金币和属性保留；突破后的原属性可暂高于新上限，下次对应属性变化时截断。升级动画尚未接入，详见[阶段2B规格](Apple/docs/specs/PHASE-2B.md)。
-
-
-Windows LPS 导入正在推进：已验证原库格式的解码层与只读宠物字段候选；原版hash只读校验已接入并区分范围；库存完整参数和已核对统计数值已有只读预览；扩展Data和确认导入尚未接入，当前只能恢复iPet JSON。详见[旧档审计](Apple/docs/LEGACY-SAVE-AUDIT.md)。
-
-
-
-旧Windows库存兼容已提供只读参数预览与同名冲突诊断；尚未开放完整旧档导入，不会以当前内置商品覆盖原物品效果。进度与边界见 [阶段4E规格](Apple/docs/specs/PHASE-4E.md)。
-
-背包现已独立保存物品效果、标记与收藏；新买入冻结当前参数，使用已有库存不受同ID商品改动影响。未知类型保留但不可执行；Windows旧档整体导入仍未开放。v9及回滚说明见 [阶段4F规格](Apple/docs/specs/PHASE-4F.md)。
-
-阶段4G已完成旧统计的类型化只读预览，保留精确Int64和未知原值，拒绝静默归零/截断；尚未开放Windows整档导入，JSON仍v9。本批交付后按用户要求暂停，当前缺口见[剩余功能](Apple/docs/REMAINING-FEATURES.md)，证据与回滚见[交接](Apple/docs/HANDOFF.md)。
-
-## 开发与社区入口
-
-共享Swift包保留 `Apple/Package.swift` 及标准Sources/Tests结构，macOS应用源码移至 `Apple/Apps/macOS/`，原素材集中在 `Assets/Upstream/VPet/Core/`。入口见 [工程结构](Apple/docs/REPOSITORY-STRUCTURE.md)、[文档导航](Apple/docs/README.md)、[贡献指南](CONTRIBUTING.md)与[支持说明](SUPPORT.md)。GitHub问题/PR模板及macOS CI位于 `.github/`；生成资源、本机状态与构建产物不提交。本次不改变养成、JSON v9或存档目录，后续功能开发仍暂停。
-
-## 获取当前版本与体积
-
-原素材按当前依赖保留4534文件、约578MiB，已移除未使用图库、Windows主题/字体/语言及未选用动画，减少约433MiB；当前功能和生成资源不变，原件仍留在历史/上游。只需当前源码可使用单分支浅克隆：
+只需当前版本可单分支浅克隆：
 ```sh
 git clone --depth 1 --single-branch --branch ipet-dev https://github.com/xufilps/iPet.git
+cd iPet
+bash Apple/scripts/build.sh
+open Apple/build/Build/Products/Release/iPet.app
 ```
-完整Git历史不会因删除当前文件立即缩小；空间口径、原件恢复及缓存清理见[体积说明](Apple/docs/PROJECT-SIZE.md)。
 
-## 原项目 README.md（原文保留）
+也可打开 `Apple/iPet.xcodeproj`，选择共享 `iPet` scheme。首次构建自动把内置 LPS/PNG 转成运行时资源；无需在线下载素材或解析 LinePutScript。命令行构建为自用 ad-hoc 签名，不是 Developer ID 签名或公证发行。
 
-以下完整保留原 VPet 简体中文 README 原文，对照上游基线 `1a06c5981330564bab05a098d2d7969a4b119dd3`。后续内容描述原 Windows 项目、原发布渠道和原授权；iPet 的当前状态以上文为准。原文中的源码相对链接、Windows 工程和构建说明属于历史内容，现应到 [原仓库](https://github.com/LorisYounger/VPet) 阅读使用；下面的原文仍保持逐字节不变。
+**GitHub 不包含 `Apple/build/`。** 这是本机生成的应用、编译结果和日志目录，已被忽略；运行构建脚本后会出现。`Apple/.build/` 和 `Apple/Resources/PetAssets/` 同样是可再生成输出，不应提交。原始构建输入已在仓库的 `Assets/Upstream/VPet/Core/` 中。
 
-# VPet-Simulator
+## 当前功能
 
-简体中文 | [繁體中文](./README_zht.md) | [English](./README_en.md) | [日本語](./README_ja.md)
+| 范围 | 已实现内容 |
+| --- | --- |
+| 桌面互动 | 透明桌宠、按帧alpha穿透、抚摸、长按捏脸、提起/拖动、隐藏/显示与位置恢复；可选随宠工具栏 |
+| 动作与反馈 | 151个动作/Graph/状态组合、4393张选用PNG帧；待机/特殊待机、状态过渡、说话、进食、休息、移动与边缘动作 |
+| 养成 | 体力、饱腹、口渴、心情、健康、好感；桌面剩余经验/等级突破与动态上限，抚摸、分次投喂、休息和疾病状态判断 |
+| 活动与经济 | 13项工作/学习/娱乐，收益与完成奖励、倍率、暂停/继续/停止；118项物品与原图片，购买即用/入包、库存检索/收藏/批量使用、药品与重复食用衰减 |
+| 日程与本地记录 | 14项活动套餐、日程队列及循环控制；购买/使用/活动统计、结束历史、陪伴时间及活跃日评价 |
+| 原生界面 | 中文状态、对话、活动、日程、商店、背包、统计、快捷、诊断与设置页面；本地气泡、671条基础文案及189条选择式对话 |
+| 数据与工具 | 版本化JSON、自动备份、显式导出/确认恢复、未知/未来版本保护；本机快捷/按键适配及可预览诊断报告 |
 
-虚拟桌宠模拟器 一个开源的桌宠软件, 可以内置到任何WPF应用程序
+组合数不是原版完整动画或功能数量。现有能力也不等于所有交互场景已通过实机验收；平台适配与原版差异逐项记录在 [对照矩阵](Apple/docs/UPSTREAM_COMPARISON.md)。
 
-![主图](README.assets/%E4%B8%BB%E5%9B%BE.png)
+菜单栏提供显示/隐藏、重置位置、休息与功能面板。桌宠本身不成为键盘主窗口；打开功能面板会正常激活应用。拖动暂停自主移动，隐藏暂停渲染；应用仍运行时养成继续。退出和系统睡眠不补算养成或活动收益，恢复后重建计时基准。
 
-获取虚拟桌宠模拟器 [OnSteam(免费)](https://store.steampowered.com/app/1920960/VPet) 或 通过[Nuget](https://www.nuget.org/packages/VPet-Simulator.Core)内置到你的WPF应用程序
+## 存档与恢复
 
-## 虚拟桌宠模拟器 详细介绍
+正式数据仍位于 `~/Library/Application Support/VPetApple/`，保留历史目录名以避免丢档；这与已删除的旧 `VPetApple.app` 无关。
 
-虚拟桌宠模拟器是一款桌宠软件,支持各种互动投喂等. 开源免费并且支持创意工坊.
+当前宠物存档为 **JSON v9**，主档 `pet.json`，上一份有效备份 `pet.previous.json`。每60秒、关键互动、睡眠和正常退出保存。损坏原件会保留，再尝试有效备份；未来版本或加载失败停止覆盖写入。支持读取旧iPet v1～v8，首次升级写入前保留独立旧版本原件。
 
-反正免费为啥不试试呢(
+恢复或回滚前先退出应用，复制整个数据目录。旧程序应使用对应版本的 `pet.vN-before-upgrade-*.json` 副本；不要修改版本号冒充降级，不要删除未来版本或损坏证据。界面的导出/预览恢复仅支持iPet JSON。
 
-该游戏为 [虚拟主播模拟器](https://store.steampowered.com/app/1352140/_/) 内置桌宠(教程)程序独立而来, 如果喜欢的话欢迎添加 [虚拟主播模拟器](https://store.steampowered.com/app/1352140/_/) 至愿望单
+**Windows LPS整档导入尚未开放。** 当前已有结构、宠物、库存、统计与hash的只读解析/预览；扩展Data、主人称呼持久化和完整预览/确认写入仍缺。详见 [旧档审计](Apple/docs/LEGACY-SAVE-AUDIT.md)。
 
-### 超多的互动和动画
+## 工程结构
 
-多达 32(种) * 4(状态) * 3(类型) 种动画, *注:部分种类没有生病状态或循环等内容,实际动画数量会偏少*
+```text
+.github/                   问题/PR模板及macOS CI
+Assets/Upstream/VPet/Core/  当前构建所需的原素材子集
+Apple/
+  Package.swift            共享Swift包
+  Sources/                 PetCore、PetRendering、PetMacInput
+  Tests/                   模块回归及原库夹具
+  Apps/macOS/              AppKit/SwiftUI应用源码
+  iPet.xcodeproj/          可再生成的Xcode项目与共享scheme
+  Resources/               AppIcon及忽略的生成资源
+  scripts/                 转换、构建、审计及验证工具
+  docs/                    导航、规格、对照与交接
+  build/、.build/          本机生成目录，不上传GitHub
+docs/upstream/             原Windows贡献/开发证据归档
+LICENSE、NOTICE             代码许可与来源告知
+```
 
-#### 一些动画例子:
+原素材已裁剪为4534文件、约578MiB，移除约433MiB未使用内容，不降低图片质量或减少当前功能。完整Git历史仍保留原件，普通完整克隆不会同步缩小；恢复路径和缓存口径见 [体积说明](Apple/docs/PROJECT-SIZE.md)。原完整Windows源码、README及翻译请在 [上游固定基线](https://github.com/LorisYounger/VPet/tree/1a06c5981330564bab05a098d2d7969a4b119dd3) 或Git历史查阅，不在当前树重复提供。
 
-##### 摸头
+## 验证与已知限制
 
-![ss0](README.assets/ss0.gif)
+```sh
+# 转换资源、审计依赖、测试、macOS构建、iOS共享编译与签名检查
+bash Apple/scripts/verify.sh
+# 资源已生成后，可单独运行共享模块测试
+swift test --package-path Apple
+```
 
-##### 提起
+最近完整自动验证包含 **372项Swift、26项Python**，macOS Release、iOS Simulator共享模块和严格签名检查通过。GitHub自动检查见 [Actions](https://github.com/xufilps/iPet/actions)；日志生成于本机或runner的 `Apple/build/verification/`。自动测试、加速时钟模拟和短时观察不能代替真实使用。
 
-![ss4](README.assets/ss4.gif)![ss4](README.assets/ss8.gif)
+主要未完成项：
+- 真实系统睡眠、多显示器、最低系统/Intel及两小时连续运行验收。
+- 多角色、数据型MOD、主题/本地化及Windows整档导入。
+- 部分原动画变体、工具栏/消息设置、语音与完整调试功能。
+- Steam/工坊/云同步/联网生态及C#插件替代；Swift不能直接运行原插件。
+- 完整iOS应用、真机验证、Developer ID签名、公证及正式安装包。
 
-##### 爬墙
+完整缺口与阶段标准见 [剩余功能](Apple/docs/REMAINING-FEATURES.md) 和 [路线](Apple/docs/ROADMAP.md)。没有同条件Windows性能对比，不声称更省资源或已完成长期稳定性验收。
 
-![ss7](README.assets/ss7.gif)
+## 来源、许可证与贡献
 
-### 免费
+代码遵守 [Apache License 2.0](LICENSE)，原LICENSE全文不变。感谢 LorisYounger、VPet贡献者及虚拟主播模拟器制作组；iPet是派生适配，不是原作者官方Apple版本。修改与署名见 [NOTICE](NOTICE) 和 [ATTRIBUTION](Apple/ATTRIBUTION.md)。
 
-该游戏完全免费! 反正不要钱,试试不要紧(<br/>
-该游戏主要目的是宣传下 [虚拟主播模拟器](https://store.steampowered.com/app/1352140/_/), 这是虚拟主播模拟器里面的桌宠.
+角色、动画与内置图片适用独立授权，不能用Apache代码许可代替。原声明要求告知素材来源、提供原项目链接，并禁止收费分发动画；商业使用须遵循原声明的告知、联系权利人等条件。授权全文保留在 [ANIMATION_LICENSE](Apple/ANIMATION_LICENSE.md)，随应用附带。照片图库不包含在当前源码或应用中。
 
-### 开源
+像素风图标由OpenAI imagegen参考原角色生成，是原形象的新演绎，不宣称独立角色权利或原作者新作；母图及记录见 [Design](Apple/Design/README.md)。
 
-该游戏在github上开源, 欢迎提出自己的想法,创意或者参与开发!<br/>
-您还可以修改代码来制作自己专属的桌宠!(虽然说大部分内容都支持创意工坊,不需要修改代码)<br/>
-项目地址: https://github.com/LorisYounger/VPet
-
-### 支持创意工坊
-
-该游戏支持创意工坊,您可以制作别的人物桌宠动画或者互动,并上传至创意工坊分享给更多人使用.
-
-MOD制作器:  https://github.com/LorisYounger/VPet.ModMaker
-
-创意工坊支持添加/修改以下内容
-
-* 桌宠动画
-* 物品/食物/饮料等
-* 自定义桌宠工作
-* 说话文本
-* 主题
-* 代码插件 - 通过编写代码给桌宠添加内容
-  * 添加新的动画逻辑/显示方案 (eg: l2d/spine 等)
-  * 添加新功能 (闹钟/记事板等等)
-  * 几乎无所不能, 示例例子参见 [VPet.Plugin.Demo](https://github.com/LorisYounger/VPet.Plugin.Demo)
-
-
-### 反馈&建议&联系我们
-
-如果有建议或者意见,可以在Steam商店评论/社区,Github Issue,虚拟主播模拟器贴吧,虚拟桌宠模拟器MODDer群(907101442)或者邮件联系我 [mailto:service@exlb.net](mailto:service@exlb.net)
-
-## 软件结构
-
-* **VPet-Simulator.Windows: 适用于桌面端的虚拟桌宠模拟器**
-  * *Function 功能性代码存放位置*
-    * CoreMOD Mod管理类
-    * MWController 窗体控制器
-  
-  * *WinDesign 窗口和UI设计
-    * winBetterBuy 更好买窗口
-    * winCGPTSetting ChatGPT 设置
-    * winSetting 软件设置/MOD 窗口
-    * winConsole 开发控制台
-    * winGameSetting 游戏设置
-    * winReport 反馈中心
-  
-  * MainWindows 主窗体,存放和展示Core
-  * PetHelper 快速切换小标
-* **VPet-Simulator.Tool: 方便制作MOD的工具(eg:图片帧生成)**
-* **VPet-Simulator.Core: 软件核心 方便内置到任何WPF应用程序(例如:VUP-Simulator)**
-  * Handle 接口与控件
-    * IController 窗体控制器 (调用相关功能和设置,例如移动到侧边等)
-    * Function 通用功能
-    * GameCore 游戏核心,包含各种数据等内容
-    * GameSave 游戏存档
-    * IFood 食物/物品接口
-    * PetLoader 宠物图形加载器
-  * Graph 图形渲染
-    * IGraph 动画基本接口
-    * GraphCore 动画显示核心
-    * GraphHelper 动画帮助类
-    * GraphInfo 动画信息
-    * FoodAnimation 食物动画 支持显示前中后3层夹心动画 不一定只用于食物,只是叫这个名字
-    * PNGAnimation 桌宠动态动画组件
-    * Picture 桌宠静态动画组件
-  * Display 显示
-    * basestyle/Theme 基本风格主题
-    * Main.xaml 核心显示部件
-      * MainDisplay 核心显示方法
-      * MainLogic 核心显示逻辑
-    * ToolBar 点击人物时候的工具栏
-    * MessageBar 人物说话时候的说话栏
-    * WorkTimer 工作时钟
-
-## 参与开发
-
-欢迎参与虚拟桌宠模拟器的开发! 为保证代码可维护度和游戏性,如果想要开发新的功能,请先[邮件联系](mailto:zoujin.dev@exlb.org)或发[Issues](https://github.com/LorisYounger/VPet/issues)我想要添加的功能/玩法, 以确保该功能/玩法适用于虚拟桌宠模拟器. 以免未来提交时因不合适被拒(而造成代码浪费)<br/>
-如果是修复错误或者BUG,无需联系我,修好后直接PR即可
-
-当想法通过后,您可以通过 [fork](https://github.com/LorisYounger/VPet/fork) 功能拷贝代码至自己的github以方便编写自己的代码, 编写完毕后通过[pull requests](https://github.com/LorisYounger/VPet/compare) 提交<br/>
-如果您想法没有被通过,也可以另起炉灶,写个不同版本功能的桌宠软件. 但需遵守 [Apache License 2.0](https://github.com/LorisYounger/VPet/blob/main/LICENSE) 与 [动画版权声明与授权](https://github.com/LorisYounger/VPet#%E5%8A%A8%E7%94%BB%E7%89%88%E6%9D%83%E5%A3%B0%E6%98%8E%E4%B8%8E%E6%8E%88%E6%9D%83)
-注: 一般来讲, 添加新功能都可以通过编写代码插件MOD实现, 详情请参见 [VPet.Plugin.Demo](https://github.com/LorisYounger/VPet.Plugin.Demo)
-
-我可能会对您的提交的代码进行修改,删减等以确保该功能/玩法适用于虚拟桌宠模拟器.
-
-
-感谢以下参与的开发和翻译人员
-
-<a href="https://github.com/LorisYounger/VPet/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=LorisYounger/VPet" />
-</a>
-
-和提供社区翻译和更多内容的创意工坊人员
-
-## 动画版权声明与授权
-
-在github中 [桌宠动画文件](https://github.com/LorisYounger/VPet/tree/main/VPet-Simulator.Windows/mod/0000_core/pet/vup) 动画版权归 [虚拟主播模拟器制作组](https://www.exlb.net/VUP-Simulator)所有, 当使用本类库时,您可能需要自行准备动画文件,或遵循以下协议
-
-> **注 **
-> 本动画声明仅限于桌宠自带的动画, 若有画师/开发者画自己的动画适配给桌宠,并不遵循用本声明
-
-### 非商用用途授权
-
-* 需要向用户告知动画文件来源并提供访问 [该页面](https://github.com/LorisYounger/VPet) 的链接
-* 当您完成以上要求后,您可以免费使用动画文件
-
-### 商用用途授权
-
-* 第一次使用时需弹窗并醒目的向用户告知动画文件来源并提供访问 [该页面](https://github.com/LorisYounger/VPet) 的链接
-* 在相应页面(用户可以快捷访问)向用户告知动画文件来源并提供访问 [该页面](https://github.com/LorisYounger/VPet) 的链接
-
-* 禁止通过出售动画文件进行盈利
-* 请[邮件联系](mailto:zoujin.dev@exlb.org)我
-* 当您完成以上要求后,您可以免费使用动画文件
-
-### 分发动画文件
-
-* 需要告知以上所有授权信息
-* 需要提供访问 [该页面](https://github.com/LorisYounger/VPet) 的链接
-* 分发动画文件时禁止任何付费/收费行为
-
-### 图片版权声明与授权
-
-* 程序内置图片 版权授权同上
-* Zip 照片图库禁止商用
-
-## 桌面端部署方法
-
-1. 下载本项目, 通过VisualStudio打开 `VPet.sln` 文件
-2. 在生成栏中, 选择 位数为 `x64` 和生成项目为 `Vpet-Simulator.Windows`
-   ![image-20230208004330895](README.assets/image-20230208004330895.png)
-3. 点击启动, 如果一切正常则会报错 `缺少模组Core,无法启动桌宠`
-4. 以管理员身份运行 `mklink.bat`, 这会让mod文件链接到生成位置
-5. 再次点击启动即可正常运行
+问题与贡献请使用 [Issues](https://github.com/xufilps/iPet/issues) 和指向 `ipet-dev` 的PR，流程见 [CONTRIBUTING](CONTRIBUTING.md)、[支持](SUPPORT.md) 与 [安全报告](SECURITY.md)。详细开发入口见 [文档导航](Apple/docs/README.md)及 [构建说明](Apple/README.md)。
