@@ -117,7 +117,7 @@ def convert(source, destination):
                     choices = [p for p in matching if any(part.lower().split('_')[0] == prefix or part.lower().split('_')[-1] == prefix for part in p.relative_to(root).parts)]
                     if choices:
                         stage = {'phase': phase, 'layers': [layer(choices[0], 0)], 'foodTrack': []}
-                        if action in ('head','body','fidget','walkLeft','walkRight','climb','sideHide','pinch','specialIdle') and len(choices)>1:
+                        if action in ('head','body','fidget','walkLeft','walkRight','climb','sideHide','pinch','specialIdle','raised') and len(choices)>1:
                             stage['variants'] = [[layer(path,0)] for path in choices[1:]]
                         stages.append(stage)
             if stages:

@@ -112,7 +112,7 @@ import PetCore
         let target=playbackMood ?? mood
         let clip=manifest.resolvePlayback(action:.raised,graphID:"raised.static",mood:target) ?? manifest.resolve(action:.raised,mood:target)
         mood=target
-        let end=clip.stages.filter { $0.phase == .end }
+        let end=clip.selectingVariant(phase:.end,random:&random).stages.filter { $0.phase == .end }
         guard !end.isEmpty else { play(.idle,mood:mood);onActionFinished?(.raised);return }
         requestedGraphID="raised.static"
         timeline=AnimationTimeline(clip:AnimationClip(graphID:clip.graphID,action:clip.action,mood:clip.mood,stages:end),looping:false);installTimeline()
@@ -179,6 +179,7 @@ import PetCore
         installTimeline()
     }
     public var isMovementAnimation:Bool { timeline.map { [.walkLeft,.walkRight,.climb].contains($0.clip.action) } ?? false }
+    var currentFramePath:String? { timeline?.stage.layers.first?.frame(at:timeline?.elapsed ?? 0)?.path }
     public var currentPhase:AnimationPhase? { timeline?.stage.phase }
     public func playMovement(_ action:PetAction,graphID:String,mood:PetMood) {
         sideHideMain=nil;sideHideReturning=false;raisedCycles=nil;fidgetCycles=nil;specialIdle=nil;specialReturning=false;playbackMood=nil

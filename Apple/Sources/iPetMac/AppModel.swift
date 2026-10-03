@@ -65,7 +65,6 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
     private let autonomy = PetAutonomy()
     private var dialogue:PetDialogue!
     private let speech=PetSpeechWindow()
-    private var speechUntil=0.0
     private var toolbar:PetToolbarWindow?
     private var lastToolbarRefresh=0.0
     private var menuToolbar:NSMenuItem!
@@ -474,8 +473,8 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
     }
     private func showSpeech(_ text:String) {
         guard visible, !suspended, let screen=companionScreen else { return }
-        speech.show(text:text,petFrame:speechAnchor,screen:screen)
-        speechUntil=ProcessInfo.processInfo.systemUptime+max(5,min(14,Double(text.count)*0.08))
+        if text.count>4000 { recordDiagnostic(.rendering,"说话内容超过显示上限，仅显示前4000字符。") }
+        speech.show(text:text,name:engine.state.name,petFrame:speechAnchor,screen:screen)
     }
     private var companionScreen:CGRect? { (needsEdgeRecovery ? edgeScreen : nil) ?? petPanel?.screen?.visibleFrame ?? NSScreen.main?.visibleFrame }
     private var speechAnchor:CGRect { toolbar?.visibleFrame.map { petPanel.frame.union($0) } ?? petPanel.frame }
@@ -515,8 +514,8 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         let now = ProcessInfo.processInfo.systemUptime
         let delta = min(max(now - (lastTick ?? now), 0), 0.1); lastTick = now
         if speech.isVisible {
-            if now>=speechUntil { speech.hide() }
-            else if let screen=companionScreen { speech.updatePosition(petFrame:speechAnchor,screen:screen) }
+            speech.advance(to:now)
+            if speech.isVisible,let screen=companionScreen { speech.updatePosition(petFrame:speechAnchor,screen:screen) }
         }
         let oldMood = engine.presentationMood
         if (!writable || packageWriteFailed),engine.state.schedule?.isRunning == true,engine.state.schedule?.isPaused == false {

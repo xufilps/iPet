@@ -65,5 +65,20 @@ final class PetRaiseTests:XCTestCase {
             XCTAssertNotEqual(scene.requestedAction,.raised)
         }
     }
+    func testHappyDropSelectsBothOriginalEndVariants() async throws {
+        let assets=root,manifest=try PetManifest.load(from:root)
+        let end=try XCTUnwrap(manifest.clips.first { $0.action == .raised && $0.mood == .happy && $0.graphID == "raised.static" }?.stages.first { $0.phase == .end })
+        XCTAssertEqual(end.variants?.count,1)
+        await MainActor.run {
+            var paths=Set<String>()
+            for seed in 1...20 {
+                let scene=PetScene(manifest:manifest,assetRoot:assets,random:SeededPetRandom(seed:UInt64(seed)))
+                scene.beginRaise(mood:.happy);scene.finishRaise()
+                XCTAssertEqual(scene.currentPhase,.end)
+                if let frame=scene.currentFramePath { paths.insert(frame) }
+            }
+            XCTAssertEqual(paths.count,2)
+        }
+    }
 
 }

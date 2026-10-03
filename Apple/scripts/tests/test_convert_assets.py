@@ -87,6 +87,17 @@ class ConversionTests(unittest.TestCase):
                 self.run_conversion()
             self.assertEqual((self.output/'manifest.json').read_bytes(),original)
 
+    def test_static_raise_end_variants_are_preserved(self):
+        for name, value in [('A_Happy',10),('C_Happy',20),('C_Happy_2',30)]:
+            directory=self.source/'pet/vup/Raise/Raised_Static'/name
+            directory.mkdir(parents=True)
+            (directory/'drop_0_100.png').write_bytes(png(value))
+        self.run_conversion()
+        clip=next(c for c in json.loads((self.output/'manifest.json').read_text())['clips'] if c.get('graphID')=='raised.static')
+        end=next(s for s in clip['stages'] if s['phase']=='end')
+        self.assertEqual(len(end['variants']),1)
+        self.assertIn('C_Happy_2',end['variants'][0][0]['frames'][0]['path'])
+
     def test_default_alternatives_are_exported_and_validated(self):
         directory=self.source/'pet/vup/Default/Nomal/2'
         directory.mkdir(parents=True)
