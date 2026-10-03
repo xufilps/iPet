@@ -5,7 +5,7 @@
 ## 实际加载路径与差异
 MainWindow.SavesLoad创建GameSave_v2（或叠加已有旧数据），取其GameSave_VPet并赋给Core.Save。GameSave_v2.load读取vpet和statistics，将其余LPS放入Data；保存ToLPS写Data、GameSave.ToLine、statistics及hash。MainWindow保存把Items逐项序列化为item0、item1…，读取按item前缀重建。项目使用LinePutScript1.11.9；其ConvertType.ToFloat使用FInt64，**不能在尚未核对编码前把Info直接当普通十进制Double**。
 
-桌面GameSave_VPet.Exp是剩余经验，Level和LevelMax另存；旧共享GameSave.Exp是累计经验、Level=sqrt(Exp)/10+1。阶段2B已让iPet采用前者，并实现v1～v7累计经验到v8剩余经验的迁移。新建金币100，旧iPet余额保留；运行时状态、活动资格、统计、文字和界面已接入动态上限。LPS解析/导入尚未实现。
+桌面GameSave_VPet.Exp是剩余经验，Level和LevelMax另存；旧共享GameSave.Exp是累计经验、Level=sqrt(Exp)/10+1。阶段2B已让iPet采用前者，并实现v1～v7累计经验到v8剩余经验的迁移。新建金币100，旧iPet余额保留；运行时状态、活动资格、统计、文字和界面已接入动态上限。LPS结构解析及宠物/库存/统计只读子集已有实现，整档导入尚未开放。
 
 ## 字段映射与依赖
 | 原字段/行 | 原含义与源码依据 | 当前iPet / 必须完成的映射 | 状态 |
@@ -18,7 +18,7 @@ MainWindow.SavesLoad创建GameSave_v2（或叠加已有旧数据），取其Game
 | vpet/money | 钱包，ToFloat编码 | 固定点钱包预览保留原值，非法数值阻断，原溢出补偿未迁移 | 部分实现 |
 | vpet/mode | 保存的原可变模式 | 原模式名读取与重算差异已报告；未知名称阻断 | 部分实现 |
 | itemN | Item/Food包含name、count、itemtype、参数及Star/Data/CanUse等 | 已有只读完整参数/标记/Data预览和同名冲突报告，v9已支持原生参数持久化/使用；尚无整档确认导入 | 部分实现 |
-| statistics | SortedDictionary统计键/SetObject及多种值类型 | counters仅有限Double；日期/字符串、原名称键映射和重复键需单列 | 待实现 |
+| statistics | SortedDictionary统计键/SetObject及多种值类型 | 已核对键提供Int32/精确Int64/Double只读记录及有限计数器子集；未知原值保留，名称映射/完整应用尚缺 | 部分实现（4G） |
 | Data中的套餐/排程/日期/自定义值 | GameSave_v2保留未识别行，插件可扩展 | 必须逐项核对结构，不能仅转vpet就宣称完整旧档兼容 | 待审计 |
 | hash（ver=2）及vpet/hash旧路径 | 原完整性/反修改标志，两种hash路径 | hash不是存档总版本；不能忽略后声称验证成功，阶段4D已实现原根SHA512/MD5及宠物MD5，范围与缺失/不匹配/不支持状态明确 | 已实现只读校验 |
 | 原溢出修复与round标志 | MainWindow对极低Exp/Money及旧溢出补偿会改数值 | 一次性导入预览须明确解释，未核对统计/编码时不能自动套用 | 待审计 |
@@ -57,4 +57,6 @@ UI先只读预览，列出准确保留、明确转换、未支持内容、原has
 阶段4F已接v9库存参数持久化与使用，保存/恢复的输出大小及未来嵌套版本在改文件前校验。统计/Data/主人与完整LPS导入仍待实现，源档不写；回滚须用独立v8原件，不改版本头。详见[规格](specs/PHASE-4F.md)。
 
 ## 阶段4G Task1：统计类型及地区风险
-已核对StatisticsCalHandle/TakeItem/本地eval/交互统计的字段用途；stat_money是普通Double，时间主写Int64而旧界面部分读Int32，stat_move_length写Int32但界面读Int64。实际库例证明无类型标签、Int64转Double精度损失、整数截断/溢出、非法归零及地区小数误读；迁移不得静默套这种宽松回退。Statistics.GetString保留原转义，日期/FInt64/bool仅是接口能力例，未找到内置statistics对应写入，不预先推断未知键。详见[4G规格](specs/PHASE-4G.md)和[原库样例](../Tests/Fixtures/LEGACY-LPS-SOURCE.md)。只读统计映射/原生计数器兼容检查仍待Task2，当前v9与用户数据不变。
+已核对StatisticsCalHandle/TakeItem/本地eval/交互统计的字段用途；stat_money是普通Double，时间主写Int64而旧界面部分读Int32，stat_move_length写Int32但界面读Int64。实际库例证明无类型标签、Int64转Double精度损失、整数截断/溢出、非法归零及地区小数误读；迁移不得静默套这种宽松回退。Statistics.GetString保留原转义，日期/FInt64/bool仅是接口能力例，未找到内置statistics对应写入，不预先推断未知键。详见[4G规格](specs/PHASE-4G.md)和[原库样例](../Tests/Fixtures/LEGACY-LPS-SOURCE.md)。只读统计映射/表示兼容子集已在Task2接入，但不应用到原生状态；当前v9与用户数据不变。
+
+阶段4G已交付已核对数值字段的只读类型预览，未知原值/重复/文化格式等明确诊断，buy_名称仍需库存ID映射；完整统计迁移、Data映射及确认导入未完成，见[规格](specs/PHASE-4G.md)。

@@ -34,12 +34,12 @@ SetObject存储int/long普通整数、double普通地区小数、FInt64为1e9固
 - [x] 验证序列化确定性、字段普通/固定点差异及Int64精确原值，记录来源/SHA256和地区风险。
 
 ## Task2：只读映射
-- [ ] RED后实现PetLegacyStatisticsPreview及Tests，按上表registry精准键/动态模式，Int64保留精确整数。大小写不归一；源字段/未知/重复/非法值保留，诊断最多200条。
-- [ ] 唯一statistics根才提供映射；未知/重复不能当完整成功。原生计数器子集仅key≤400、abs≤1e12的精确承载数值；buy_原名称不得擅自换成native ID，映射依赖库存ID选择另处理。
-- [ ] PetLegacySavePreview增加statistics只读结果，保持整档仍不可确认导入；原日期/文本/插件内容保留并解释，非规范不猜。
+- [x] RED后实现PetLegacyStatisticsPreview及Tests，按上表registry精准键/动态模式，Int64保留精确整数。大小写不归一；源字段/未知/重复/非法值保留，诊断最多200条。
+- [x] 唯一statistics根才提供映射；未知/重复不能当完整成功。原生计数器子集仅key≤400、abs≤1e12的精确承载数值；buy_原名称不得擅自换成native ID，映射依赖库存ID选择另处理。
+- [x] PetLegacySavePreview增加statistics只读结果，保持整档仍不可确认导入；原日期/文本/插件内容保留并解释，非规范不猜。
 
 ## Task3：验证与交付
-- [ ] 全套Swift/Python/macOS/iOS共享编译/签名、工程再生成/原文许可/链接；独立6.1-sol整批审查、必要一次RED→GREEN修复，文档与交接更新，提交推送ipet-dev。
+- [x] 全套Swift/Python/macOS/iOS共享编译/签名、工程再生成/原文许可/链接；独立6.1-sol整批审查、必要一次RED→GREEN修复，文档与交接更新，提交推送ipet-dev。
 
 ## Review Focus
 同文本多种读取/文化差异；stat_money普通Double与宠物固定点；Int64→Double精度；动态名称键未映射ID；重复/文化相关字典名称不静默丢数据。未知含日期/文本原件必须保留，不把只读子集当整档兼容。
@@ -47,4 +47,4 @@ SetObject存储int/long普通整数、double普通地区小数、FInt64为1e9固
 ## 回滚与后续
 本批无保存/发布状态变更，回滚代码无需恢复档案。后续继续Data中的buytime/套餐/排程/主人及扩展内容映射，建立完整导入规格、双原件备份和确认窗口；原生历史不猜测，不用读取一次statistics就宣称原统计完整迁移。
 
-Task1实测：统计无类型标签，DateTime存ticks，FInt64固定点；大Int64转Double丢1，整数读取截断/溢出，非法读Double归0。fr-FR写1,25在Invariant读为125，不能把当前culture回退当无损迁移。Statistics.AddRange接ISub.info原文字，GetString不解码转义；未知文本需保留rawInfo。四种Oracle模式重新生成逐字节一致。Task2尚未实现，JSON/运行时不变。
+Task1实测：统计无类型标签，DateTime存ticks，FInt64固定点；大Int64转Double丢1，整数读取截断/溢出，非法读Double归0。fr-FR写1,25在Invariant读为125，不能把当前culture回退当无损迁移。Statistics.AddRange接ISub.info原文字，GetString不解码转义；未知文本需保留rawInfo。四种Oracle模式重新生成逐字节一致。Task2已实现只读映射，JSON/运行时不变。独立审查未发现Important/Critical；Minor指出非零小数下溢归零违反合同，已补RED→GREEN修复，真正零、负零和可表示次正规数仍接受。九项针对性回归通过。
