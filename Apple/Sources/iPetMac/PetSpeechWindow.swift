@@ -33,6 +33,7 @@ private struct SpeechBubble:View {
     private var playback:PetSpeechPlayback?
     private var previousTime:TimeInterval?
     private var contentSize=CGSize.zero
+    var onRevealFinished:(()->Void)?
     var isVisible:Bool { panel.isVisible }
     func setTopMost(_ value:Bool) { panel.level=value ? .floating:.normal }
     init() {
@@ -54,7 +55,8 @@ private struct SpeechBubble:View {
     }
     func advance(to time:TimeInterval) {
         guard time.isFinite,let previousTime,time>=previousTime,var playback else { return }
-        self.previousTime=time;playback.advance(by:time-previousTime);self.playback=playback
+        self.previousTime=time;let revealed=playback.advance(by:time-previousTime);self.playback=playback
+        if revealed { onRevealFinished?() }
         if playback.phase == .finished { hide();return }
         let text=playback.displayedText
         if content.text != text { content.text=text }

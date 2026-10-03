@@ -20,10 +20,12 @@ public struct PetSpeechPlayback: Sendable {
         let normalized=fullText.replacingOccurrences(of:"\r",with:"").replacingOccurrences(of:"\n\n",with:"\n")
         holdDuration=Double(normalized.filter { punctuation.contains($0) }.count)*2+4
     }
-    public mutating func advance(by seconds: Double) {
-        guard !cancelled,seconds.isFinite,seconds>=0 else { return }
+    @discardableResult public mutating func advance(by seconds: Double) -> Bool {
+        guard !cancelled,seconds.isFinite,seconds>=0 else { return false }
+        let wasRevealing=phase == .revealing
         // The finite upper bound also avoids overflow on pathological injected clocks.
         elapsed=min(revealDuration+holdDuration+2,elapsed+min(seconds,100_000))
+        return wasRevealing && phase != .revealing
     }
     public mutating func cancel() { cancelled=true }
     public var phase: Phase {

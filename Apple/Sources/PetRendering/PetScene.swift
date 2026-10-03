@@ -52,6 +52,7 @@ import PetCore
     /// Return true when the owner replaces a successfully completed movement.
     public var onMovementCompleted: (() -> Bool)?
     public var onDiagnostic: ((String) -> Void)?
+    private var speechReady:(()->Void)?
     private var timeline: AnimationTimeline?
     private var sideHideMain:AnimationClip?
     private var sideHideReturning=false
@@ -125,6 +126,7 @@ import PetCore
         play(action,mood:mood)
     }
     public func play(_ action: PetAction, mood: PetMood) {
+        speechReady=nil
         sideHideMain=nil;sideHideReturning=false;raisedCycles=nil;fidgetCycles=nil;specialIdle=nil;specialReturning=false;playbackMood=nil
         transitionSteps=[];transitionTarget=nil
         isFinishingActivity=false; requestedGraphID=nil
@@ -132,6 +134,35 @@ import PetCore
         let clip = manifest.resolve(action: action, mood: mood)
         if clip.action != action || clip.mood != mood { onDiagnostic?("动画回退：\(action.rawValue)/\(mood.rawValue) → \(clip.action.rawValue)/\(clip.mood.rawValue)") }
         timeline = AnimationTimeline(clip: clip.selectingVariants(random:&random), looping: [.idle, .sleep, .raised, .walkLeft, .walkRight, .climb, .pinch].contains(action))
+        installTimeline()
+    }
+    public func discardSpeechStart() {
+        if speechReady != nil,requestedAction == .say { finishSpeech() }
+        else { speechReady=nil }
+    }
+    @discardableResult public func playSpeech(mood:PetMood,onReady:@escaping ()->Void) -> Bool {
+        guard requestedAction == .idle,mood != .ill else { return false }
+        let candidates=Set(manifest.clips.filter { $0.action == .say }.compactMap(\.graphID)).sorted().compactMap {
+            manifest.resolvePlayback(action:.say,graphID:$0,mood:mood)
+        }.filter { Set($0.stages.map(\.phase)) == Set([.start,.loop,.end]) }
+        guard !candidates.isEmpty else { onDiagnostic?("说话表情资源缺失，仅显示文字。");return false }
+        let value=random.unit(),unit=value.isFinite ? min(1.0.nextDown,max(0,value)):0
+        let clip=candidates[Int(unit*Double(candidates.count))]
+        sideHideMain=nil;sideHideReturning=false;raisedCycles=nil;fidgetCycles=nil;specialIdle=nil;specialReturning=false;playbackMood=nil
+        transitionSteps=[];transitionTarget=nil;isFinishingActivity=false
+        requestedAction = .say;requestedGraphID=clip.graphID;self.mood=mood;speechReady=onReady
+        timeline=AnimationTimeline(clip:clip.selectingVariants(random:&random),looping:true);installTimeline()
+        return true
+    }
+    public func finishSpeech() {
+        guard requestedAction == .say,currentPhase != .end else { return }
+        speechReady=nil
+        let target=playbackMood ?? mood
+        guard let clip=manifest.resolvePlayback(action:.say,graphID:requestedGraphID,mood:target),
+              let end=clip.selectingVariant(phase:.end,random:&random).stages.first(where: { $0.phase == .end }) else {
+            play(.idle,mood:target);onActionFinished?(.say);return
+        }
+        timeline=AnimationTimeline(clip:AnimationClip(graphID:clip.graphID,action:.say,mood:target,stages:[end]),looping:false)
         installTimeline()
     }
     public func setPlaybackMood(_ mood:PetMood) { playbackMood=mood }
@@ -147,6 +178,7 @@ import PetCore
         if sideHideMain != nil,let graph=sideHideMain?.graphID { sideHideMain=manifest.resolvePlayback(action:.sideHide,graphID:graph,mood:target) }
     }
     private func installTimeline() {
+        if requestedAction != .say { speechReady=nil }
         timelineGeneration &+= 1
         previousTime = nil
         reportedMissingFood = false
@@ -376,6 +408,12 @@ import PetCore
                 refreshPlayback(phase:phase)
             }
         }
+        if requestedAction == .say,currentPhase == .loop,let callback=speechReady {
+            speechReady=nil
+            let generation=timelineGeneration
+            callback()
+            if generation != timelineGeneration { return }
+        }
         if timeline?.finished == true {
             if requestedAction == .specialIdle,specialReturning,let clip=specialClip(graphID:"state.one",mood:playbackMood ?? mood) {
                 specialReturning=false;installSpecial(clip,loopOnly:true);return
@@ -421,8 +459,10 @@ import PetCore
                     onDiagnostic?("无法解码动画帧：\(frame.path)")
                     if requestedAction != .idle {
                         let completed=requestedAction, target=transitionTarget
+                        let ready=completed == .say ? speechReady:nil
                         play(.idle,mood:target ?? mood)
-                        if target != nil || [.walkLeft,.walkRight,.climb,.sideHide,.raised,.pinch,.specialIdle].contains(completed) { onActionFinished?(completed) }
+                        if target != nil || [.walkLeft,.walkRight,.climb,.sideHide,.raised,.pinch,.specialIdle,.say].contains(completed) { onActionFinished?(completed) }
+                        ready?()
                         return
                     }
                 }

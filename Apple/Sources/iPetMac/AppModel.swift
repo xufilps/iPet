@@ -117,6 +117,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         petScene = PetScene(manifest: try PetManifest.load(from: root), assetRoot: root)
         petScene.onDiagnostic = { [weak self] text in self?.recordDiagnostic(.rendering,text);NSLog("%@",text) }
         petScene.play(state.resting ? .sleep : .idle, mood: presentationMood)
+        speech.onRevealFinished = { [weak self] in self?.petScene.finishSpeech() }
         petScene.onIdleCycle = { [weak self] in self?.autonomy.recordIdleCycle() }
         petScene.onPinchLoop = { [weak self] in
             guard let self,self.visible,!self.suspended,self.petView.isInteracting,!self.petView.isDragging else { return false }
@@ -144,7 +145,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         petView.autoresizingMask = [.width, .height]; petView.presentScene(petScene)
         petPanel.contentView = petView
         petView.onPanelRequested = { [weak self] in self?.showControls() }
-        petView.onPressBegin = { [weak self] in self?.engine.recordInteraction();self?.autonomy.reset() }
+        petView.onPressBegin = { [weak self] in self?.petScene.discardSpeechStart();self?.engine.recordInteraction();self?.autonomy.reset() }
         petView.canPinch = { [weak self] point in
             guard let self,self.sideHidePlan == nil else { return false }
             return self.petScene.canPinch(at:point,mood:self.engine.presentationMood)
@@ -472,6 +473,12 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         showSpeech(entry.rendered(state:state))
     }
     private func showSpeech(_ text:String) {
+        guard visible,!suspended,companionScreen != nil else { return }
+        petScene.discardSpeechStart();speech.hide()
+        if !petView.isInteracting,petScene.playSpeech(mood:presentationMood,onReady:{ [weak self] in self?.presentSpeech(text) }) { return }
+        presentSpeech(text)
+    }
+    private func presentSpeech(_ text:String) {
         guard visible, !suspended, let screen=companionScreen else { return }
         if text.count>4000 { recordDiagnostic(.rendering,"说话内容超过显示上限，仅显示前4000字符。") }
         speech.show(text:text,name:engine.state.name,petFrame:speechAnchor,screen:screen)
@@ -555,7 +562,8 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         }
         let eligible = !manualTest && PetAutonomy.canStart(state:engine.state,action:petScene.requestedAction,visible:visible,interacting:petView.isInteracting,finishing:petScene.isFinishingActivity)
         if let entry=dialogue.automatic(state:engine.state,eligible:eligible && !speech.isVisible,mood:presentationMood) { showSpeech(entry.rendered(state:engine.state)) }
-        if let behavior = autonomy.poll(eligible:eligible,allowsMovement:autoMove,mood:engine.presentationMood,working:petScene.requestedAction == .activity) {
+        let autonomyEligible = !manualTest && PetAutonomy.canStart(state:engine.state,action:petScene.requestedAction,visible:visible,interacting:petView.isInteracting,finishing:petScene.isFinishingActivity)
+        if let behavior = autonomy.poll(eligible:autonomyEligible,allowsMovement:autoMove,mood:engine.presentationMood,working:petScene.requestedAction == .activity) {
             switch behavior {
             case .walkLeft, .walkRight:
                 _ = chooseMovement()
@@ -626,7 +634,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
     @objc func toggleVisibility() {
         keyboardSender.cancel()
         petView.cancelInteraction()
-        speech.hide();toolbar?.hide();dialogue.resetTiming()
+        petScene?.discardSpeechStart();speech.hide();toolbar?.hide();dialogue.resetTiming()
         visible.toggle(); menuVisibility.title = visible ? "隐藏桌宠" : "显示桌宠"
         cancelMovement(); autonomy.reset()
         if visible { restoreBaseAnimation(force:true); petView.isPaused = false; petPanel.orderFrontRegardless() }
@@ -696,7 +704,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         let frame=needsEdgeRecovery ? edgeScreen.map { PetClimbPlan.recovered(pet:petPanel.frame,screen:$0) } ?? petPanel.frame : petPanel.frame
         UserDefaults.standard.set(frame.minX, forKey: "petX"); UserDefaults.standard.set(frame.minY, forKey: "petY")
     }
-    private func suspend() { recordDiagnostic(.lifecycle,"系统即将睡眠，计时暂停且不补算。");keyboardSender.cancel(); cancelInventoryUse();petView.cancelInteraction();speech.hide();toolbar?.hide();dialogue.resetTiming();save(); suspended = true; cancelMovement(); autonomy.reset(); petView.isPaused = true; petScene.releaseTextures() }
+    private func suspend() { recordDiagnostic(.lifecycle,"系统即将睡眠，计时暂停且不补算。");keyboardSender.cancel(); cancelInventoryUse();petView.cancelInteraction();petScene?.discardSpeechStart();speech.hide();toolbar?.hide();dialogue.resetTiming();save(); suspended = true; cancelMovement(); autonomy.reset(); petView.isPaused = true; petScene.releaseTextures() }
     private func resume() {
         recordDiagnostic(.lifecycle,"系统唤醒，重建计时基准。");
         engine.resetClock();dialogue.resetTiming(); lastTick = nil; lastSave = ProcessInfo.processInfo.systemUptime
@@ -712,7 +720,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
             message = "保存失败：\(error.localizedDescription)";recordDiagnostic(.save,message);NSLog("%@",message);return false
         }
     }
-    func stop() { keyboardSender.cancel(); cancelInventoryUse();cancelMovement();speech.hide();toolbar?.hide();petView?.cancelInteraction();timer?.cancel(); if engine != nil { save() }; persistPositionIfReady() }
+    func stop() { keyboardSender.cancel(); cancelInventoryUse();cancelMovement();petScene?.discardSpeechStart();speech.hide();toolbar?.hide();petView?.cancelInteraction();timer?.cancel(); if engine != nil { save() }; persistPositionIfReady() }
     private func persistPositionIfReady() { if petPanel != nil { persistPosition() } }
     private func canManageSave() -> Bool {
         guard writable else { message="存档写入已暂停，先处理原文件后再导出或恢复。";return false }
@@ -750,7 +758,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
             alert.addButton(withTitle:"恢复并保留原件");alert.addButton(withTitle:"取消")
             guard alert.runModal() == .alertFirstButtonReturn,canManageSave() else { return }
             let restored=try store.restore(data,currentState:engine.state)
-            petView.cancelInteraction();cancelMovement();speech.hide();dialogue.resetTiming();autonomy.reset()
+            petView.cancelInteraction();cancelMovement();petScene?.discardSpeechStart();speech.hide();dialogue.resetTiming();autonomy.reset()
             engine=PetEngine(state:restored,catalog:catalog)
             engine.configureSimulation(enabled:simulationEnabled,fixedMood:fixedMood)
             state=engine.state;lastTick=nil;lastSave=ProcessInfo.processInfo.systemUptime

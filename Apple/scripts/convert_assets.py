@@ -57,6 +57,7 @@ def convert(source, destination):
     diagnostics = []
     roots = [(action,subtree,subtree.split("/")[-1] if action in ("walkLeft","walkRight") else "raised.static" if action=="raised" else None) for action,subtree in ACTIONS.items()]
     roots += [('pinch','Pinch',None)]
+    roots += [('say','Say/'+name,'say.'+name.lower()) for name in ['Self','Serious','Shining','Shy']]
     roots += [('raised','Raise/Raised_Dynamic','raised.dynamic')]
     roots += [(action,'MOVE/'+graph,graph) for action,side in [('walkLeft','left'),('walkRight','right')] for graph in ['walk.'+side+'.faster','walk.'+side+'.slow','crawl.'+side]]
     roots += [('sideHide','SideHide_'+side+'_'+kind,'sidehide.'+side.lower()+('' if kind=='Main' else '.rise')) for side in ['Left','Right'] for kind in ['Main','Rise']]
@@ -103,7 +104,7 @@ def convert(source, destination):
                     if groups['start'] and groups['loop']: clip['idleLoopLimit']=int(durations.get(graph,10))
                     clips.append(clip)
                 continue
-            matching = [p for p in leaves if mode.lower() in p.relative_to(root).as_posix().lower()]
+            matching = leaves if action == 'say' and mode == 'Nomal' else [] if action == 'say' else [p for p in leaves if mode.lower() in p.relative_to(root).as_posix().lower()]
             if not matching:
                 continue  # Renderer explicitly falls back to Nomal/idle.
             stages = []
@@ -117,7 +118,7 @@ def convert(source, destination):
                     choices = [p for p in matching if any(part.lower().split('_')[0] == prefix or part.lower().split('_')[-1] == prefix for part in p.relative_to(root).parts)]
                     if choices:
                         stage = {'phase': phase, 'layers': [layer(choices[0], 0)], 'foodTrack': []}
-                        if action in ('head','body','fidget','walkLeft','walkRight','climb','sideHide','pinch','specialIdle','raised') and len(choices)>1:
+                        if action in ('head','body','fidget','walkLeft','walkRight','climb','sideHide','pinch','specialIdle','raised','say') and len(choices)>1:
                             stage['variants'] = [[layer(path,0)] for path in choices[1:]]
                         stages.append(stage)
             if stages:

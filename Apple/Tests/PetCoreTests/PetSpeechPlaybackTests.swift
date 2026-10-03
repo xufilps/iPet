@@ -44,4 +44,16 @@ final class PetSpeechPlaybackTests:XCTestCase {
         var empty=PetSpeechPlayback(text:"");empty.advance(by:0.15)
         XCTAssertEqual(empty.phase,.holding)
     }
+    func testRevealCompletionSignalsOnceEvenWhenClockSkipsHolding() {
+        var speech=PetSpeechPlayback(text:"你好")
+        XCTAssertFalse(speech.advance(by:0.15))
+        XCTAssertTrue(speech.advance(by:0.15))
+        XCTAssertFalse(speech.advance(by:1))
+        var skipped=PetSpeechPlayback(text:"你好")
+        XCTAssertTrue(skipped.advance(by:100))
+        XCTAssertFalse(skipped.advance(by:100))
+        var cancelled=PetSpeechPlayback(text:"你好")
+        cancelled.cancel();XCTAssertFalse(cancelled.advance(by:100))
+    }
+
 }

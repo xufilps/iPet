@@ -98,6 +98,18 @@ class ConversionTests(unittest.TestCase):
         self.assertEqual(len(end['variants']),1)
         self.assertIn('C_Happy_2',end['variants'][0][0]['frames'][0]['path'])
 
+    def test_speech_default_mode_and_loop_variants(self):
+        for name in ['A','B_1','B_2','C']:
+            directory=self.source/'pet/vup/Say/Shining'/name
+            directory.mkdir(parents=True)
+            (directory/'say_0_100.png').write_bytes(png(10))
+        self.run_conversion()
+        clips=[c for c in json.loads((self.output/'manifest.json').read_text())['clips'] if c.get('graphID')=='say.shining']
+        self.assertEqual(len(clips),1)
+        self.assertEqual(clips[0]['mood'],'Nomal')
+        self.assertEqual([s['phase'] for s in clips[0]['stages']],['start','loop','end'])
+        self.assertEqual(len(clips[0]['stages'][1]['variants']),1)
+
     def test_default_alternatives_are_exported_and_validated(self):
         directory=self.source/'pet/vup/Default/Nomal/2'
         directory.mkdir(parents=True)
