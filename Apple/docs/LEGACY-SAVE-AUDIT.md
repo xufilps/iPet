@@ -1,6 +1,6 @@
 # Windows LPS 旧存档迁移前审计 — 2026-10-03
 
-固定源头：上游1a06c598；本文件记录源码证据和迁移依赖，**当前尚不能导入Windows LPS**。现有“从JSON恢复”只处理iPet JSON。阶段2B已纠正桌面养成运行时与JSON升级；下一步仍须核对LPS数值编码和原字段，不能直接把资源转换器当存档解析器。
+固定源头：上游1a06c598；本文件记录源码证据和迁移依赖，**当前尚不能导入Windows LPS**；阶段4B已提供有原库合成样例验证的纯结构/规范固定点解码层。现有“从JSON恢复”只处理iPet JSON。阶段2B已纠正桌面养成运行时与JSON升级；下一步仍须核对LPS数值编码和原字段，不能直接把资源转换器当存档解析器。
 
 ## 实际加载路径与差异
 MainWindow.SavesLoad创建GameSave_v2（或叠加已有旧数据），取其GameSave_VPet并赋给Core.Save。GameSave_v2.load读取vpet和statistics，将其余LPS放入Data；保存ToLPS写Data、GameSave.ToLine、statistics及hash。MainWindow保存把Items逐项序列化为item0、item1…，读取按item前缀重建。项目使用LinePutScript1.11.9；其ConvertType.ToFloat使用FInt64，**不能在尚未核对编码前把Info直接当普通十进制Double**。
@@ -34,3 +34,7 @@ UI先只读预览，列出准确保留、明确转换、未支持内容、原has
 - [MainWindow](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows/MainWindow.cs)：Save的item序列化、SavesLoad赋值及溢出修复。
 - [Item](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/Mod/Item.cs)、[Statistics](https://github.com/LorisYounger/VPet/blob/1a06c5981330564bab05a098d2d7969a4b119dd3/VPet-Simulator.Windows.Interface/Statistics.cs)、Interface.csproj的LinePutScript1.11.9引用。
 - [本批规格](specs/PHASE-2A.md)、[PetDesktopGrowth](../Sources/PetCore/PetDesktopGrowth.swift)、[回归](../Tests/PetCoreTests/PetDesktopGrowthTests.swift)。
+
+## 阶段4B：已验证的解码合同
+固定LinePutScript1.11.9标签69ea42f7，实际NuGet库生成9组结构及8组FInt64数值样例。规范浮点存储为Int64/1e9，不按普通小数猜测；名称采用原版ordinal首次匹配，保留重复字段和行，转义在切分之后按源顺序解码。原库命名Infinity哨兵实际ToDouble为有限值，iPet明确拒绝三种命名特殊值及非规范/地区相关数字，后续预览需报告，不自行套溢出补偿。
+[PetLegacyLPS](../Sources/PetCore/PetLegacyLPS.swift)限制8MiB、10000行、每行2000子字段，UTF8/BOM及源CRLF/延续规则已验证；[夹具来源](../Tests/Fixtures/LEGACY-LPS-SOURCE.md)保留生成器/哈希。解码层不映射PetState，不写档，不等于导入或通用MOD支持。下一批仍需原字段、库存参数、统计/Data/hash映射及完整预览/备份/发布流程。

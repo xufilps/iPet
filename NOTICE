@@ -28,3 +28,10 @@ redistribution of animation files in this source repository.
 The iPet pixel-style application icon was generated with OpenAI imagegen using the original vpeticon.png as a visual reference. This does not change the original character and animation licensing. See Apple/Design/README.md and Apple/ATTRIBUTION.md.
 
 The original C# project files were removed from the current iPet source tree; the upstream project remains at https://github.com/LorisYounger/VPet. Required original animation/configuration assets, attribution, licenses and Git history are retained.
+
+The native legacy LPS compatibility decoder follows the serialization contracts
+of LinePutScript 1.11.9 by LorisYounger (LB Copyright © 2018), licensed under
+Apache-2.0: https://github.com/LorisYounger/LinePutScript/tree/69ea42f7f213be2669879705035a77a1804c457a .
+The Swift implementation is modified for bounded parsing and explicit numeric
+rejection. A development-only fixture generator uses the original NuGet library;
+the macOS application does not bundle or require the .NET library.

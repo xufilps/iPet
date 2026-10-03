@@ -192,12 +192,10 @@ python3 Apple/scripts/soak.py --seconds 7200 --output Apple/build/soak-2h.json
 
 ---
 
-## 原项目 README.md（原文保留）
-
-以下完整保留原 VPet 简体中文 README 原文，对照上游基线 `1a06c5981330564bab05a098d2d7969a4b119dd3`。后续内容描述原 Windows 项目、原发布渠道和原授权；iPet 的当前状态以上文为准。原文中的源码相对链接、Windows 工程和构建说明属于历史内容，现应到 [原仓库](https://github.com/LorisYounger/VPet) 阅读使用；下面的原文仍保持逐字节不变。
 
 
-## v0.2.0 养成升级与验证边界
+
+## v0.2.0 首次养成升级（历史记录）
 
 旧原生 JSON v1 加载保留原属性，首次升级补入 1000 金币、空背包与食用历史；写 v2 前保留独立 v1 原件，不随日常备份轮换覆盖。未知物品和活动 ID 保留，无法使用的条目明确显示；加载中的活动暂停，用户决定继续或结束，退出/睡眠不追补活动时长和收益。食用衰减按墙钟到期，这与离线养成扣减不同。
 
@@ -207,7 +205,18 @@ python3 Apple/scripts/soak.py --seconds 7200 --output Apple/build/soak-2h.json
 
 
 
+## 当前养成与旧档兼容
+
 当前养成已切换为原桌面 `GameSave_VPet` 模型：经验表示本级剩余经验，负经验不降级，等级突破影响属性上限，好感上限独立保存，新建金币100。旧JSON累计经验自动转换，既有金币和属性保留；突破后的原属性可暂高于新上限，下次对应属性变化时截断。升级动画尚未接入，详见[阶段2B规格](Apple/docs/specs/PHASE-2B.md)。
+
+
+Windows LPS 导入正在推进：已验证原库格式的纯解码层，尚无字段迁移与导入入口，当前只能恢复iPet JSON。详见[旧档审计](Apple/docs/LEGACY-SAVE-AUDIT.md)。
+
+
+
+## 原项目 README.md（原文保留）
+
+以下完整保留原 VPet 简体中文 README 原文，对照上游基线 `1a06c5981330564bab05a098d2d7969a4b119dd3`。后续内容描述原 Windows 项目、原发布渠道和原授权；iPet 的当前状态以上文为准。原文中的源码相对链接、Windows 工程和构建说明属于历史内容，现应到 [原仓库](https://github.com/LorisYounger/VPet) 阅读使用；下面的原文仍保持逐字节不变。
 
 # VPet-Simulator
 

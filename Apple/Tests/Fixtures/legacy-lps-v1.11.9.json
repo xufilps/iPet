@@ -1,0 +1,654 @@
+{
+  "library": "LinePutScript",
+  "version": "1.11.9",
+  "sourceCommit": "69ea42f7f213be2669879705035a77a1804c457a",
+  "culture": "Invariant",
+  "cases": [
+    {
+      "input": "vpet:|Level#10:|LevelMax#0:|money#100000000000:|exp#50000000000:|",
+      "lines": [
+        {
+          "name": "vpet",
+          "rawInfo": "",
+          "info": "",
+          "rawText": "",
+          "text": "",
+          "comment": "",
+          "fields": [
+            {
+              "name": "Level",
+              "rawInfo": "10",
+              "info": "10"
+            },
+            {
+              "name": "LevelMax",
+              "rawInfo": "0",
+              "info": "0"
+            },
+            {
+              "name": "money",
+              "rawInfo": "100000000000",
+              "info": "100000000000"
+            },
+            {
+              "name": "exp",
+              "rawInfo": "50000000000",
+              "info": "50000000000"
+            }
+          ],
+          "lookups": [
+            {
+              "name": "name",
+              "info": null
+            },
+            {
+              "name": "Name",
+              "info": null
+            },
+            {
+              "name": "NAME",
+              "info": null
+            },
+            {
+              "name": "\u00E9",
+              "info": null
+            },
+            {
+              "name": "e\u0301",
+              "info": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "input": "vpet#id:|name#\u841D\u8389\u65AF:|name#\u7B2C\u4E8C\u540D:|Name#\u5927\u5C0F\u5199:|\u672B\u5C3E///comment///tail",
+      "lines": [
+        {
+          "name": "vpet",
+          "rawInfo": "id",
+          "info": "id",
+          "rawText": "\u672B\u5C3E",
+          "text": "\u672B\u5C3E",
+          "comment": "comment///tail",
+          "fields": [
+            {
+              "name": "name",
+              "rawInfo": "\u841D\u8389\u65AF",
+              "info": "\u841D\u8389\u65AF"
+            },
+            {
+              "name": "name",
+              "rawInfo": "\u7B2C\u4E8C\u540D",
+              "info": "\u7B2C\u4E8C\u540D"
+            },
+            {
+              "name": "Name",
+              "rawInfo": "\u5927\u5C0F\u5199",
+              "info": "\u5927\u5C0F\u5199"
+            }
+          ],
+          "lookups": [
+            {
+              "name": "name",
+              "info": "\u841D\u8389\u65AF"
+            },
+            {
+              "name": "Name",
+              "info": "\u5927\u5C0F\u5199"
+            },
+            {
+              "name": "NAME",
+              "info": null
+            },
+            {
+              "name": "\u00E9",
+              "info": null
+            },
+            {
+              "name": "e\u0301",
+              "info": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "input": "vpet:|hostname#\u4E3B/!n\u4EBA/n:/!|/id/com/!/!|=/tab/r:|\u6587\u672C/!n/n:/!|/id/com/!/!|=",
+      "lines": [
+        {
+          "name": "vpet",
+          "rawInfo": "",
+          "info": "",
+          "rawText": "\u6587\u672C/!n/n:/!|/id/com/!/!|=",
+          "text": "\u6587\u672C/n\n:|#,/|=",
+          "comment": "",
+          "fields": [
+            {
+              "name": "hostname",
+              "rawInfo": "\u4E3B/!n\u4EBA/n:/!|/id/com/!/!|=/tab/r",
+              "info": "\u4E3B/n\u4EBA\n:|#,/|=\t\r"
+            }
+          ],
+          "lookups": [
+            {
+              "name": "name",
+              "info": null
+            },
+            {
+              "name": "Name",
+              "info": null
+            },
+            {
+              "name": "NAME",
+              "info": null
+            },
+            {
+              "name": "\u00E9",
+              "info": null
+            },
+            {
+              "name": "e\u0301",
+              "info": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "input": "vpet:|name#first:\r\n|second:|\r\n\r\nstatistics:|day#1:\n:2:|",
+      "lines": [
+        {
+          "name": "vpet",
+          "rawInfo": "",
+          "info": "",
+          "rawText": "",
+          "text": "",
+          "comment": "",
+          "fields": [
+            {
+              "name": "name",
+              "rawInfo": "first/nsecond",
+              "info": "first\nsecond"
+            }
+          ],
+          "lookups": [
+            {
+              "name": "name",
+              "info": "first\nsecond"
+            },
+            {
+              "name": "Name",
+              "info": null
+            },
+            {
+              "name": "NAME",
+              "info": null
+            },
+            {
+              "name": "\u00E9",
+              "info": null
+            },
+            {
+              "name": "e\u0301",
+              "info": null
+            }
+          ]
+        },
+        {
+          "name": "statistics",
+          "rawInfo": "",
+          "info": "",
+          "rawText": "",
+          "text": "",
+          "comment": "",
+          "fields": [
+            {
+              "name": "day",
+              "rawInfo": "12",
+              "info": "12"
+            }
+          ],
+          "lookups": [
+            {
+              "name": "name",
+              "info": null
+            },
+            {
+              "name": "Name",
+              "info": null
+            },
+            {
+              "name": "NAME",
+              "info": null
+            },
+            {
+              "name": "\u00E9",
+              "info": null
+            },
+            {
+              "name": "e\u0301",
+              "info": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "input": "alone\nplain#info\nempty:|\ncomment///note\n",
+      "lines": [
+        {
+          "name": "alone",
+          "rawInfo": "",
+          "info": "",
+          "rawText": "alone",
+          "text": "alone",
+          "comment": "",
+          "fields": [],
+          "lookups": [
+            {
+              "name": "name",
+              "info": null
+            },
+            {
+              "name": "Name",
+              "info": null
+            },
+            {
+              "name": "NAME",
+              "info": null
+            },
+            {
+              "name": "\u00E9",
+              "info": null
+            },
+            {
+              "name": "e\u0301",
+              "info": null
+            }
+          ]
+        },
+        {
+          "name": "plain",
+          "rawInfo": "info",
+          "info": "info",
+          "rawText": "plain#info",
+          "text": "plain#info",
+          "comment": "",
+          "fields": [],
+          "lookups": [
+            {
+              "name": "name",
+              "info": null
+            },
+            {
+              "name": "Name",
+              "info": null
+            },
+            {
+              "name": "NAME",
+              "info": null
+            },
+            {
+              "name": "\u00E9",
+              "info": null
+            },
+            {
+              "name": "e\u0301",
+              "info": null
+            }
+          ]
+        },
+        {
+          "name": "empty",
+          "rawInfo": "",
+          "info": "",
+          "rawText": "",
+          "text": "",
+          "comment": "",
+          "fields": [],
+          "lookups": [
+            {
+              "name": "name",
+              "info": null
+            },
+            {
+              "name": "Name",
+              "info": null
+            },
+            {
+              "name": "NAME",
+              "info": null
+            },
+            {
+              "name": "\u00E9",
+              "info": null
+            },
+            {
+              "name": "e\u0301",
+              "info": null
+            }
+          ]
+        },
+        {
+          "name": "comment",
+          "rawInfo": "",
+          "info": "",
+          "rawText": "comment",
+          "text": "comment",
+          "comment": "note",
+          "fields": [],
+          "lookups": [
+            {
+              "name": "name",
+              "info": null
+            },
+            {
+              "name": "Name",
+              "info": null
+            },
+            {
+              "name": "NAME",
+              "info": null
+            },
+            {
+              "name": "\u00E9",
+              "info": null
+            },
+            {
+              "name": "e\u0301",
+              "info": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "input": "vpet:|value#one#two:|value:|last",
+      "lines": [
+        {
+          "name": "vpet",
+          "rawInfo": "",
+          "info": "",
+          "rawText": "last",
+          "text": "last",
+          "comment": "",
+          "fields": [
+            {
+              "name": "value",
+              "rawInfo": "one#two",
+              "info": "one#two"
+            },
+            {
+              "name": "value",
+              "rawInfo": "",
+              "info": ""
+            }
+          ],
+          "lookups": [
+            {
+              "name": "name",
+              "info": null
+            },
+            {
+              "name": "Name",
+              "info": null
+            },
+            {
+              "name": "NAME",
+              "info": null
+            },
+            {
+              "name": "\u00E9",
+              "info": null
+            },
+            {
+              "name": "e\u0301",
+              "info": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "input": "vpet:|Level#10:|\nvpet:|Level#20:|",
+      "lines": [
+        {
+          "name": "vpet",
+          "rawInfo": "",
+          "info": "",
+          "rawText": "",
+          "text": "",
+          "comment": "",
+          "fields": [
+            {
+              "name": "Level",
+              "rawInfo": "10",
+              "info": "10"
+            }
+          ],
+          "lookups": [
+            {
+              "name": "name",
+              "info": null
+            },
+            {
+              "name": "Name",
+              "info": null
+            },
+            {
+              "name": "NAME",
+              "info": null
+            },
+            {
+              "name": "\u00E9",
+              "info": null
+            },
+            {
+              "name": "e\u0301",
+              "info": null
+            }
+          ]
+        },
+        {
+          "name": "vpet",
+          "rawInfo": "",
+          "info": "",
+          "rawText": "",
+          "text": "",
+          "comment": "",
+          "fields": [
+            {
+              "name": "Level",
+              "rawInfo": "20",
+              "info": "20"
+            }
+          ],
+          "lookups": [
+            {
+              "name": "name",
+              "info": null
+            },
+            {
+              "name": "Name",
+              "info": null
+            },
+            {
+              "name": "NAME",
+              "info": null
+            },
+            {
+              "name": "\u00E9",
+              "info": null
+            },
+            {
+              "name": "e\u0301",
+              "info": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "input": "vpet#\u0301header:|name#\u0301x:|",
+      "lines": [
+        {
+          "name": "vpet",
+          "rawInfo": "\u0301header",
+          "info": "\u0301header",
+          "rawText": "",
+          "text": "",
+          "comment": "",
+          "fields": [
+            {
+              "name": "name",
+              "rawInfo": "\u0301x",
+              "info": "\u0301x"
+            }
+          ],
+          "lookups": [
+            {
+              "name": "name",
+              "info": "\u0301x"
+            },
+            {
+              "name": "Name",
+              "info": null
+            },
+            {
+              "name": "NAME",
+              "info": null
+            },
+            {
+              "name": "\u00E9",
+              "info": null
+            },
+            {
+              "name": "e\u0301",
+              "info": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "input": "vpet:|e\u0301#first:|\u00E9#second:|",
+      "lines": [
+        {
+          "name": "vpet",
+          "rawInfo": "",
+          "info": "",
+          "rawText": "",
+          "text": "",
+          "comment": "",
+          "fields": [
+            {
+              "name": "e\u0301",
+              "rawInfo": "first",
+              "info": "first"
+            },
+            {
+              "name": "\u00E9",
+              "rawInfo": "second",
+              "info": "second"
+            }
+          ],
+          "lookups": [
+            {
+              "name": "name",
+              "info": null
+            },
+            {
+              "name": "Name",
+              "info": null
+            },
+            {
+              "name": "NAME",
+              "info": null
+            },
+            {
+              "name": "\u00E9",
+              "info": "second"
+            },
+            {
+              "name": "e\u0301",
+              "info": "first"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "numbers": [
+    {
+      "value": 0,
+      "stored": "0",
+      "decoded": 0
+    },
+    {
+      "value": 1,
+      "stored": "1000000000",
+      "decoded": 1
+    },
+    {
+      "value": -1,
+      "stored": "-1000000000",
+      "decoded": -1
+    },
+    {
+      "value": 100,
+      "stored": "100000000000",
+      "decoded": 100
+    },
+    {
+      "value": 50.25,
+      "stored": "50250000000",
+      "decoded": 50.25
+    },
+    {
+      "value": -1E-09,
+      "stored": "-1",
+      "decoded": -1E-09
+    },
+    {
+      "value": 1234.56789,
+      "stored": "1234567890000",
+      "decoded": 1234.56789
+    },
+    {
+      "value": 199899.95,
+      "stored": "199899950000000",
+      "decoded": 199899.95
+    }
+  ],
+  "sentinels": [
+    {
+      "raw": "-9223372036854775808",
+      "nan": false,
+      "negativeInfinity": false,
+      "positiveInfinity": false,
+      "decoded": "-9223372036.854776"
+    },
+    {
+      "raw": "-9223372036854775807",
+      "nan": false,
+      "negativeInfinity": true,
+      "positiveInfinity": false,
+      "decoded": "-9223372036.854776"
+    },
+    {
+      "raw": "9223372036854775806",
+      "nan": true,
+      "negativeInfinity": false,
+      "positiveInfinity": false,
+      "decoded": "NaN"
+    },
+    {
+      "raw": "9223372036854775807",
+      "nan": false,
+      "negativeInfinity": false,
+      "positiveInfinity": true,
+      "decoded": "9223372036.854776"
+    }
+  ]
+}
