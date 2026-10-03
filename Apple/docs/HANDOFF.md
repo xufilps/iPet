@@ -355,3 +355,9 @@ v0.2.0设置页提供点击时快照导出、选择文件只读摘要/确认恢�
 交付189条原版SelectText转换、独立选择目录/会话池、养成效果与原事件计数、对话页和菜单入口。原五项抽池/条件边界、600秒严格刷新、每次原期限加300秒、后效补一个话题均已接入，按ID选择避免原UI索引映射隐患；话题效果原生可见。保存失败保留内存结果并锁后续选择，事务状态验证失败回滚数值和计数且不消费选项。规格检查点530f4a09，完整合同见[PHASE-3AJ](specs/PHASE-3AJ.md)。原README7775字节后缀及LICENSE完整，main未改。
 验证宿主沿用arm64 macOS27.0/Xcode27.0/Swift6.4；verify.sh日志Apple/build/verification/phase3aj.log通过，macOS Release/严格签名和iOS Simulator共享模块编译成功；新增两项边界检查后完整Swift重跑phase3aj-tests-final.log：182核心+95渲染+6适配=283项，Python23项。工程重生成字节一致，构建.app中确认189条选择清单。日志为本机忽略输出；独立6.1-sol源码审查未发现阻塞项。
 尚无原生面板关闭重开/连续选择/睡眠倒计时/焦点实机证据，长期压力仍最后执行；没有改变正式存档或发送真实按键。原hostsay持久日志、原气泡附加描述和语音尚缺；内置文本正常，畸形空/未闭合占位符在资源加载端的额外防御校验延后，本批不宣称通用MOD兼容。存档仍v7；回滚前备份整个Application Support目录，回滚代码无需降级或删除存档。下一步审计旧LPS存档一次性导入与可独立数据兼容，不进入iOS应用/发行。
+
+## 2026-10-03 / 阶段2A：桌面等级模型基础与旧档审计
+固定原MainWindow.SavesLoad赋给Core.Save的是GameSave_VPet，初版依据Core/GameSave的累计经验/固定100上限并非桌面整体行为。已纠正README、差异矩阵和剩余清单的等价声明，新增[LEGACY-SAVE-AUDIT](LEGACY-SAVE-AUDIT.md)列明旧档映射、实际类、LinePutScript1.11.9浮点编码及库存/统计/hash/未知Data依赖。规格检查点9ad2e9d7；[PetDesktopGrowth](../Sources/PetCore/PetDesktopGrowth.swift)实现剩余经验、独立等级/突破、原阈值、负经验不降级、独立好感上限、动态上限和桌面CalMode原比例>=80条件。大额经验按突破段与二分处理，固定参考逐级循环核对，不逐级遍历至巨额。
+本批仅交付共享模型，**尚未接入PetState、引擎、UI和存档**；实际存档仍v7、未动用户数据、WindowsLPS尚不能导入。下一批需先实现全养成调用点/状态显示与安全JSON升级，再按审计推进预览/一次性导入。不要把纯模型测试当应用养成已纠偏，也不把生成审计文档当旧档已兼容。
+验证宿主沿用arm64 macOS27.0/Xcode27.0/Swift6.4；完整verify.sh（Apple/build/verification/phase2a.log）通过：189核心+95渲染+6适配=290Swift、23Python；macOS Release/ad-hoc签名、严格验证和iOS Simulator共享模块编译通过。工程重生成字节一致，原README7775字节后缀与LICENSE完整，文档本地链接/diff检查通过。独立6.1-sol审查无正确性问题；建议的极端Int解码/更多小数回归尚未追加，现有验证覆盖规格内固定场景，不声明全整数域或无限C#溢出兼容。模型范围突破0...10000、经验绝对值≤1e12、好感上限≤1e12，越界事务拒绝而非截断。
+回滚本批代码即可；运行时存档不变，未来接入的格式升级另立规格并独立保留原件。长期压力、真实睡眠/多屏和iOS应用/发行继续留后，main仍上游镜像。

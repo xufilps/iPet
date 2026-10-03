@@ -1,17 +1,17 @@
 # 行为对照 — 2026-10-02 / v0.2.0
 
-对照基线 `1a06c598`，核心来源为 `GameSave.cs` 的 EatFood、StoreTake、CalMode 及属性 setter，`MainLogic.cs` 的 FunctionSpend 和默认 15 秒 EventTimer，`MainDisplay.cs` 的头部/身体抚摸入口。
+对照基线 `1a06c598`，当前运行时初版核心来源为 `GameSave.cs` 的 EatFood、StoreTake、CalMode 及属性 setter，`MainLogic.cs` 的 FunctionSpend 和默认 15 秒 EventTimer，`MainDisplay.cs` 的头部/身体抚摸入口。
 
 | 行为 | Swift 首版 |
 | --- | --- |
 | 默认养成 | 每 15 秒推进 TimePass=0.05，保留饱腹/饮水、体力、健康、心情、经验和好感公式及运算顺序 |
 | 低饱腹/饮水/心情 | 保留 setter 的溢出伤害、心情对健康/好感的影响与 0–100 截断 |
-| 状态 | 保留 CalMode 的健康、心情、好感阈值和边界比较 |
+| 状态 | 当前保留共享Core CalMode；桌面GameSave_VPet动态上限/比例判断不同，待阶段2A接入 |
 | 投喂 | 一半体力/食物/饮料立即增加，一半缓慢释放；保留 StoreTake 将不足1的尾数丢弃的行为 |
 | 抚摸 | 体力≥10且心情<100时体力-2、心情+1；其他状态仍播放动画 |
 | 休息 | 保留原公式，包括饮水≥25的分支使后续≥75分支不可达；不擅自修正原逻辑 |
 | 随机健康 | 保留原 Next(1,3) 的1或2；Next(0,1) 恒为0，不误移植为0或1随机 |
-| 经验下降 | 等级可下降，历史好感可能短暂超过当前等级上限；存档允许原规则产生的合法历史值 |
+| 经验下降 | 当前共享Core模型可掉级；Windows桌面模型负经验不掉级，需纠偏；现有JSON不能据此冒称桌面等价 |
 | 时间 | 已查养成定时器和主存档加载路径未见离线补算；首版不新增离线消耗。暂停恢复重建时钟，长调度间隔不补算 |
 | 互动空闲时间 | 用活跃逻辑时间计算，排除退出、睡眠和暂停的时间，这是生命周期适配 |
 | 物品 | 118原记录，七类、原价格与七属性；一半即时/一半缓释、原食用衰减及药品代价；限时4项不纳入 |
@@ -292,3 +292,6 @@ CheckPosition的上/下/左/右各要求距离<角色对应尺寸×-0.25，反�
 ## 阶段3AJ：选择式本地对话
 固定原版TalkSelect维护五个不同Choose，只有RelsTime严格早于DateTime.Now才重抽并清空已说集合；每次成功选择延长原期限五分钟。选择效果按EatFood顺序应用后另加金币，exp/like/money统计按符号累计事件次数，不是实际变化值。ToTags与候选Tags按大小写精确匹配，最多补一个，使用应用后状态检查；已有池不重筛。Swift独立PetSelectionSession采用注入墙上时钟与随机源，运行时池不保存，不使用普通ClickText冷却；UI按ID选择、效果失败不消费、保存失败停止后续选择。原CheckState只检查八项包含边界条件，未用Mode/小时/活动，保留此行为。
 转换189条内置SelectText为独立v1清单，Tag角色标签与Tags话题标签分离，效果按原MainWindow限幅，经验要求整数。原生页面显示效果说明，诊断记录选择文本；原气泡附加效果描述及hostsay持久历史尚未完整迁移。相同v7存档保存效果和计数，期限睡眠继续流逝但不推进离线养成。八项核心回归覆盖边界/抽池/延时/后效/拒绝/真正状态验证回滚/重复选择/固定随机；实机体验单列。
+
+## 阶段2A：桌面保存类审计与模型基础
+MainWindow.SavesLoad将GameSave_v2.GameSave_VPet赋给Core.Save，实际桌面规则与初版参考Core/GameSave不同。桌面保存Level/LevelMax/剩余Exp，门槛200*Level−100，满门槛升级、每级好感上限+10；超过1000+100*LevelMax突破后重置Level=100*新LevelMax。负Exp不掉级，StrengthMax/FeelingMax随等级与突破增长；CalMode有Feeling/FeelingMax>=80源代码条件，不能改写成0.8。初始金币原100/iPet1000也是差异。PetDesktopGrowth已实现上述纯模型，七项回归含逐级参考循环和1e12大额确定性；**本批未接入运行时PetState、引擎或JSON**，存档仍v7。后续必须先完成保存升级与所有调用点迁移，再做LPS一次性导入，见[审计](LEGACY-SAVE-AUDIT.md)。
