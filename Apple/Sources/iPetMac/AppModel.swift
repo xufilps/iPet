@@ -35,6 +35,10 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
     var presentationMood:PetMood { engine?.presentationMood ?? state.mood }
     @Published var interactionCycle=200
     @Published var autoMove = UserDefaults.standard.object(forKey: "autoMove") as? Bool ?? true
+    @Published var movementAreaMode:PetMovementAreaMode = .current
+    @Published private(set) var movementAreaNotice=""
+    private var customMovementArea:CGRect?
+    private var movementAreaWindow:PetMovementAreaWindow?
     @Published var smartMoveEnabled=false
     @Published var smartMoveInterval=1200
     @Published private(set) var smartMovePaused=false
@@ -96,6 +100,8 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         simulationEnabled=smokeMode ? true:(defaults.object(forKey:"simulationEnabled") as? Bool ?? true)
         fixedMood=smokeMode ? .normal:(PetMood(rawValue:defaults.string(forKey:"fixedMood") ?? "") ?? .normal)
         interactionCycle=smokeMode ? 200:min(1000,max(30,defaults.object(forKey:"interactionCycle") as? Int ?? 200))
+        movementAreaMode=smokeMode ? .current:(PetMovementAreaMode(rawValue:defaults.string(forKey:"movementAreaMode") ?? "") ?? .current)
+        if !smokeMode,let values=defaults.array(forKey:"customMovementArea") as? [Double],values.count == 4 { customMovementArea=CGRect(x:values[0],y:values[1],width:values[2],height:values[3]) }
         smartMoveEnabled = !smokeMode && defaults.bool(forKey:"smartMoveEnabled")
         let interval=defaults.object(forKey:"smartMoveInterval") as? Int ?? 1200
         smartMoveInterval=smokeMode ? 1200:(PetSmartMove.intervals.contains(interval) ? interval:1200)
@@ -209,6 +215,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         if let x = UserDefaults.standard.object(forKey: "petX") as? Double, let y = UserDefaults.standard.object(forKey: "petY") as? Double {
             petPanel.setFrameOrigin(NSPoint(x: x, y: y)); clampPosition()
         } else { resetPosition() }
+        refreshMovementAreaNotice()
         petPanel.orderFrontRegardless()
         toolbar=PetToolbarWindow { [weak self] action in self?.toolbarAction(action) }
         applyWindowPreferences()
@@ -220,7 +227,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         observers.append(workspace.addObserver(forName:NSWorkspace.didActivateApplicationNotification,object:nil,queue:.main) { [weak self] _ in MainActor.assumeIsolated { self?.keyboardSender.frontmostApplicationChanged() } })
         observers.append(workspace.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in MainActor.assumeIsolated { self?.suspend() } })
         observers.append(workspace.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in MainActor.assumeIsolated { self?.resume() } })
-        observers.append(NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in MainActor.assumeIsolated { self?.edgeScreen=nil;self?.cancelMovement();self?.clampPosition();self?.restoreBaseAnimation(force:true); self?.updateTextureResolution() } })
+        observers.append(NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in MainActor.assumeIsolated { self?.edgeScreen=nil;self?.cancelMovement();self?.clampPosition();self?.refreshMovementAreaNotice();self?.restoreBaseAnimation(force:true); self?.updateTextureResolution() } })
         lastSave = ProcessInfo.processInfo.systemUptime; autonomy.reset()
         timer = Timer.publish(every: 1.0 / 30, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.tick() }
         if !message.isEmpty { showControls() }
@@ -496,7 +503,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         if text.count>4000 { recordDiagnostic(.rendering,"说话内容超过显示上限，仅显示前4000字符。") }
         speech.show(text:text,name:engine.state.name,petFrame:speechAnchor,screen:screen)
     }
-    private var companionScreen:CGRect? { (needsEdgeRecovery ? edgeScreen : nil) ?? petPanel?.screen?.visibleFrame ?? NSScreen.main?.visibleFrame }
+    private var companionScreen:CGRect? { petPanel?.screen?.visibleFrame ?? NSScreen.screens.first?.visibleFrame }
     private var speechAnchor:CGRect { toolbar?.visibleFrame.map { petPanel.frame.union($0) } ?? petPanel.frame }
     @objc func toggleToolbar() { toolbarEnabled.toggle();updateToolbarPreference() }
     func updateToolbarPreference() {
@@ -597,7 +604,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         if reposition && needsEdgeRecovery { clampPosition();needsEdgeRecovery=false;edgeScreen=nil }
     }
     private func beginSideHide(screen pinnedScreen:CGRect?=nil) -> Bool {
-        guard let screen=pinnedScreen ?? NSScreen.screens.max(by:{ intersectionArea($0.visibleFrame)<intersectionArea($1.visibleFrame) })?.visibleFrame,
+        guard let screen=pinnedScreen ?? movementArea,
               let plan=PetSideHidePlan.make(pet:petPanel.frame,screen:screen) else { return false }
         walkPlan=nil;climbPlan=nil;climbLocated=false;sideHidePlan=plan;sideHideHovered=false
         edgeScreen=screen;needsEdgeRecovery=true;autonomy.reset()
@@ -611,14 +618,14 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         return true
     }
     private func beginClimbing(_ plan:PetClimbPlan) {
-        if edgeScreen == nil { edgeScreen=petPanel.screen?.visibleFrame }
+        if edgeScreen == nil { edgeScreen=movementArea }
         walkPlan=nil;climbPlan=plan;climbLocated=false;needsEdgeRecovery=true
         moveCycles.begin(distance:plan.distance)
         petScene.playMovement(.climb,graphID:plan.graphID,mood:engine.presentationMood)
     }
     @discardableResult private func chooseMovement(previous:PetMovementChoice?=nil) -> Bool {
         guard movementEnabled else { return false }
-        guard let screen=edgeScreen ?? petPanel.screen?.visibleFrame else { return false }
+        guard let screen=edgeScreen ?? movementArea else { return false }
         let candidates=previous?.compatible(mood:engine.presentationMood,pet:petPanel.frame,screen:screen)
             ?? PetMovementChoice.candidates(mood:engine.presentationMood,pet:petPanel.frame,screen:screen)
         guard !candidates.isEmpty else { return false }
@@ -659,7 +666,7 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
     func updateSize() {
         cancelMovement();restoreBaseAnimation(force:true)
         size = min(500, max(150, size)); if !smokeMode { UserDefaults.standard.set(size, forKey: "petSize") }
-        petPanel.setContentSize(NSSize(width: size, height: size)); clampPosition(); updateTextureResolution()
+        petPanel.setContentSize(NSSize(width: size, height: size)); clampPosition();refreshMovementAreaNotice(); updateTextureResolution()
     }
     private func updateTextureResolution() {
         petScene.setTextureResolution(pixelWidth: Int(size * (petPanel.screen?.backingScaleFactor ?? 2)))
@@ -713,18 +720,45 @@ enum ControlPage: String, CaseIterable { case diagnostics="诊断",status="状�
         if !smokeMode { UserDefaults.standard.set(autoMove, forKey: "autoMove") }
         if !autoMove && (walkPlan != nil || climbPlan != nil || (needsEdgeRecovery && sideHidePlan == nil)) { cancelMovement();restoreBaseAnimation(force:true);persistPosition() }
     }
+    private var areaResolution:PetMovementArea.Resolution {
+        PetMovementArea.resolve(mode:movementAreaMode,custom:customMovementArea,pet:petPanel.frame,screens:NSScreen.screens.map(\.visibleFrame))
+    }
+    private var movementArea:CGRect? { areaResolution.rect }
+    private func refreshMovementAreaNotice() {
+        let result=areaResolution
+        movementAreaNotice=result.adjusted ? "选定范围已裁剪或临时回退到可用屏幕；原设置保留。没有可容纳角色的屏幕时暂停移动。":""
+    }
+    func updateMovementArea() {
+        petView.cancelInteraction();cancelMovement();restoreBaseAnimation(force:true)
+        clampPosition();refreshMovementAreaNotice();persistPosition();autonomy.reset()
+        if !smokeMode {
+            UserDefaults.standard.set(movementAreaMode.rawValue,forKey:"movementAreaMode")
+            if let r=customMovementArea { UserDefaults.standard.set([Double(r.minX),Double(r.minY),Double(r.width),Double(r.height)],forKey:"customMovementArea") }
+        }
+    }
+    func detectMovementScreen() {
+        guard let screen=petPanel.screen ?? NSScreen.screens.first else { return }
+        customMovementArea=screen.visibleFrame;movementAreaMode = .custom;updateMovementArea()
+    }
+    func selectMovementArea() {
+        petView.cancelInteraction();cancelMovement();restoreBaseAnimation(force:true);clampPosition();autonomy.reset()
+        movementAreaWindow?.close()
+        guard let frame=movementArea else { return }
+        let window=PetMovementAreaWindow(frame:frame,minimum:size) { [weak self] rect in
+            guard let self else { return };self.customMovementArea=rect;self.movementAreaMode = .custom;self.updateMovementArea()
+        }
+        movementAreaWindow=window;window.makeKeyAndOrderFront(nil)
+    }
     @objc func resetPosition() {
-        guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
+        guard let rect=movementArea else { return }
         cancelMovement();restoreBaseAnimation(force:true)
-        petPanel.setFrameOrigin(NSPoint(x: screen.visibleFrame.maxX - size - 30, y: screen.visibleFrame.minY + 30)); persistPosition()
+        petPanel.setFrameOrigin(NSPoint(x:rect.maxX-size-30,y:rect.minY+30));clampPosition();persistPosition()
     }
     private func clampPosition() {
         if needsEdgeRecovery,let screen=edgeScreen { petPanel.setFrame(PetClimbPlan.recovered(pet:petPanel.frame,screen:screen),display:true);return }
-        guard let screen = NSScreen.screens.max(by: { intersectionArea($0.visibleFrame) < intersectionArea($1.visibleFrame) }) else { return }
-        let visible = screen.visibleFrame, frame = petPanel.frame
-        petPanel.setFrame(PetClimbPlan.recovered(pet:frame,screen:visible),display:true)
+        guard let rect=movementArea else { return }
+        petPanel.setFrame(PetClimbPlan.recovered(pet:petPanel.frame,screen:rect),display:true)
     }
-    private func intersectionArea(_ rect: NSRect) -> CGFloat { let overlap = rect.intersection(petPanel.frame); return overlap.isNull ? 0 : overlap.width * overlap.height }
     private func persistPosition() {
         guard !smokeMode else { return }
         let frame=needsEdgeRecovery ? edgeScreen.map { PetClimbPlan.recovered(pet:petPanel.frame,screen:$0) } ?? petPanel.frame : petPanel.frame

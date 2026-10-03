@@ -2,6 +2,7 @@
 import AppKit
 import SwiftUI
 import PetCore
+import PetRendering
 
 struct ControlsView: View {
     @ObservedObject var model: AppModel
@@ -77,6 +78,15 @@ struct ControlsView: View {
                 .onChange(of:model.smartMoveInterval) { model.updateSmartMoveSettings() }
             Text(model.smartMovePaused ? "移动已因长时间未互动而暂停。轻点角色后恢复；提起放下不会重置计时。":"智能移动只控制移动，不停止养成、待机或说话。默认等待20分钟；睡眠期间暂停计时，松开非提起互动后重新计时。")
                 .font(.caption).foregroundStyle(.secondary)
+            Picker("移动范围",selection:$model.movementAreaMode) {
+                Text("角色所在屏幕（原有默认）").tag(PetMovementAreaMode.current)
+                Text("主屏幕").tag(PetMovementAreaMode.primary)
+                Text("固定自定义范围").tag(PetMovementAreaMode.custom)
+            }.onChange(of:model.movementAreaMode) { model.updateMovementArea() }
+            HStack { Button("检测角色所在屏幕") { model.detectMovementScreen() };Button("自定义范围…") { model.selectMovementArea() } }
+            Text("范围使用屏幕可见区域，避开菜单栏与Dock。自定义窗口可拖动缩放；跨屏范围取最大可用交集，不穿过显示器间空隙。")
+                .font(.caption).foregroundStyle(.secondary)
+            if !model.movementAreaNotice.isEmpty { Text(model.movementAreaNotice).font(.caption).foregroundStyle(.orange) }
             HStack {
                 Text("自主互动周期")
                 Slider(value:Binding(get:{ Double(model.interactionCycle) },set:{ model.interactionCycle=Int($0.rounded()) }),in:30...1000,step:1)
