@@ -18,7 +18,8 @@ def verify():
     errors = []
     required = [
         'Apple/Package.swift', 'Apple/Sources/PetCore', 'Apple/Sources/PetRendering',
-        'Apple/Sources/PetMacInput', 'Apple/Apps/macOS/main.swift',
+        'Apple/Sources/PetMacInput', 'Apple/Apps/macOS/main.swift', 'Apple/Apps/iOS/iPetApp.swift',
+        'Apple/Tests/iOSAppTests', 'Apple/scripts/build-ios.sh', 'Apple/scripts/test-ios.sh',
         'Apple/Tests/PetCoreTests', 'Apple/Tests/PetRenderingTests', 'Apple/Tests/PetMacInputTests',
         'Assets/Upstream/VPet/Core/pet/vup', 'Apple/docs/README.md',
         'CONTRIBUTING.md', 'CODE_OF_CONDUCT.md', 'SECURITY.md', 'SUPPORT.md',
@@ -52,7 +53,8 @@ def verify():
                 errors.append(f'Broken link: {path.relative_to(ROOT)} -> {target}')
     # Generate into the existing project, restoring original files even on failure.
     paths = [ROOT / 'Apple/iPet.xcodeproj/project.pbxproj',
-             ROOT / 'Apple/iPet.xcodeproj/xcshareddata/xcschemes/iPet.xcscheme']
+             ROOT / 'Apple/iPet.xcodeproj/xcshareddata/xcschemes/iPet.xcscheme',
+             ROOT / 'Apple/iPet.xcodeproj/xcshareddata/xcschemes/iPet-iOS.xcscheme']
     before = {path: path.read_bytes() for path in paths}
     try:
         subprocess.run(['/usr/bin/python3', str(ROOT / 'Apple/scripts/create_project.py')], check=True)
