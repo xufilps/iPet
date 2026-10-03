@@ -210,7 +210,7 @@ python3 Apple/scripts/soak.py --seconds 7200 --output Apple/build/soak-2h.json
 当前养成已切换为原桌面 `GameSave_VPet` 模型：经验表示本级剩余经验，负经验不降级，等级突破影响属性上限，好感上限独立保存，新建金币100。旧JSON累计经验自动转换，既有金币和属性保留；突破后的原属性可暂高于新上限，下次对应属性变化时截断。升级动画尚未接入，详见[阶段2B规格](Apple/docs/specs/PHASE-2B.md)。
 
 
-Windows LPS 导入正在推进：已验证原库格式的解码层与只读宠物字段候选；库存、统计、扩展数据和确认导入尚未接入，当前只能恢复iPet JSON。详见[旧档审计](Apple/docs/LEGACY-SAVE-AUDIT.md)。
+Windows LPS 导入正在推进：已验证原库格式的解码层与只读宠物字段候选；原版hash只读校验已接入并区分范围；库存、统计、扩展数据和确认导入尚未接入，当前只能恢复iPet JSON。详见[旧档审计](Apple/docs/LEGACY-SAVE-AUDIT.md)。
 
 
 

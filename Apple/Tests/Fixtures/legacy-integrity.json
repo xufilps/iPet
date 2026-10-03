@@ -1,0 +1,61 @@
+{
+  "library": "LinePutScript",
+  "version": "1.11.9",
+  "upstream": "1a06c598",
+  "serializations": [
+    {
+      "input": "",
+      "canonical": ""
+    },
+    {
+      "input": ":|f#one:|text///note",
+      "canonical": ":|f#one:|text///note"
+    },
+    {
+      "input": "alone\nplain#info\nempty:|",
+      "canonical": "alone:|alone\nplain#info:|plain#info\nempty:|"
+    },
+    {
+      "input": "vpet#head/!n:|note#/n/id:|tail///comment",
+      "canonical": "vpet#head/!n:|note#/n/id:|tail///comment"
+    },
+    {
+      "input": "vpet:|name#first:\r\n|second:|\r\nstatistics:|day#1:\n:2:|",
+      "canonical": "vpet:|name#first/nsecond:|\nstatistics:|day#12:|"
+    }
+  ],
+  "cases": [
+    {
+      "path": "rootSHA512",
+      "scope": "document",
+      "version": 2,
+      "input": "vpet:|name#\u841D\u8389\u65AF:|hostname#\u963F\u8F69\uD83D\uDC31:|money#1234500000000:|Level#10:|LevelMax#0:|exp#50000000000:|strength#115500000000:|StoreStrength#-1250000000:|strengthFood#90250000000:|StoreStrengthFood#2750000000:|strengthDrink#85500000000:|StoreStrengthDrink#1000000000:|feeling#105500000000:|health#82000000000:|likability#135250000000:|mode#Happy:|LikabilityMax#150.25:|\nstatistics:|stat_total_time#30:|///stats\nplugin:|text#literal/!n/n/id/com:|body///external\nhash#3145451969531407266:|ver#2:|",
+      "canonical": "vpet:|name#\u841D\u8389\u65AF:|hostname#\u963F\u8F69\uD83D\uDC31:|money#1234500000000:|Level#10:|LevelMax#0:|exp#50000000000:|strength#115500000000:|StoreStrength#-1250000000:|strengthFood#90250000000:|StoreStrengthFood#2750000000:|strengthDrink#85500000000:|StoreStrengthDrink#1000000000:|feeling#105500000000:|health#82000000000:|likability#135250000000:|mode#Happy:|LikabilityMax#150.25:|\nstatistics:|stat_total_time#30:|///stats\nplugin:|text#literal/!n/n/id/com:|body///external",
+      "expected": "3145451969531407266"
+    },
+    {
+      "path": "rootMD5",
+      "scope": "document",
+      "version": 0,
+      "input": "vpet:|name#\u841D\u8389\u65AF:|hostname#\u963F\u8F69\uD83D\uDC31:|money#1234500000000:|Level#10:|LevelMax#0:|exp#50000000000:|strength#115500000000:|StoreStrength#-1250000000:|strengthFood#90250000000:|StoreStrengthFood#2750000000:|strengthDrink#85500000000:|StoreStrengthDrink#1000000000:|feeling#105500000000:|health#82000000000:|likability#135250000000:|mode#Happy:|LikabilityMax#150.25:|\nstatistics:|stat_total_time#30:|///stats\nplugin:|text#literal/!n/n/id/com:|body///external\nhash#-7587687573643308499:|ver#0:|",
+      "canonical": "vpet:|name#\u841D\u8389\u65AF:|hostname#\u963F\u8F69\uD83D\uDC31:|money#1234500000000:|Level#10:|LevelMax#0:|exp#50000000000:|strength#115500000000:|StoreStrength#-1250000000:|strengthFood#90250000000:|StoreStrengthFood#2750000000:|strengthDrink#85500000000:|StoreStrengthDrink#1000000000:|feeling#105500000000:|health#82000000000:|likability#135250000000:|mode#Happy:|LikabilityMax#150.25:|\nstatistics:|stat_total_time#30:|///stats\nplugin:|text#literal/!n/n/id/com:|body///external",
+      "expected": "-7587687573643308499"
+    },
+    {
+      "path": "rootSHA512",
+      "scope": "document",
+      "version": 1,
+      "input": "vpet:|name#\u841D\u8389\u65AF:|hostname#\u963F\u8F69\uD83D\uDC31:|money#1234500000000:|Level#10:|LevelMax#0:|exp#50000000000:|strength#115500000000:|StoreStrength#-1250000000:|strengthFood#90250000000:|StoreStrengthFood#2750000000:|strengthDrink#85500000000:|StoreStrengthDrink#1000000000:|feeling#105500000000:|health#82000000000:|likability#135250000000:|mode#Happy:|LikabilityMax#150.25:|\nstatistics:|stat_total_time#30:|///stats\nplugin:|text#literal/!n/n/id/com:|body///external\nhash#3145451969531407266:|ver#1:|",
+      "canonical": "vpet:|name#\u841D\u8389\u65AF:|hostname#\u963F\u8F69\uD83D\uDC31:|money#1234500000000:|Level#10:|LevelMax#0:|exp#50000000000:|strength#115500000000:|StoreStrength#-1250000000:|strengthFood#90250000000:|StoreStrengthFood#2750000000:|strengthDrink#85500000000:|StoreStrengthDrink#1000000000:|feeling#105500000000:|health#82000000000:|likability#135250000000:|mode#Happy:|LikabilityMax#150.25:|\nstatistics:|stat_total_time#30:|///stats\nplugin:|text#literal/!n/n/id/com:|body///external",
+      "expected": "3145451969531407266"
+    },
+    {
+      "path": "legacyPetMD5",
+      "scope": "pet",
+      "version": 2,
+      "input": "vpet:|name#\u841D\u8389\u65AF:|hostname#\u963F\u8F69\uD83D\uDC31:|money#1234500000000:|Level#10:|LevelMax#0:|exp#50000000000:|strength#115500000000:|StoreStrength#-1250000000:|strengthFood#90250000000:|StoreStrengthFood#2750000000:|strengthDrink#85500000000:|StoreStrengthDrink#1000000000:|feeling#105500000000:|health#82000000000:|likability#135250000000:|mode#Happy:|LikabilityMax#150.25:|note#literal/!n/n/id:|hash#-6665899120960830877:|\nstatistics:|stat_total_time#30:|///stats\nplugin:|text#literal/!n/n/id/com:|body///external\nhash#123:|ver#99:|",
+      "canonical": "vpet:|name#\u841D\u8389\u65AF:|hostname#\u963F\u8F69\uD83D\uDC31:|money#1234500000000:|Level#10:|LevelMax#0:|exp#50000000000:|strength#115500000000:|StoreStrength#-1250000000:|strengthFood#90250000000:|StoreStrengthFood#2750000000:|strengthDrink#85500000000:|StoreStrengthDrink#1000000000:|feeling#105500000000:|health#82000000000:|likability#135250000000:|mode#Happy:|LikabilityMax#150.25:|note#literal/!n/n/id:|\nstatistics:|stat_total_time#30:|///stats\nplugin:|text#literal/!n/n/id/com:|body///external",
+      "expected": "-6665899120960830877"
+    }
+  ]
+}

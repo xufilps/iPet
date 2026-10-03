@@ -12,6 +12,7 @@ public struct PetLegacySavePreview: Sendable {
     }
     public let sourceData: Data
     public let document: PetLegacyLPSDocument
+    public let integrity: PetLegacyIntegrity.Result
     public let petState: PetState?
     public let hostName: String?
     public let savedMode: String?
@@ -20,12 +21,14 @@ public struct PetLegacySavePreview: Sendable {
 
     public init(data: Data) throws {
         sourceData=data;document=try PetLegacyLPSDocument.parse(data)
-        var mapper=Mapper(document:document);mapper.run()
+        integrity=PetLegacyIntegrity.inspect(document)
+        var mapper=Mapper(document:document,integrity:integrity);mapper.run()
         petState=mapper.state;hostName=mapper.hostName;savedMode=mapper.savedMode
         issues=mapper.issues;omittedIssueCount=mapper.omitted
     }
     private struct Mapper {
         let document:PetLegacyLPSDocument
+        let integrity:PetLegacyIntegrity.Result
         var state:PetState?,hostName:String?,savedMode:String?
         var issues=[Issue](),omitted=0,invalid=false,consumed=Set<Int>()
         mutating func report(_ path:String,_ message:String,_ severity:Issue.Severity = .warning) {
@@ -65,9 +68,11 @@ public struct PetLegacySavePreview: Sendable {
             return value
         }
         mutating func run() {
+            report("hash",integrity.message,integrity.status == .mismatch || integrity.status == .unsupported ? .blocking:.warning)
             let pets=document.lines.filter { $0.name.utf8.elementsEqual("vpet".utf8) }
             for line in document.lines where !line.name.utf8.elementsEqual("vpet".utf8) {
-                let message = line.name == "hash" ? "原hash尚未验证，不能声称完整性检查成功。" : line.name == "statistics" ? "原统计的类型与名称映射尚未实现。" : line.name.hasPrefix("item") ? "原库存参数、类型与自定义数据尚未映射，未替换为同名内置物品。" : "原扩展数据尚未映射，完整源字节保留。"
+                if line.name.utf8.elementsEqual("hash".utf8) { continue }
+                let message = line.name == "statistics" ? "原统计的类型与名称映射尚未实现。" : line.name.hasPrefix("item") ? "原库存参数、类型与自定义数据尚未映射，未替换为同名内置物品。" : "原扩展数据尚未映射，完整源字节保留。"
                 report(line.name,message,.blocking)
             }
             guard pets.count==1,let line=pets.first else { report("vpet","需要唯一的桌面宠物根行。",.blocking);return }
@@ -91,7 +96,7 @@ public struct PetLegacySavePreview: Sendable {
                     invalid=true;report("vpet.mode","不是受支持的原版模式名称，宠物候选不可用。",.blocking)
                 }
             } else { savedMode="Nomal";report("vpet.mode","原字段缺失，按桌面初始化模式Nomal预览。") }
-            for index in line.fields.indices where !consumed.contains(index) { report("vpet."+line.fields[index].name,"尚未映射的宠物字段，源数据保留。",.blocking) }
+            for index in line.fields.indices where !consumed.contains(index) && !line.fields[index].name.utf8.elementsEqual("hash".utf8) { report("vpet."+line.fields[index].name,"尚未映射的宠物字段，源数据保留。",.blocking) }
             guard !invalid else { return }
             do {
                 // Original load visits Exp before LikabilityMax. Its final serialized limit wins.

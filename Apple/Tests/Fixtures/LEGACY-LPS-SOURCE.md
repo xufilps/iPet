@@ -22,3 +22,11 @@ legacy-pet-fields.json由同一生成器加`--pet-fields`生成。DTO复制固�
 dotnet Apple/scripts/legacy_lps_oracle/bin/Release/net8.0/LegacyLPSOracle.dll --pet-fields > Apple/Tests/Fixtures/legacy-pet-fields.json
 ```
 宠物夹具SHA-256：`ab0b27cacb7f93b961a7b05056d5e66e9d666c9be6d8a6182767768d16e5284d`。
+
+## 完整性夹具（阶段4D）
+legacy-integrity.json用同一实际库生成5组LpsDocument.ToString字节样例，以及根SHA512 ver2、旧根MD5 ver0、旧根SHA512回退ver1、旧vpet MD5四组源算法结果。MD5加权代码按原GameSave_v2逐项复制公式并明确unchecked，SHA512调用实际Sub.GetHashCode；little-endian Int64预期包括负值。样例包含中文/emoji、转义、注释、CRLF/延续及旧宠物路径优先于未知根版本。旧宠物样例的raw头部Info和尾Text为空；非空时的独立加权回归尚未补，源码审查确认实现用raw值。
+```sh
+dotnet build Apple/scripts/legacy_lps_oracle/LegacyLPSOracle.csproj --configuration Release
+dotnet Apple/scripts/legacy_lps_oracle/bin/Release/net8.0/LegacyLPSOracle.dll --hashes > Apple/Tests/Fixtures/legacy-integrity.json
+```
+完整性夹具SHA-256：`15bd106e2d1ae7d0d4ccb1e70ee4a8e2e6b5a88237d96d2f064a71192324d6d0`。先确认构建成功再运行生成器，避免旧二进制输出被误用。

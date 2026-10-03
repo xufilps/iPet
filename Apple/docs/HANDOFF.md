@@ -1,6 +1,6 @@
 # 当前交接入口 — 2026-10-02 / v0.2.0
 
-当前最新为阶段4C只读LPS宠物字段预览核心，JSON仍v8，320项Swift测试通过，详见文末。第五阶段历史开发与研究交付、231项Swift测试和未完成验收见[最新交接](PHASE-5-HANDOFF.md)；[生态研究](ECOSYSTEM_RESEARCH.md)解释Steam/工坊/云/插件/图库限制。按用户要求此检查点暂停，不进入第六阶段；下文保留早期交付与逐批历史，历史版本/性能数据不代表当前全部验收。
+当前最新为阶段4D旧档完整性校验，JSON仍v8，327项Swift测试通过，详见文末。第五阶段历史开发与研究交付、231项Swift测试和未完成验收见[最新交接](PHASE-5-HANDOFF.md)；[生态研究](ECOSYSTEM_RESEARCH.md)解释Steam/工坊/云/插件/图库限制。按用户要求此检查点暂停，不进入第六阶段；下文保留早期交付与逐批历史，历史版本/性能数据不代表当前全部验收。
 
 ---
 
@@ -379,3 +379,8 @@ v1～v7先按旧边界验证，再迁移累计经验；高于1000级进入桌面
 新增PetLegacySavePreview只读核心，sourceData/document完整保留，提供宠物子集、主人称呼和保存模式；并无预览窗口或整档确认/保存API。固定原类字段注解区分固定点/普通Double，LikabilityMax不除1e9，旧金币不重置，raw属性直接核对原生/突破历史边界，不重新产生养成副作用。缺字段按原初始化且明确提示；缺LikabilityMax保留Exp升级增量，存在时按原加载顺序覆盖。原IgnoreCase只用于两项ASCII字段，其余ordinal；重复匹配/根行、非法数值或模式阻断候选。
 实际NuGet1.11.9注解DTO序列化/反序列化生成legacy-pet-fields.json，DTO模式为四值枚举；mode#Bogus实际抛ArgumentException。DTO不模拟原增长setter，不能当Windows运行oracle。独立6.1-sol审查发现缺上限丢增量及未知模式仍有候选，两个回归观察失败后单次修复；10项专项通过。完整phase4c-final.log：219核心+95渲染+6适配=320 Swift、23 Python，macOS Release、iOS Simulator共享模块与严格签名通过。宿主沿用arm64 macOS27/Xcode27/Swift6.4；规格检查点531bcfc0，源夹具与重生成命令见LEGACY-LPS-SOURCE。
 库存原参数、统计、hash及其它Data全部报告为未迁移，不用内置同名参数替换，不声称原hash已验证；诊断最多200条并列额外数量。原JSONv8、用户正式数据未改变。回滚本批代码无需降档，保留整目录和原LPS；下一批继续库存/统计/Data/完整性及主人称呼持久化，之后再接预览/双原件备份/确认发布。真实验收/压力及阶段6未执行。
+
+## 2026-10-03 / 阶段4D：旧档完整性校验
+新增PetLegacyIntegrity及原库文档canonicalString，接入只读预览结果/诊断。旧vpet/hash优先，MD5前8字节little-endian与unchecked加权，原根Info/Text用raw、子Info用解码；根ver2 SHA512及旧0/1 MD5→SHA512回退核对移除hash行后的库序列化。匹配状态、路径和范围明确，宠物校验不覆盖其它根行/注释；重复/未知版本/非规范值不猜，-1常用无效标记不冒称通过。CryptoKit只用于共享核心hash，不需要.NET运行时。
+实际NuGet1.11.9生成5组序列化、4条算法路径合成夹具，旧MD5与宠物加权预期包含负Int64；7项新增回归覆盖库字节、路径、字段/注释改动、范围、优先级、无hash/重复/未来/非法及CRLF/BOM。完整phase4d.log：226核心+95渲染+6适配=327 Swift、23 Python，macOS Release、iOS Simulator共享模块及严格签名通过。宿主仍arm64 macOS27/Xcode27/Swift6.4，生成工具SDK8.0.425；规格检查点a1030bf9，来源/夹具哈希见LEGACY-LPS-SOURCE。
+独立6.1-sol审查未发现正确性问题，非阻断建议为追加非空宠物raw头Info/尾Text的加权夹具；现有这两值为空，源码检查确认用raw，测试补强延后。原README7775字节/LICENSE、工程一致和文档链接检查通过。原JSONv8、用户正式档和源LPS未写；回滚代码无需降档，保留完整目录和原件。下一批继续库存参数、统计与扩展Data/套餐/排程、主人持久化，再接完整预览及双原件确认；当前仍不能整档导入，实机压力/阶段6未执行。

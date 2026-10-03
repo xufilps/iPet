@@ -20,7 +20,7 @@ MainWindow.SavesLoad创建GameSave_v2（或叠加已有旧数据），取其Game
 | itemN | Item/Food包含name、count、itemtype、参数及Star/Data/CanUse等 | 内置Food名称映射core.item.+name，不能丢原参数或把插件物品当内置；不同参数/未知类型需报告保留原件 | 待实现 |
 | statistics | SortedDictionary统计键/SetObject及多种值类型 | counters仅有限Double；日期/字符串、原名称键映射和重复键需单列 | 待实现 |
 | Data中的套餐/排程/日期/自定义值 | GameSave_v2保留未识别行，插件可扩展 | 必须逐项核对结构，不能仅转vpet就宣称完整旧档兼容 | 待审计 |
-| hash（ver=2）及vpet/hash旧路径 | 原完整性/反修改标志，两种hash路径 | hash不是存档总版本；不能忽略后声称验证成功，初期明确“未验证原hash” | 待实现 |
+| hash（ver=2）及vpet/hash旧路径 | 原完整性/反修改标志，两种hash路径 | hash不是存档总版本；不能忽略后声称验证成功，阶段4D已实现原根SHA512/MD5及宠物MD5，范围与缺失/不匹配/不支持状态明确 | 已实现只读校验 |
 | 原溢出修复与round标志 | MainWindow对极低Exp/Money及旧溢出补偿会改数值 | 一次性导入预览须明确解释，未核对统计/编码时不能自动套用 | 待审计 |
 
 ## 导入门槛与恢复合同
@@ -41,3 +41,7 @@ UI先只读预览，列出准确保留、明确转换、未支持内容、原has
 
 ## 阶段4C：宠物候选与未支持项诊断
 [PetLegacySavePreview](../Sources/PetCore/PetLegacySavePreview.swift)保留完整sourceData/document，提供petState宠物子集、hostname、保存模式及最多200条诊断/额外计数，没有整档确认/保存API。真实库DTO样例证明字段编码，缺项默认依据原类初始化；LikabilityMax仅存在时覆盖Exp增长后的上限，缺项保留增量。原IgnoreCase仅strength/StoreStrength适用，其余严格匹配；重复匹配字段/根行明确阻断候选，非规范模式拒绝。库存、统计、hash及其它根Data全部列为未迁移，不用同名目录替换参数。主人称呼尚未接原生持久化/UI，预览核心也未接窗口。下一步完整库存/统计/Data/hash映射后才能定义整档导入合同。
+
+## 阶段4D：原hash路径与范围
+[PetLegacyIntegrity](../Sources/PetCore/PetLegacyIntegrity.swift)核对旧宠物MD5加权（仅宠物、优先）或根hash移除后的库序列化（ver2 SHA512；旧0/1 MD5后SHA512回退）。文档canonicalString按原StringBuilder序列化，不直接hash磁盘CRLF字节；字段顺序、原转义与注释按源处理。结果明确verified/mismatch/missing/unsupported、路径、范围及原值/计算值。仅宠物匹配不证明其它根行，缺hash不声称通过；-1标记仍按源算法比较。未知版本和重复路径明确不支持。
+只读预览已接该结果；不匹配/不支持为blocking，缺失/仅宠物范围明确说明。尚无整档确认写入，不修改源LPS，不把hash当来源签名；JSONv8与正式数据不变。库存参数/统计/Data/套餐/排程及主人称呼持久化仍未迁移。

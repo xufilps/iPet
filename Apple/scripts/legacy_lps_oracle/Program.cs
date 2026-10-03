@@ -1,9 +1,18 @@
 // Synthetic compatibility fixtures only; never reads a user's save.
 using System.Globalization;
 using System.Text.Json;
+using System.Text;
+using System.Security.Cryptography;
 using LinePutScript;
 using LinePutScript.Converter;
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+if (args.Contains("--hashes")) {
+    var serializations = new[] {"", ":|f#one:|text///note", "alone\nplain#info\nempty:|", "vpet#head/!n:|note#/n/id:|tail///comment", "vpet:|name#first:\r\n|second:|\r\nstatistics:|day#1:\n:2:|"}
+        .Select(input => new {input,canonical=new LpsDocument(input).ToString()}).ToArray();
+    var hashCases = new[] {HashOracle.Build("rootSHA512",2),HashOracle.Build("rootMD5",0),HashOracle.Build("rootSHA512",1),HashOracle.Build("legacyPetMD5",2)};
+    Console.WriteLine(JsonSerializer.Serialize(new {library="LinePutScript",version="1.11.9",upstream="1a06c598",serializations,cases=hashCases},new JsonSerializerOptions {WriteIndented=true}));
+    return;
+}
 if (args.Contains("--pet-fields")) {
     var pet = new PetFieldsDTO();
     var line = LPSConvert.SerializeObject(pet, "vpet");
@@ -68,3 +77,28 @@ public class PetFieldsDTO {
 }
 
 public enum FixtureMood { Happy, Nomal, PoorCondition, Ill }
+
+public static class HashOracle {
+    public static long MD5Prefix(string text) => BitConverter.ToInt64(MD5.HashData(Encoding.UTF8.GetBytes(text)),0);
+    public static object Build(string path,int version) {
+        var document = new LpsDocument(LPSConvert.SerializeObject(new PetFieldsDTO(),"vpet").ToString()+"\r\nstatistics:|stat_total_time#30:|///stats\r\nplugin:|text#literal/!n/n/id/com:|body///external");
+        var canonical = document.ToString();
+        long expected;
+        if (path=="legacyPetMD5") {
+            var pet=document.FindLine("vpet")!;
+            pet.Add(new Sub("note","literal/n\n#"));
+            unchecked {
+                expected=MD5Prefix(pet.Name)*2+MD5Prefix(((ISub)pet).info)*3+MD5Prefix(pet.text)*4;
+                foreach (var field in pet) expected+=MD5Prefix(field.Name)*2+MD5Prefix(field.Info)*3;
+            }
+            canonical=document.ToString();
+            pet.Add(new Sub("hash",expected.ToString()));
+            // The original pet route has priority even when another root hash exists.
+            document.AddLine(new Line("hash","123","",new Sub("ver","99")));
+        } else {
+            expected=path=="rootMD5"?MD5Prefix(canonical):Sub.GetHashCode(canonical);
+            document.AddLine(new Line("hash",expected.ToString(),"",new Sub("ver",version.ToString())));
+        }
+        return new {path,scope=path=="legacyPetMD5"?"pet":"document",version,input=document.ToString(),canonical,expected=expected.ToString()};
+    }
+}

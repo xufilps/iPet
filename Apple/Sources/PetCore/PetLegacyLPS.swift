@@ -85,3 +85,16 @@ public struct PetLegacyLPSDocument: Sendable {
         return result
     }
 }
+
+extension PetLegacyLPSDocument {
+    /// Matches LpsDocument.ToString (the StringBuilder overload), not the raw input file.
+    public var canonicalString: String {
+        lines.map { line in
+            var value=line.name+(line.rawInfo.isEmpty ? "":"#"+line.rawInfo)+":|"
+            for field in line.fields { value+=field.name+(field.rawInfo.isEmpty ? "":"#"+field.rawInfo)+":|" }
+            value+=line.rawText
+            if !line.comment.isEmpty { value+="///"+line.comment }
+            return value
+        }.joined(separator:"\n").trimmingCharacters(in:CharacterSet(charactersIn:"\n"))
+    }
+}
