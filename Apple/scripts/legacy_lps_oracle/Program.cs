@@ -6,6 +6,31 @@ using System.Security.Cryptography;
 using LinePutScript;
 using LinePutScript.Converter;
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+if (args.Contains("--statistics")) {
+    // Mirrors Statistics.ToSubs and AddRange. No WPF, plugins or user files.
+    var stats = new SortedDictionary<string,SetObject?> {
+        ["stat_money"]=new SetObject(1234.5),["stat_buytimes"]=new SetObject(7),["stat_work_time"]=new SetObject(3600L),
+        ["stat_bb_drink"]=new SetObject(1.25),["eval_day_20261003"]=new SetObject(600L),
+        ["eval_longest_session_seconds"]=new SetObject(9007199254740993L),
+        ["plugin_date"]=new SetObject(new DateTime(2026,10,3,12,34,56,DateTimeKind.Unspecified)),
+        ["plugin_fixed"]=new SetObject(new FInt64(12.5)),["plugin_bool"]=new SetObject(true),
+        ["plugin_text"]=new SetObject(Sub.TextReplace("主/n人\n:|#")),["skipped_null"]=null
+    };
+    var statsLine=new Line("statistics","",stats.Where(entry=>entry.Value!=null).Select(entry=>new Sub(entry.Key,entry.Value!)).ToList());
+    var loadedStats = new SortedDictionary<string,SetObject?>();
+    foreach(var sub in new Line(statsLine.ToString())) loadedStats.Add(sub.Name,sub.info);
+    var entries=loadedStats.Select(entry=>new {key=entry.Key,stored=entry.Value!.GetString(),reads=StatisticsOracle.Read(entry.Value)}).ToArray();
+    var coercions=new[] {"1.25","2147483648","bad","1,25","True","638950628960000000"}.Select(raw=>new {raw,reads=StatisticsOracle.Read(new SetObject(raw))}).ToArray();
+    string duplicateOutcome;
+    try { var duplicate=new SortedDictionary<string,SetObject?>();foreach(var sub in new Line("statistics:|same#1:|same#2:|")) duplicate.Add(sub.Name,sub.info);duplicateOutcome="accepted"; }
+    catch(Exception ex) { duplicateOutcome=ex.GetType().Name; }
+    CultureInfo.CurrentCulture=CultureInfo.GetCultureInfo("fr-FR");
+    var foreign=new Sub("stat_bb_drink",new SetObject(1.25)).ToString();
+    CultureInfo.CurrentCulture=CultureInfo.InvariantCulture;
+    var foreignRead=new SetObject(new Line("statistics:|"+foreign).Find("stat_bb_drink")!.info).GetDouble();
+    Console.WriteLine(JsonSerializer.Serialize(new {library="LinePutScript",version="1.11.9",upstream="1a06c598",culture="Invariant",input=statsLine.ToString(),entries,coercions,duplicateOutcome,foreignCulture="fr-FR",foreign,foreignRead},new JsonSerializerOptions {WriteIndented=true}));
+    return;
+}
 if (args.Contains("--items")) {
     var itemCases = new LegacyItemDTO[] {
         new LegacyItemDTO {Name="测试道具",Image=null,Price=12.5,Count=3,Data="literal/null\n:|#",Desc="说明",Star=true,IsSingle=true,CanUse=false,Visibility=false},
@@ -147,4 +172,16 @@ public class LegacyFoodDTO : LegacyItemDTO {
     [Line(ignoreCase:true)] public double Likability {get;set;}
     [Line(ignoreCase:true)] public string? Graph {get;set;}
     public override object Snapshot() => new {Image,Name,ItemType,Price,Desc,Count,Data,CanUse,Star,IsSingle,Visibility,Type=Type.ToString(),Exp,Strength,StrengthFood,StrengthDrink,Feeling,Health,Likability,Graph};
+}
+
+public static class StatisticsOracle {
+    private static string Probe(Func<string> get) { try { return get(); } catch(Exception ex) { return "error:"+ex.GetType().Name; } }
+    public static object Read(SetObject value) => new {
+        int32=Probe(()=>value.GetInteger().ToString(CultureInfo.InvariantCulture)),
+        int64=Probe(()=>value.GetInteger64().ToString(CultureInfo.InvariantCulture)),
+        ordinaryDouble=Probe(()=>value.GetDouble().ToString("R",CultureInfo.InvariantCulture)),
+        fixedStored=Probe(()=>value.GetFloat().ToStoreString()),
+        dateTicks=Probe(()=>value.GetDateTime().Ticks.ToString(CultureInfo.InvariantCulture)),
+        boolean=Probe(()=>value.GetBoolean().ToString()),text=Probe(()=>value.GetString())
+    };
 }

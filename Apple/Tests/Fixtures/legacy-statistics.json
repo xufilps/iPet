@@ -1,0 +1,217 @@
+{
+  "library": "LinePutScript",
+  "version": "1.11.9",
+  "upstream": "1a06c598",
+  "culture": "Invariant",
+  "input": "statistics:|eval_day_20261003#600:|eval_longest_session_seconds#9007199254740993:|plugin_bool#True:|plugin_date#639266276960000000:|plugin_fixed#12500000000:|plugin_text#\u4E3B/!n\u4EBA/n:/!|/id:|stat_bb_drink#1.25:|stat_buytimes#7:|stat_money#1234.5:|stat_work_time#3600:|",
+  "entries": [
+    {
+      "key": "eval_day_20261003",
+      "stored": "600",
+      "reads": {
+        "int32": "600",
+        "int64": "600",
+        "ordinaryDouble": "600",
+        "fixedStored": "600",
+        "dateTicks": "600",
+        "boolean": "False",
+        "text": "600"
+      }
+    },
+    {
+      "key": "eval_longest_session_seconds",
+      "stored": "9007199254740993",
+      "reads": {
+        "int32": "1",
+        "int64": "9007199254740993",
+        "ordinaryDouble": "9007199254740992",
+        "fixedStored": "9007199254740993",
+        "dateTicks": "9007199254740993",
+        "boolean": "False",
+        "text": "9007199254740993"
+      }
+    },
+    {
+      "key": "plugin_bool",
+      "stored": "True",
+      "reads": {
+        "int32": "0",
+        "int64": "0",
+        "ordinaryDouble": "0",
+        "fixedStored": "9223372036854775806",
+        "dateTicks": "0",
+        "boolean": "True",
+        "text": "True"
+      }
+    },
+    {
+      "key": "plugin_date",
+      "stored": "639266276960000000",
+      "reads": {
+        "int32": "-1156163584",
+        "int64": "639266276960000000",
+        "ordinaryDouble": "6.3926627696E\u002B17",
+        "fixedStored": "639266276960000000",
+        "dateTicks": "639266276960000000",
+        "boolean": "False",
+        "text": "639266276960000000"
+      }
+    },
+    {
+      "key": "plugin_fixed",
+      "stored": "12500000000",
+      "reads": {
+        "int32": "-384901888",
+        "int64": "12500000000",
+        "ordinaryDouble": "12500000000",
+        "fixedStored": "12500000000",
+        "dateTicks": "12500000000",
+        "boolean": "False",
+        "text": "12500000000"
+      }
+    },
+    {
+      "key": "plugin_text",
+      "stored": "\u4E3B/!n\u4EBA/n:/!|/id",
+      "reads": {
+        "int32": "0",
+        "int64": "0",
+        "ordinaryDouble": "0",
+        "fixedStored": "9223372036854775806",
+        "dateTicks": "0",
+        "boolean": "False",
+        "text": "\u4E3B/!n\u4EBA/n:/!|/id"
+      }
+    },
+    {
+      "key": "stat_bb_drink",
+      "stored": "1.25",
+      "reads": {
+        "int32": "1",
+        "int64": "1",
+        "ordinaryDouble": "1.25",
+        "fixedStored": "1250000000",
+        "dateTicks": "639048960000000000",
+        "boolean": "False",
+        "text": "1.25"
+      }
+    },
+    {
+      "key": "stat_buytimes",
+      "stored": "7",
+      "reads": {
+        "int32": "7",
+        "int64": "7",
+        "ordinaryDouble": "7",
+        "fixedStored": "7",
+        "dateTicks": "7",
+        "boolean": "False",
+        "text": "7"
+      }
+    },
+    {
+      "key": "stat_money",
+      "stored": "1234.5",
+      "reads": {
+        "int32": "1234",
+        "int64": "1234",
+        "ordinaryDouble": "1234.5",
+        "fixedStored": "1234500000000",
+        "dateTicks": "389200896000000000",
+        "boolean": "False",
+        "text": "1234.5"
+      }
+    },
+    {
+      "key": "stat_work_time",
+      "stored": "3600",
+      "reads": {
+        "int32": "3600",
+        "int64": "3600",
+        "ordinaryDouble": "3600",
+        "fixedStored": "3600",
+        "dateTicks": "3600",
+        "boolean": "False",
+        "text": "3600"
+      }
+    }
+  ],
+  "coercions": [
+    {
+      "raw": "1.25",
+      "reads": {
+        "int32": "1",
+        "int64": "1",
+        "ordinaryDouble": "1.25",
+        "fixedStored": "1250000000",
+        "dateTicks": "639048960000000000",
+        "boolean": "False",
+        "text": "1.25"
+      }
+    },
+    {
+      "raw": "2147483648",
+      "reads": {
+        "int32": "-2147483648",
+        "int64": "2147483648",
+        "ordinaryDouble": "2147483648",
+        "fixedStored": "2147483648",
+        "dateTicks": "2147483648",
+        "boolean": "False",
+        "text": "2147483648"
+      }
+    },
+    {
+      "raw": "bad",
+      "reads": {
+        "int32": "0",
+        "int64": "0",
+        "ordinaryDouble": "0",
+        "fixedStored": "9223372036854775806",
+        "dateTicks": "0",
+        "boolean": "False",
+        "text": "bad"
+      }
+    },
+    {
+      "raw": "1,25",
+      "reads": {
+        "int32": "125",
+        "int64": "125",
+        "ordinaryDouble": "125",
+        "fixedStored": "125",
+        "dateTicks": "639048960000000000",
+        "boolean": "False",
+        "text": "1,25"
+      }
+    },
+    {
+      "raw": "True",
+      "reads": {
+        "int32": "0",
+        "int64": "0",
+        "ordinaryDouble": "0",
+        "fixedStored": "9223372036854775806",
+        "dateTicks": "0",
+        "boolean": "True",
+        "text": "True"
+      }
+    },
+    {
+      "raw": "638950628960000000",
+      "reads": {
+        "int32": "875321344",
+        "int64": "638950628960000000",
+        "ordinaryDouble": "6.3895062896E\u002B17",
+        "fixedStored": "638950628960000000",
+        "dateTicks": "638950628960000000",
+        "boolean": "False",
+        "text": "638950628960000000"
+      }
+    }
+  ],
+  "duplicateOutcome": "ArgumentException",
+  "foreignCulture": "fr-FR",
+  "foreign": "stat_bb_drink#1,25:|",
+  "foreignRead": 125
+}

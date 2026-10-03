@@ -38,3 +38,8 @@ dotnet Apple/scripts/legacy_lps_oracle/bin/Release/net8.0/LegacyLPSOracle.dll --
 两个完整记录分别覆盖基类与派生食物，原对象/反序列化快照完全相同；Food未重复标注的ItemType/Star仍由实际库序列化。七个加载样例证明IgnoreCase字段能读取两种大小写，枚举Drink有效而drink拒绝，数字4映射Drink，布尔0拒绝，原始/null是null但/!null解码为字面/null。普通Double保存12.5/21.75和负效果，不能使用宠物FInt64缩放。
 
 MainWindow.ItemsAdd（3086行）仅按Name合并Count并保留首条参数，未检查ItemType/IsSingle或效果差异；Food的LoadImageSource/LoadEatTimeSource在商店路径更新收藏/说明；库存SavesLoad调用继承的Item.LoadSource，不调用上述方法，保留序列化Star/Data。类型化Swift库存映射、冲突报告和整档导入仍未完成。
+
+## 阶段4G统计证据（Task1）
+`legacy-statistics.json` SHA-256 `3bf5ecb3e5ba6f3919ce3884c410be0ee5c837627edd25c7621824999db500ef`，同一固定NuGet1.11.9，构建成功后运行Oracle `--statistics`生成。模拟Statistics.ToSubs（SortedDictionary、null跳过、Sub(key,SetObject)）和AddRange（原info重新添加），不调用用户数据或原WPF运行时。Invariant序列化10项记录：普通Double/Int32/Int64、日期ticks、FInt64、bool、已转义文字；日期/固定点/bool/文本为codec能力例，不是已确认的原内置统计键。
+原实际库读取证明：大Int64 9007199254740993转Double变9007199254740992；普通1.25整数接口截断到1，2147483648的Int32读取溢出为负，bad读Double归0；fr-FR写1,25在Invariant读取变125。未知值不能凭数字形态推测类型。Statistics.GetString保留原info转义，未自动解码（与Sub.Info便利接口不同）。重复字典键抛ArgumentException。
+连续统计生成逐字节一致；items/hash/pet-fields旧夹具再生仍逐字节一致。首次C#构建因ISub.info为string误调用GetDouble失败，set-e阻止旧DLL生成；改为显式SetObject后构建/生成成功，不采用失败版本输出。

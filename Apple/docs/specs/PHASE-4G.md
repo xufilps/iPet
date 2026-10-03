@@ -30,8 +30,8 @@ SetObject存储int/long普通整数、double普通地区小数、FInt64为1e9固
 未查到原内置statistics使用gdat/gflt写入；接口有能力不代表这些值全属日期/固定点。其它旧统计键、插件键和类型冲突另列未知，不能仅匹配stat_前缀。
 
 ## Task1：实际库证据
-- [ ] 扩展Oracle --statistics，模拟Statistics.ToSubs/AddRange，生成普通数值/大Int64、DateTime ticks、FInt64、bool/转义文字及宽松读取差异样例；保留严格原culture。
-- [ ] 验证序列化确定性、字段普通/固定点差异及Int64精确原值，记录来源/SHA256和地区风险。
+- [x] 扩展Oracle --statistics，模拟Statistics.ToSubs/AddRange，生成普通数值/大Int64、DateTime ticks、FInt64、bool/转义文字及宽松读取差异样例；保留严格原culture。
+- [x] 验证序列化确定性、字段普通/固定点差异及Int64精确原值，记录来源/SHA256和地区风险。
 
 ## Task2：只读映射
 - [ ] RED后实现PetLegacyStatisticsPreview及Tests，按上表registry精准键/动态模式，Int64保留精确整数。大小写不归一；源字段/未知/重复/非法值保留，诊断最多200条。
@@ -46,3 +46,5 @@ SetObject存储int/long普通整数、double普通地区小数、FInt64为1e9固
 
 ## 回滚与后续
 本批无保存/发布状态变更，回滚代码无需恢复档案。后续继续Data中的buytime/套餐/排程/主人及扩展内容映射，建立完整导入规格、双原件备份和确认窗口；原生历史不猜测，不用读取一次statistics就宣称原统计完整迁移。
+
+Task1实测：统计无类型标签，DateTime存ticks，FInt64固定点；大Int64转Double丢1，整数读取截断/溢出，非法读Double归0。fr-FR写1,25在Invariant读为125，不能把当前culture回退当无损迁移。Statistics.AddRange接ISub.info原文字，GetString不解码转义；未知文本需保留rawInfo。四种Oracle模式重新生成逐字节一致。Task2尚未实现，JSON/运行时不变。

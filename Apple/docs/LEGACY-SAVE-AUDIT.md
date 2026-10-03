@@ -55,3 +55,6 @@ UI先只读预览，列出准确保留、明确转换、未支持内容、原has
 [PetInventoryMetadata](../Sources/PetCore/PetInventoryMetadata.swift)可Codable往返保存数量以外的旧物品参数，保留普通负价、收藏/可用/单件/可见标记、Image和Data及Food完整效果。数量只由inventory拥有，不在此模型重复保存。未知类型仅作为数据保留；原图片/Graph为不执行的来源字符串，不授权读取任意路径。原生承载上限、已定义类别/Int32经验和未来嵌套版本通过显式validate检查，失败不截断。5项新回归通过；PetState/实际JSON仍v8，元数据尚未进入正式保存/使用。Task2将接v9原件升级与版本保护，Task3接原生UI；详见[规格](specs/PHASE-4F.md)。
 
 阶段4F已接v9库存参数持久化与使用，保存/恢复的输出大小及未来嵌套版本在改文件前校验。统计/Data/主人与完整LPS导入仍待实现，源档不写；回滚须用独立v8原件，不改版本头。详见[规格](specs/PHASE-4F.md)。
+
+## 阶段4G Task1：统计类型及地区风险
+已核对StatisticsCalHandle/TakeItem/本地eval/交互统计的字段用途；stat_money是普通Double，时间主写Int64而旧界面部分读Int32，stat_move_length写Int32但界面读Int64。实际库例证明无类型标签、Int64转Double精度损失、整数截断/溢出、非法归零及地区小数误读；迁移不得静默套这种宽松回退。Statistics.GetString保留原转义，日期/FInt64/bool仅是接口能力例，未找到内置statistics对应写入，不预先推断未知键。详见[4G规格](specs/PHASE-4G.md)和[原库样例](../Tests/Fixtures/LEGACY-LPS-SOURCE.md)。只读统计映射/原生计数器兼容检查仍待Task2，当前v9与用户数据不变。
