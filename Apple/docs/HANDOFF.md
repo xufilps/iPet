@@ -1,6 +1,8 @@
 # 当前交接入口 — 2026-10-03 / v0.2.0
 
-最新交付阶段6A：新增iOS26/iPadOS26固定角色原生应用，Liquid Glass操作、互动/活动/商店/背包/消息和独立本地存档。408共享Swift+8iOS模型+28Python、双平台构建/签名/资源/图标检查通过，独立审查的重要问题已修复。iPhone/iPad的iOS27 Simulator启动截图已有，触摸/完整动效/26运行时/真机/最终压力待验；Simulator包不是设备安装包。JSONv9不变，正式macOS数据未修改；见[iOS交付说明](IOS.md)和[规格](specs/PHASE-6A-IOS.md)。
+最新排查：修复iOS未知库存显示与搜索空态，隔离Debug测试宿主，补齐方向声明及真实Simulator菜单/库存/消息/方向流程。iPad 13模型+3界面通过，共享408Swift/28Python及双平台构建、资源/图标/许可/签名检查已通过；iPhone最终完整脚本及13模型+3界面通过，iPad导航辅助适配后再次完整16项通过。JSONv9与养成公式不变，真实26系统、真机、macOS睡眠/多屏及最终压力仍待验；详见[排查记录](IOS-DEBUG-AUDIT-2026-10-03.md)。
+
+阶段6A首版：新增iOS26/iPadOS26固定角色原生应用，Liquid Glass操作、互动/活动/商店/背包/消息和独立本地存档。408共享Swift+8iOS模型+28Python、双平台构建/签名/资源/图标检查通过，独立审查的重要问题已修复。iPhone/iPad的iOS27 Simulator启动截图已有，触摸/完整动效/26运行时/真机/最终压力待验；Simulator包不是设备安装包。JSONv9不变，正式macOS数据未修改；见[iOS交付说明](IOS.md)和[规格](specs/PHASE-6A-IOS.md)。
 
 平台要求更新：最低支持统一为macOS 26 / iOS 26 / iPadOS 26，工程生成器、共享包和Simulator编译目标同步调整，GitHub验证环境改为macOS 26。当前已有macOS桌宠与iOS应用内养宠源码/Simulator构建；iOS固定角色与Liquid Glass首版见[规格](specs/PHASE-6A-IOS.md)。下文macOS 14/iOS 17是历史记录，不是当前支持范围；本机macOS27/Xcode27构建不能替代26系统运行验收。
 

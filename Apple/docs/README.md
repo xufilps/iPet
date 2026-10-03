@@ -4,6 +4,7 @@
 
 | 用途 | 文档 |
 | --- | --- |
+| iOS排查与自动操作验收 | [2026-10-03排查记录](IOS-DEBUG-AUDIT-2026-10-03.md) |
 | iOS首版、构建与存档 | [iOS说明](IOS.md)、[规格](specs/PHASE-6A-IOS.md)、[实施计划](plans/PHASE-6A-IOS.md) |
 | 工程入口与目录职责 | [构建](../README.md)、[结构](REPOSITORY-STRUCTURE.md)、[体积](PROJECT-SIZE.md)、[贡献](../../CONTRIBUTING.md) |
 | 原作差异与行为依据 | [对照矩阵](UPSTREAM_COMPARISON.md)、[行为](BEHAVIOR.md) |

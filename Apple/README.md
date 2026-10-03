@@ -21,7 +21,7 @@ bash Apple/scripts/verify.sh
 
 `Package.swift` 是共享库唯一manifest，`Sources/PetCore`为纯Swift养成/保存，`Sources/PetRendering`为SpriteKit，`Sources/PetMacInput`为平台输入适配；对应回归在 `Tests/`。AppKit/SwiftUI应用源码独立放在 `Apps/macOS/`，由Xcode构建。生成的 `Resources/PetAssets/` 不提交；图标资源目录和 [母图来源](Design/README.md) 已提交。
 
-`verify.sh` 验证目录入口、原LICENSE和保留的上游归档完整性、文档链接、生成项目一致性，运行28项Python、408项共享Swift和8项iOS模型测试，构建macOS Release与iOS Simulator应用、以iOS26最低目标交叉编译共享模块并验证签名。日志在 `build/verification/`。本次本机通过不代表GitHub runner已通过；CI只启动隔离模型测试的Simulator宿主，不进行真实触摸验收、修改用户存档或执行压力测试。
+`verify.sh` 验证目录入口、原LICENSE和保留的上游归档完整性、文档链接、生成项目一致性，运行28项Python、408项共享Swift、13项iOS模型和3项界面测试，构建macOS Release与iOS Simulator应用、以iOS26最低目标交叉编译共享模块并验证签名。日志在 `build/verification/`。本次本机通过不代表GitHub runner已通过；CI使用隔离的Simulator模型与界面测试宿主，不操作真实设备、修改日常存档或执行压力测试；保留普通XCTest日志和截图，关闭可能长时间等待的系统级诊断收集。
 
 ## 数据与恢复
 正式存档仍为 `~/Library/Application Support/VPetApple/`，当前JSON v9；主档 `pet.json`、上一份有效档 `pet.previous.json`。每60秒、关键互动、睡眠和退出保存。损坏原件保留并尝试备份，未来版本阻止覆盖；读取旧v1…v8后，首次升级写入前保留独立旧版本原件。
