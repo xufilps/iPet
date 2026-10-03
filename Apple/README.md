@@ -1,6 +1,6 @@
 # iPet Apple 工程 · v0.2.0
 
-macOS 14+原生桌宠，Swift 6共享核心及SpriteKit动画模块预留iOS 17+支持。当前交付macOS源码/自用构建，没有完整iOS应用或公证安装包。当前功能和验收以 [交接](docs/HANDOFF.md) 为准；目录职责见 [工程结构](docs/REPOSITORY-STRUCTURE.md)。
+macOS 26+原生桌宠，Swift 6共享核心及SpriteKit动画模块最低支持iOS／iPadOS 26。当前交付macOS源码/自用构建，没有完整iOS应用或公证安装包。iOS固定角色与Liquid Glass界面设计见[首版规格](docs/specs/PHASE-6A-IOS.md)。当前功能和验收以 [交接](docs/HANDOFF.md) 为准；目录职责见 [工程结构](docs/REPOSITORY-STRUCTURE.md)。
 
 ## 构建和启动
 需要 Xcode 16+（Swift 6）、Python 3和本仓库原始素材。没有第三方Swift依赖，不需要.NET、Steam或Windows工具。首次克隆包含较大原素材；只转换选用动作，原素材在 `../Assets/Upstream/VPet/Core/`。
@@ -21,7 +21,7 @@ bash Apple/scripts/verify.sh
 
 `Package.swift` 是共享库唯一manifest，`Sources/PetCore`为纯Swift养成/保存，`Sources/PetRendering`为SpriteKit，`Sources/PetMacInput`为平台输入适配；对应回归在 `Tests/`。AppKit/SwiftUI应用源码独立放在 `Apps/macOS/`，由Xcode构建。生成的 `Resources/PetAssets/` 不提交；图标资源目录和 [母图来源](Design/README.md) 已提交。
 
-`verify.sh` 验证目录入口、原LICENSE和保留的上游归档完整性、文档链接、生成项目一致性，运行26项Python/372项Swift测试，构建macOS Release、交叉编译iOS Simulator共享模块并验证签名。日志在 `build/verification/`。本次本机通过不代表GitHub runner已通过；CI同样不会启动UI、修改用户存档或执行压力测试。
+`verify.sh` 验证目录入口、原LICENSE和保留的上游归档完整性、文档链接、生成项目一致性，运行28项Python/403项Swift测试，构建macOS Release、以iOS 26最低目标交叉编译Simulator共享模块并验证签名。日志在 `build/verification/`。本次本机通过不代表GitHub runner已通过；CI同样不会启动UI、修改用户存档或执行压力测试。
 
 ## 数据与恢复
 正式存档仍为 `~/Library/Application Support/VPetApple/`，当前JSON v9；主档 `pet.json`、上一份有效档 `pet.previous.json`。每60秒、关键互动、睡眠和退出保存。损坏原件保留并尝试备份，未来版本阻止覆盖；读取旧v1…v8后，首次升级写入前保留独立旧版本原件。

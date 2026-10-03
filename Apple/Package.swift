@@ -4,7 +4,7 @@
 import PackageDescription
 let package = Package(
     name: "iPet",
-    platforms: [.macOS(.v14), .iOS(.v17)],
+    platforms: [.macOS("26.0"), .iOS("26.0")],
     products: [.library(name: "PetMacInput", targets: ["PetMacInput"]), .library(name: "PetCore", targets: ["PetCore"]), .library(name: "PetRendering", targets: ["PetRendering"])],
     targets: [
         .target(name: "PetCore"),

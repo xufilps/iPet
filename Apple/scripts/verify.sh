@@ -21,6 +21,6 @@ if re.search(r'Some test targets reported failures|error:| failed ', log):
     sys.exit(1)
 PY_CHECK
 "$apple_root/scripts/build.sh" > "$apple_root/build/verification/macos-build.log" 2>&1
-swift build --package-path "$apple_root" --target PetRendering --triple arm64-apple-ios17.0-simulator --sdk "$(xcrun --sdk iphonesimulator --show-sdk-path)" --scratch-path "$apple_root/build/ios" > "$apple_root/build/verification/ios-build.log" 2>&1
+swift build --package-path "$apple_root" --target PetRendering --triple arm64-apple-ios26.0-simulator --sdk "$(xcrun --sdk iphonesimulator --show-sdk-path)" --scratch-path "$apple_root/build/ios" > "$apple_root/build/verification/ios-build.log" 2>&1
 codesign --verify --strict "$apple_root/build/Build/Products/Release/iPet.app"
 printf '%s\n' 'Core/rendering tests, macOS Release build, iOS Simulator shared-module build and signature verification passed.'

@@ -4,8 +4,8 @@
 
 iPet 是基于 [VPet / LorisYounger](https://github.com/LorisYounger/VPet) 的 Swift 原生桌宠，优先还原 macOS 日常养宠体验，再扩展 iOS 应用内养宠。当前版本为 **v0.2.0 开发版**，提供源码与自用构建，尚无正式公证安装包或完整 iOS 应用。
 
-- macOS 14+，Swift 6，AppKit 桌面窗口、SpriteKit 动画、SwiftUI 功能面板。
-- 原生共享核心支持 iOS 17+编译；这不等于已交付 iOS 应用。
+- macOS 26+，Swift 6，AppKit 桌面窗口、SpriteKit 动画、SwiftUI 功能面板。
+- 原生共享核心最低支持 iOS／iPadOS 26；这不等于已交付 iOS 应用。iOS应用采用固定角色与Liquid Glass界面，见[首版规格](Apple/docs/specs/PHASE-6A-IOS.md)。
 - 开发及贡献分支为 **`ipet-dev`**，也是 GitHub 首页默认分支；`main` 仅同步原 Windows 项目。
 - 当前已恢复功能推进，阶段2D新增升级动画与通知、阶段3AK补随宠活动分组菜单、3AL加入可选自动隐藏、3AM补四种计时显示、2E补商品低价修正、3AN补活动变体与本地消息设置，最近完成本机基本验收。实际完成与待验证项见 [交接](Apple/docs/HANDOFF.md)。
 

@@ -58,3 +58,5 @@
 ## 前置交付：统一平台最低版本
 
 范围：Package.swift平台声明、create_project.py与生成工程、verify.sh的Simulator目标、README与交接入口。只提高系统要求，不修改养成、存档、动画或窗口行为，也不宣称已有完整iOS应用。检查工程重新生成一致、全套现有回归、macOS Release的LSMinimumSystemVersion为26.0、iOS共享模块26.0编译。当前主机macOS27与Simulator SDK27，只能提供该环境构建证据，macOS26/iOS26运行验收仍待对应系统。回滚该配置提交可恢复旧最低版本，用户JSON无需迁移。
+
+前置交付验证完成：403项Swift/28项Python、macOS Release/iOS 26最低目标共享模块编译、签名和工程生成一致性通过。Package实际解析为macOS26.0/iOS26.0；应用Info.plist的LSMinimumSystemVersion与双架构Mach-O最低系统均为26.0，SDK27.0。日志为本地忽略目录 `Apple/build/verification/platform-26.log` 与 `platform-26-package.json`。CI配置改为[GitHub提供的macOS26环境](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)，尚未取得本次远程工作流执行结果。
