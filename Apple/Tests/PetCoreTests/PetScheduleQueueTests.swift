@@ -63,9 +63,9 @@ final class PetScheduleQueueTests:XCTestCase {
         s.studyPackage=nil;XCTAssertFalse(edit(&q,.appendActivity("study",multiplier:1),state:s).accepted)
     }
     func testPlayRequiresFifteenAndSelectorRejectsExcessMultiplier() throws {
-        var q=PetScheduleQueue(),s=state();s.experience=16900 // Level14.
+        var q=PetScheduleQueue(),s=state();s.growth = .initial;s.experience=16900 // Level14.
         XCTAssertFalse(edit(&q,.appendActivity("play",multiplier:1),state:s).accepted)
-        s.experience=19600
+        s.growth = .initial;s.experience=19600
         XCTAssertTrue(edit(&q,.appendActivity("play",multiplier:1),state:s).accepted)
         XCTAssertFalse(edit(&q,.appendActivity("work",multiplier:2),state:s).accepted)
     }

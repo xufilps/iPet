@@ -8,12 +8,12 @@ final class PetEconomyIntegrationTests: XCTestCase {
         let engine=PetEngine(state:initial,clock:clock,random:FixedRandom(),catalog:catalog)
         XCTAssertTrue(engine.perform(.startActivity("work")).accepted)
         clock.now=15;engine.tick();clock.now=16;engine.tick()
-        let earned=engine.state.money-1000;XCTAssertGreaterThan(earned,0)
+        let earned=engine.state.money-initial.money;XCTAssertGreaterThan(earned,0)
         XCTAssertTrue(engine.perform(.buyItem("bread",mode:.inventory)).accepted)
         let food=engine.state.food;XCTAssertEqual(engine.state.inventory["bread"],1)
         XCTAssertTrue(engine.perform(.useItem("bread")).accepted)
         XCTAssertGreaterThan(engine.state.food,food);XCTAssertEqual(engine.state.inventory["bread",default:0],0)
-        XCTAssertEqual(engine.state.money,1000+earned-8,accuracy:1e-8)
+        XCTAssertEqual(engine.state.money,initial.money+earned-8,accuracy:1e-8)
         let dir=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at:dir) }
         let store=PetSaveStore(directory:dir);try store.save(engine.state)
@@ -38,7 +38,7 @@ final class PetEconomyIntegrationTests: XCTestCase {
         state.activity?.isPaused=true;XCTAssertNil(PetPresentation(state:state,catalog:catalog).graphID)
         state.activity=nil;state.resting=true
         XCTAssertEqual(PetPresentation(state:state,catalog:catalog).action,.sleep)
-        XCTAssertEqual(state.money,1000)
+        XCTAssertEqual(state.money,100)
     }
     func testUnknownPausedActivitySurvivesIllnessAndItemUse() {
         let clock=FakeClock(); var state=PetState();state.health=10

@@ -15,7 +15,7 @@ public enum PetSaveMigration {
         guard document.version == 1 else { throw PetSaveError.invalidDocument }
         let old=document.state
         guard [old.storedStrength,old.storedFood,old.storedDrink].allSatisfy({ $0 >= 0 }) else { throw PetSaveError.invalidState }
-        var state=PetState();state.name=old.name;state.strength=old.strength;state.food=old.food;state.drink=old.drink;state.feeling=old.feeling;state.health=old.health;state.affection=old.affection;state.experience=old.experience;state.storedStrength=old.storedStrength;state.storedFood=old.storedFood;state.storedDrink=old.storedDrink;state.resting=old.resting
-        try state.validate();return state
+        var state=PetState();state.growth=nil;state.money=1000;state.name=old.name;state.strength=old.strength;state.food=old.food;state.drink=old.drink;state.feeling=old.feeling;state.health=old.health;state.affection=old.affection;state.experience=old.experience;state.storedStrength=old.storedStrength;state.storedFood=old.storedFood;state.storedDrink=old.storedDrink;state.resting=old.resting
+        try state.migrateDesktopGrowth();return state
     }
 }

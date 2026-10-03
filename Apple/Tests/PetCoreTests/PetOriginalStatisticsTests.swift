@@ -45,7 +45,7 @@ final class PetOriginalStatisticsTests:XCTestCase {
         let store=PetSaveStore(directory:root)
         var state=PetState();state.progress=PetProgress()
         var object=try JSONSerialization.jsonObject(with:JSONEncoder().encode(PetSaveDocument(state:state))) as! [String:Any]
-        object["version"]=3;let original=try JSONSerialization.data(withJSONObject:object)
+        object["version"]=3;let original=try JSONSerialization.data(withJSONObject:historicalSaveObject(object))
         try original.write(to:store.primary);state=try XCTUnwrap(store.load())
         XCTAssertNil(state.progress?.counters)
         state.progress?.counters=["unknown_metric":-3]

@@ -40,7 +40,7 @@ final class PetActivityMultiplierTests:XCTestCase {
         XCTAssertTrue(engine.perform(.startMultipliedActivity("work",multiplier:2)).accepted)
         XCTAssertEqual(engine.state.activity?.effectiveMultiplier,2)
         clock.now=15;engine.tick()
-        XCTAssertEqual(engine.state.money,1001.309,accuracy:1e-8)
+        XCTAssertEqual(engine.state.money,101.309,accuracy:1e-8)
         XCTAssertEqual(engine.state.food,99.84075,accuracy:1e-8);XCTAssertEqual(engine.state.drink,99.88625,accuracy:1e-8)
         let before=engine.state
         XCTAssertFalse(engine.perform(.startMultipliedActivity("work",multiplier:3)).accepted);XCTAssertEqual(engine.state,before)
@@ -57,7 +57,7 @@ final class PetActivityMultiplierTests:XCTestCase {
         let earned=try XCTUnwrap(engine.state.activity?.earned),money=engine.state.money
         clock.now=601;engine.tick()
         XCTAssertEqual(engine.state.money,money+earned*0.1,accuracy:1e-8);XCTAssertNil(engine.state.activity)
-        state.activity=ActivitySession(activityID:"work",multiplier:2);state.activity?.isPaused=true;state.experience=0
+        state.activity=ActivitySession(activityID:"work",multiplier:2);state.activity?.isPaused=true;state.growth = .initial;state.experience=0
         let low=PetEngine(state:state,catalog:catalog)
         XCTAssertFalse(low.perform(.resumeActivity).accepted);XCTAssertTrue(low.state.activity!.isPaused)
     }
@@ -74,7 +74,7 @@ final class PetActivityMultiplierTests:XCTestCase {
         let dir=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer { try? FileManager.default.removeItem(at:dir) }
         let store=PetSaveStore(directory:dir)
         var object=try XCTUnwrap(JSONSerialization.jsonObject(with:store.exportSnapshot(PetState())) as? [String:Any]);object["version"]=4
-        let old=try JSONSerialization.data(withJSONObject:object)
+        let old=try JSONSerialization.data(withJSONObject:historicalSaveObject(object))
         try FileManager.default.createDirectory(at:dir,withIntermediateDirectories:true);try old.write(to:store.primary)
         try store.save(PetState())
         XCTAssertEqual(try Data(contentsOf:XCTUnwrap(store.migrationBackupURL)),old)
@@ -87,12 +87,12 @@ final class PetActivityMultiplierTests:XCTestCase {
         XCTAssertEqual(try store.previewImport(current).activity?.effectiveMultiplier,2)
         var object=try XCTUnwrap(JSONSerialization.jsonObject(with:current) as? [String:Any]);object["version"]=4
         var saved=try XCTUnwrap(object["state"] as? [String:Any]);var session=try XCTUnwrap(saved["activity"] as? [String:Any]);session.removeValue(forKey:"multiplier");saved["activity"]=session;object["state"]=saved
-        let legacy=try JSONSerialization.data(withJSONObject:object);try FileManager.default.createDirectory(at:dir,withIntermediateDirectories:true);try legacy.write(to:store.primary)
+        let legacy=try JSONSerialization.data(withJSONObject:historicalSaveObject(object));try FileManager.default.createDirectory(at:dir,withIntermediateDirectories:true);try legacy.write(to:store.primary)
         let loaded=try XCTUnwrap(store.load());XCTAssertEqual(loaded.activity?.effectiveMultiplier,1)
         try store.save(loaded)
         XCTAssertEqual(try Data(contentsOf:XCTUnwrap(store.migrationBackupURL)),legacy)
-        let header=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:store.primary)) as? [String:Any]);XCTAssertEqual(header["version"] as? Int,7)
+        let header=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:store.primary)) as? [String:Any]);XCTAssertEqual(header["version"] as? Int,8)
         state.activity?.multiplier=401;XCTAssertThrowsError(try state.validate())
-        try Data("{\"version\":8}".utf8).write(to:store.primary);XCTAssertThrowsError(try store.save(loaded))
+        try Data("{\"version\":9}".utf8).write(to:store.primary);XCTAssertThrowsError(try store.save(loaded))
     }
 }

@@ -67,7 +67,7 @@ final class PetScheduleTests:XCTestCase {
         var s=saved();s.workPackage?.level=1 // base0 allowed, effective x2 requires20 at add time.
         var q=PetScheduleQueue();var high=saved();high.workPackage?.level=40
         XCTAssertTrue(q.edit(.appendActivity("work",multiplier:2),state:high,catalog:PetCatalog(activities:[testWork()]),now:Date(timeIntervalSince1970:1_000_000)).accepted)
-        s.experience=0;s.schedule=PetSchedule(queue:q)
+        s.growth = .initial;s.experience=0;s.schedule=PetSchedule(queue:q)
         let (e,_)=engine(s)
         XCTAssertTrue(e.perform(.schedule(.start)).accepted)
         XCTAssertEqual(e.state.activity?.effectiveMultiplier,1);XCTAssertEqual(e.state.schedule?.queue.entries[0].multiplier,1)
@@ -111,11 +111,11 @@ final class PetScheduleTests:XCTestCase {
         let loaded=try XCTUnwrap(store.load());XCTAssertTrue(loaded.schedule!.isPaused);XCTAssertTrue(loaded.activity!.isPaused);XCTAssertEqual(loaded.activity?.elapsedSeconds,20)
         XCTAssertTrue(try store.previewImport(store.exportSnapshot(e.state)).schedule!.isPaused)
         var object=try XCTUnwrap(JSONSerialization.jsonObject(with:store.exportSnapshot(saved())) as? [String:Any]);object["version"]=6
-        let legacy=try JSONSerialization.data(withJSONObject:object);try legacy.write(to:store.primary)
+        let legacy=try JSONSerialization.data(withJSONObject:historicalSaveObject(object));try legacy.write(to:store.primary)
         let old=try XCTUnwrap(store.load());XCTAssertNil(old.schedule);try store.save(old)
         XCTAssertEqual(try Data(contentsOf:XCTUnwrap(store.migrationBackupURL)),legacy)
-        XCTAssertEqual(PetSaveDocument(state:old).version,7)
-        let future=Data(#"{"version":8}"#.utf8);try future.write(to:store.primary)
+        XCTAssertEqual(PetSaveDocument(state:old).version,8)
+        let future=Data(#"{"version":9}"#.utf8);try future.write(to:store.primary)
         XCTAssertThrowsError(try store.save(old));XCTAssertEqual(try Data(contentsOf:store.primary),future)
     }
     func testInvalidOwnershipRejectedAndDisabledSimulationStopsSchedule() throws {

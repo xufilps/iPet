@@ -36,8 +36,9 @@ public struct PetTextEntry:Codable,Sendable {
         let value=kind=="food" ? state.food : state.drink
         let high=(mood ?? state.mood) == .happy || (mood ?? state.mood) == .normal
         let tier=state.affection<40 ? 0 : state.affection<70 ? 1 : state.affection<100 ? 2 : 3
-        let strength=high ? (value>60 ? "L" : value>40 ? "M" : "S") : (value>40 ? "L" : value>20 ? "M" : "S")
-        return self.kind==kind && value < (high ? 70 : 60) && lowMode==(high ? "H" : "L") && severity==strength && (high ? like<=tier : like<tier)
+        let maximum=state.strengthMax
+        let strength=high ? (value>maximum*0.6 ? "L" : value>maximum*0.4 ? "M" : "S") : (value>maximum*0.4 ? "L" : value>maximum*0.2 ? "M" : "S")
+        return self.kind==kind && value < state.strengthMax*(high ? 0.7 : 0.6) && lowMode==(high ? "H" : "L") && severity==strength && (high ? like<=tier : like<tier)
     }
     public func rendered(state:PetState) -> String { PetDialogueFormatting.render(text,state:state) }
 }
@@ -94,7 +95,7 @@ public final class PetDialogue {
         guard eligible else { return nil }
         let high=(mood ?? state.mood) == .happy || (mood ?? state.mood) == .normal
         for kind in ["food","drink"] {
-            guard (kind=="food" ? state.food : state.drink) < (high ? 70 : 60) else { continue }
+            guard (kind=="food" ? state.food : state.drink) < state.strengthMax*(high ? 0.7 : 0.6) else { continue }
             let count=kind=="food" ? foodCount : drinkCount
             let trigger=index(max(1,count))==0
             if kind=="food" { foodCount=trigger ? 200 : max(1,foodCount-1) }

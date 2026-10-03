@@ -17,7 +17,7 @@ public enum PetSaveError: Error, LocalizedError {
 public struct PetSaveDocument: Codable, Equatable, Sendable {
     public let version: Int
     public var state: PetState
-    public init(state: PetState) { version = 7; self.state = state }
+    public init(state: PetState) { version = 8; self.state = state }
 }
 public protocol PetPersistence {
     func load() throws -> PetState?
@@ -42,11 +42,15 @@ public final class PetSaveStore: PetPersistence {
     }
     private func decode(_ data: Data) throws -> PetState {
         let version=try headerVersion(data)
-        guard version <= 7 else { throw PetSaveError.unsupportedVersion(version) }
+        guard version <= 8 else { throw PetSaveError.unsupportedVersion(version) }
         if version == 1 { return try PetSaveMigration.decodeLegacy(data) }
-        guard (2...7).contains(version) else { throw PetSaveError.invalidDocument }
-        let document=try JSONDecoder().decode(PetSaveDocument.self,from:data)
+        guard (2...8).contains(version) else { throw PetSaveError.invalidDocument }
+        var document=try JSONDecoder().decode(PetSaveDocument.self,from:data)
         guard document.state.catalogVersion <= 1 else { throw PetSaveError.unsupportedCatalogVersion(document.state.catalogVersion) }
+        if version<8 {
+            guard document.state.growth == nil else { throw PetSaveError.invalidDocument }
+            try document.state.migrateDesktopGrowth()
+        } else { guard document.state.growth != nil else { throw PetSaveError.invalidDocument } }
         try document.state.validate();return document.state
     }
     private func protected(_ error: Error) -> Bool {
@@ -54,7 +58,7 @@ public final class PetSaveStore: PetPersistence {
     }
     private func prepareLoaded(_ data: Data) throws -> PetState {
         var state=try decode(data)
-        if try headerVersion(data) < 7 { pendingLegacy=data; recoveryMessage=(recoveryMessage ?? "") + "旧存档将升级，写入前会独立备份原件。" }
+        if try headerVersion(data) < 8 { pendingLegacy=data; recoveryMessage=(recoveryMessage ?? "") + "旧累计经验将转换为桌面等级/突破和剩余经验，属性与金币保留；写入前会独立备份原件。" }
         if state.activity != nil { state.activity?.isPaused=true }
         if state.schedule?.isRunning == true { state.schedule?.isPaused=true }
         return state
@@ -88,6 +92,7 @@ public final class PetSaveStore: PetPersistence {
         return nil
     }
     public func exportSnapshot(_ state:PetState) throws -> Data {
+        guard state.growth != nil else { throw PetSaveError.invalidState }
         try state.validate()
         let encoder=JSONEncoder();encoder.outputFormatting=[.prettyPrinted,.sortedKeys]
         let data=try encoder.encode(PetSaveDocument(state:state))
@@ -114,11 +119,12 @@ public final class PetSaveStore: PetPersistence {
         let source=directory.appendingPathComponent("pet.import-source-\(UUID().uuidString).json")
         try data.write(to:source,options:.withoutOverwriting)
         guard try Data(contentsOf:source)==data else { throw PetSaveError.invalidDocument }
-        if try headerVersion(data)<7 { try preserveLegacy(data) }
+        if try headerVersion(data)<8 { try preserveLegacy(data) }
         try save(imported)
         return imported
     }
     public func save(_ state: PetState) throws {
+        guard state.growth != nil else { throw PetSaveError.invalidState }
         try state.validate()
         try fm.createDirectory(at: directory, withIntermediateDirectories: true)
         if fm.fileExists(atPath: backup.path) {
@@ -134,7 +140,7 @@ public final class PetSaveStore: PetPersistence {
             let existing = try Data(contentsOf: primary)
             do {
                 _ = try decode(existing)
-                if try headerVersion(existing) < 7 { try preserveLegacy(existing) }
+                if try headerVersion(existing) < 8 { try preserveLegacy(existing) }
                 if let data=pendingLegacy { try preserveLegacy(data) }
                 try existing.write(to: backup, options: .atomic)
             }

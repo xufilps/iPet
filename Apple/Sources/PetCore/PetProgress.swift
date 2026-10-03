@@ -54,7 +54,7 @@ public struct PetProgress:Codable,Equatable,Sendable {
         flag("stat_0_all",state.strength<1 && state.feeling<1 && state.food<1 && state.drink<1)
         flag("stat_0_strengthfood",state.food<1);flag("stat_0_strengthdrink",state.drink<1)
         flag("stat_0_sd_sf",state.food<1 && state.drink<1)
-        if state.strength>99 && state.feeling>99 && state.food>99 && state.drink>99 { increment("stat_100_all") }
+        if state.strength>state.strengthMax-1 && state.feeling>state.feelingMax-1 && state.food>state.strengthMax-1 && state.drink>state.strengthMax-1 { increment("stat_100_all") }
     }
     mutating func recordTime(kind:ActivityKind,seconds:Double) {
         switch kind { case .work:workSeconds+=seconds;case .study:studySeconds+=seconds;case .play:playSeconds+=seconds }

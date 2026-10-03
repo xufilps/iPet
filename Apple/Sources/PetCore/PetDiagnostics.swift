@@ -36,7 +36,7 @@ public struct PetDiagnosticReport:Sendable {
         guard description.count<=10000 else { throw PetSaveError.invalidDocument }
         let formatter=ISO8601DateFormatter()
         var lines=["iPet 本机诊断报告","报告时间: "+formatter.string(from:date),"应用版本: "+appVersion,"系统版本: "+systemVersion,
-                   "宠物存档 v7 / 快捷配置 v2 / 按键宏 v1","动画组合: \(clips) / 独立帧路径: \(frames) / 物品: \(items)",
+                   "宠物存档 v8 / 快捷配置 v2 / 按键宏 v1","动画组合: \(clips) / 独立帧路径: \(frames) / 物品: \(items)",
                    "养成: \(simulationEnabled) / 显示: \(visible) / 可写: \(writable) / 保存失败: \(saveFailed)",
                    "当前运行内存日志统计（最多200条合并记录，非完整历史）:"]
         for kind in PetDiagnosticKind.allCases { lines.append("\(kind.rawValue): \(log.entries.filter { $0.kind==kind }.reduce(0) { $0+$1.count })") }

@@ -96,11 +96,11 @@ final class PetPackageTests:XCTestCase {
         let store=PetSaveStore(directory:dir);var saved=state();saved.workPackage=try definition().quote(level:15,now:Date(timeIntervalSince1970:1000000))
         let data=try store.exportSnapshot(saved);XCTAssertEqual(try store.previewImport(data),saved)
         var object=try XCTUnwrap(JSONSerialization.jsonObject(with:store.exportSnapshot(state())) as? [String:Any]);object["version"]=5
-        let legacy=try JSONSerialization.data(withJSONObject:object);try FileManager.default.createDirectory(at:dir,withIntermediateDirectories:true);try legacy.write(to:store.primary)
+        let legacy=try JSONSerialization.data(withJSONObject:historicalSaveObject(object));try FileManager.default.createDirectory(at:dir,withIntermediateDirectories:true);try legacy.write(to:store.primary)
         let loaded=try XCTUnwrap(store.load());XCTAssertNil(loaded.workPackage)
         try store.save(loaded);XCTAssertEqual(try Data(contentsOf:XCTUnwrap(store.migrationBackupURL)),legacy)
-        let header=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:store.primary)) as? [String:Any]);XCTAssertEqual(header["version"] as? Int,7)
-        let future=Data("{\"version\":8}".utf8);try future.write(to:store.primary)
+        let header=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:store.primary)) as? [String:Any]);XCTAssertEqual(header["version"] as? Int,8)
+        let future=Data("{\"version\":9}".utf8);try future.write(to:store.primary)
         XCTAssertThrowsError(try store.save(saved));XCTAssertEqual(try Data(contentsOf:store.primary),future)
     }
 }

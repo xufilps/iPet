@@ -22,26 +22,27 @@ enum PetActivityRules {
     static func advance(state: inout PetState, work: ActivityDefinition, t: Double, freedrop: Double, random: inout any PetRandom) -> Double {
         var needFood=t*work.strengthFood, needDrink=t*work.strengthDrink
         var efficiency=0.0, healthBonus = -2
+        let sm25=state.strengthMax*0.25,sm60=state.strengthMax*0.6
         let substituteFood=needFood*0.3, substituteDrink=needDrink*0.3
-        if state.strength > 25+substituteFood+substituteDrink {
+        if state.strength > sm25+substituteFood+substituteDrink {
             state.changeStrength(-substituteFood-substituteDrink); efficiency += 0.1
             needFood -= substituteFood; needDrink -= substituteDrink
         }
-        if state.food <= 25 {
+        if state.food <= sm25 {
             state.changeFood(-needFood/2); efficiency += 0.2
             if state.strength >= needFood { state.changeStrength(-needFood); efficiency += 0.1 }
             healthBonus -= 2
         } else {
             state.changeFood(-needFood); efficiency += 0.4
-            if state.food >= 60 { healthBonus += 1+Int(random.unit()*2); efficiency += 0.1 }
+            if state.food >= sm60 { healthBonus += 1+Int(random.unit()*2); efficiency += 0.1 }
         }
-        if state.drink <= 25 {
+        if state.drink <= sm25 {
             state.changeDrink(-needDrink/2); efficiency += 0.2
             if state.strength >= needDrink { state.changeStrength(-needDrink); efficiency += 0.1 }
             healthBonus -= 2
         } else {
             state.changeDrink(-needDrink); efficiency += 0.4
-            if state.drink >= 60 { healthBonus += 1+Int(random.unit()*2); efficiency += 0.1 }
+            if state.drink >= sm60 { healthBonus += 1+Int(random.unit()*2); efficiency += 0.1 }
         }
         if healthBonus > 0 { state.changeHealth(Double(healthBonus)*t) }
         let gain=max(0,t*work.moneyBase*(2*efficiency-0.5))

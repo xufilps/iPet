@@ -35,15 +35,15 @@ final class PetProgressTests:XCTestCase {
         let store=PetSaveStore(directory:root)
         var object=try JSONSerialization.jsonObject(with:JSONEncoder().encode(PetSaveDocument(state:PetState()))) as! [String:Any]
         object["version"]=2
-        let original=try JSONSerialization.data(withJSONObject:object);try original.write(to:store.primary)
+        let original=try JSONSerialization.data(withJSONObject:historicalSaveObject(object));try original.write(to:store.primary)
         var state=try XCTUnwrap(store.load());XCTAssertNil(state.progress)
         state.progress=PetProgress();try store.save(state)
         XCTAssertEqual(try Data(contentsOf:XCTUnwrap(store.migrationBackupURL)),original)
         XCTAssertEqual(try store.load(),state)
         let header=try JSONSerialization.jsonObject(with:Data(contentsOf:store.primary)) as! [String:Any]
-        XCTAssertEqual(header["version"] as? Int,7)
+        XCTAssertEqual(header["version"] as? Int,8)
         state.progress?.spent = .nan;XCTAssertThrowsError(try state.validate())
-        let future=Data("{\"version\":8}".utf8);try future.write(to:store.primary)
+        let future=Data("{\"version\":9}".utf8);try future.write(to:store.primary)
         XCTAssertThrowsError(try store.load());XCTAssertEqual(try Data(contentsOf:store.primary),future)
     }
     func testHistoryIsBoundedAndManualEndsHaveNoBonus() throws {

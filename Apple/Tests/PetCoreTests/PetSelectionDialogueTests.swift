@@ -24,13 +24,13 @@ final class PetSelectionDialogueTests:XCTestCase {
     }
     func testTransactionalChoicePostEffectFollowupAndNoRepeat() throws {
         let c=FixedWallClock(),e=entry("first",to:["next"],effects:PetDialogueEffects(money:2))
-        let d=try session([e,entry("follow",bounds:["moneymin":1002],tags:["next"]),entry("case",bounds:["moneymin":1002],tags:["Next"])],clock:c)
+        let d=try session([e,entry("follow",bounds:["moneymin":102],tags:["next"]),entry("case",bounds:["moneymin":102],tags:["Next"])],clock:c)
         let engine=PetEngine(clock:FakeClock(),wallClock:c);d.refresh(state:engine.state)
         XCTAssertEqual(d.choices.map(\.id),["first"]);let deadline=try XCTUnwrap(d.deadline)
         XCTAssertNil(d.select(id:"first") { _ in nil });XCTAssertEqual(d.choices.map(\.id),["first"]);XCTAssertEqual(d.deadline,deadline)
         c.now=c.now.addingTimeInterval(100)
         let chosen=d.select(id:"first") { effects in engine.applySelectionDialogue(effects) ? engine.state:nil }
-        XCTAssertEqual(chosen?.rendered(state:engine.state),"金币1002")
+        XCTAssertEqual(chosen?.rendered(state:engine.state),"金币102")
         XCTAssertEqual(d.deadline,deadline.addingTimeInterval(300));XCTAssertEqual(d.choices.map(\.id),["follow"])
         XCTAssertNil(d.select(id:"first") { _ in XCTFail("Repeated choice applied");return engine.state })
         XCTAssertEqual(engine.state.progress?.counters?["stat_say_money_p"],1)

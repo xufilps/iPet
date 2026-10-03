@@ -72,11 +72,11 @@ public final class PetEngine {
         switch command {
         case .touchHead, .touchBody:
             updateProgress { $0.increment(command.isHead ? "stat_touch_head":"stat_touch_body") }
-            if simulationEnabled && state.strength >= 10 && state.feeling < 100 { state.changeStrength(-2); state.changeFeeling(1) }
+            if simulationEnabled && state.strength >= 10 && state.feeling < state.feelingMax { state.changeStrength(-2); state.changeFeeling(1) }
             state.resting = false
             return command.isHead ? .head : .body
         case .touchPinch:
-            if simulationEnabled && state.strength >= 10 && state.feeling < 100 { state.changeStrength(-2);state.changeFeeling(1) }
+            if simulationEnabled && state.strength >= 10 && state.feeling < state.feelingMax { state.changeStrength(-2);state.changeFeeling(1) }
             return .pinch
         case .feed: eat(.meal); return .eat
         case .water: eat(.water); return .drink
@@ -241,43 +241,44 @@ public final class PetEngine {
     private func step() {
         let t = 0.05
         let sampledMood=state.mood
+        let sm25=state.strengthMax*0.25,sm50=state.strengthMax*0.5,sm75=state.strengthMax*0.75
         releaseStores()
         if state.resting {
             state.changeStrength(t * 2); state.changeFood(t)
-            if state.food <= 25 { state.changeFood(t) } else if state.food >= 75 { state.changeHealth(t * 2) }
+            if state.food <= sm25 { state.changeFood(t) } else if state.food >= sm75 { state.changeHealth(t * 2) }
             state.changeDrink(t)
             // Original uses >=25; its subsequent >=75 branch is unreachable.
-            if state.drink >= 25 { state.changeDrink(t) } else if state.drink >= 75 { state.changeHealth(t * 2) }
+            if state.drink >= sm25 { state.changeDrink(t) } else if state.drink >= sm75 { state.changeHealth(t * 2) }
             lastInteraction = activeSeconds
         } else if let session=state.activity, !session.isPaused, let work=catalog.activity(for:session) {
             let minutes=(activeSeconds-lastInteraction)/60
-            let freedrop=minutes < 1 ? 0 : min(sqrt(minutes)*t/4,100.0/800)
+            let freedrop=minutes < 1 ? 0 : min(sqrt(minutes)*t/4,state.feelingMax/800)
             let gain=PetActivityRules.advance(state: &state,work:work,t:t,freedrop:freedrop,random:&random)
             state.activity?.earned += gain
             updateProgress { $0.recordGain(kind:work.kind,amount:gain) }
             if work.kind == .play { lastInteraction=activeSeconds }
         } else {
             var healthBonus = -2
-            if state.food >= 50 {
+            if state.food >= sm50 {
                 state.changeFood(-t); state.changeStrength(t)
-                if state.food >= 75 { healthBonus += 1 + Int(random.unit() * 2) }
-            } else if state.food <= 25 { state.changeHealth(-random.unit() * t); healthBonus -= 2 }
-            if state.drink >= 50 {
+                if state.food >= sm75 { healthBonus += 1 + Int(random.unit() * 2) }
+            } else if state.food <= sm25 { state.changeHealth(-random.unit() * t); healthBonus -= 2 }
+            if state.drink >= sm50 {
                 state.changeDrink(-t); state.changeStrength(t)
-                if state.drink >= 75 { healthBonus += 1 + Int(random.unit() * 2) }
-            } else if state.drink <= 25 { state.changeHealth(-random.unit() * t); healthBonus -= 2 }
+                if state.drink >= sm75 { healthBonus += 1 + Int(random.unit() * 2) }
+            } else if state.drink <= sm25 { state.changeHealth(-random.unit() * t); healthBonus -= 2 }
             if healthBonus > 0 { state.changeHealth(Double(healthBonus) * t) }
             state.changeFood(-t); state.changeDrink(-t)
             let minutes = (activeSeconds - lastInteraction) / 60
-            state.changeFeeling(-(minutes < 1 ? 0 : min(sqrt(minutes) * t / 4, 100.0 / 800)))
+            state.changeFeeling(-(minutes < 1 ? 0 : min(sqrt(minutes) * t / 4, state.feelingMax / 800)))
         }
         state.experience += t
-        if state.feeling >= 75 {
-            if state.feeling >= 90 { state.changeAffection(t) }
+        if state.feeling >= state.feelingMax*0.75 {
+            if state.feeling >= state.feelingMax*0.90 { state.changeAffection(t) }
             state.experience += t * 2; state.changeHealth(t)
         } else if state.feeling <= 25 { state.changeAffection(-t); state.experience -= t }
         // Random.Next(0,1) is always zero in C#; do not add random health loss.
-        if state.drink <= 25 { state.experience -= t }
+        if state.drink <= sm25 { state.experience -= t }
         updateProgress { $0.recordSample(state:state,catalog:catalog,mood:sampledMood) }
         var progress=state.progress ?? PetProgress();evaluation.advance(progress:&progress,now:wallClock.now,seconds:15);state.progress=progress
         if state.mood == .ill, let session=state.activity, catalog.activity(for:session) != nil { stopActivity(.stateFailed) }

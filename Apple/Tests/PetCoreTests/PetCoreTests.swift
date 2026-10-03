@@ -3,23 +3,32 @@ import XCTest
 
 final class FakeClock: PetClock { var now = 0.0 }
 struct FixedRandom: PetRandom { var value = 0.0; mutating func unit() -> Double { value } }
+/// Explicit fixture conversion for pre-v8 layouts. Growth never existed there; experience was cumulative.
+func historicalSaveObject(_ object:[String:Any]) throws -> [String:Any] {
+    var result=object
+    guard let version=object["version"] as? Int,(2...7).contains(version),var state=object["state"] as? [String:Any],let growth=state["growth"] as? [String:Any] else { return result }
+    let level=try XCTUnwrap(growth["level"] as? Int)
+    XCTAssertEqual(growth["prestige"] as? Int,0,"Historical test conversion only handles fixtures before the first prestige")
+    state["experience"]=100*Double((level-1)*(level-1))+(try XCTUnwrap(state["experience"] as? Double))
+    state.removeValue(forKey:"growth");result["state"]=state;return result
+}
 final class PetCoreTests: XCTestCase {
     func testOriginalDefaultTick() {
         let clock = FakeClock(); let engine = PetEngine(clock: clock, random: FixedRandom())
         clock.now = 15; engine.tick()
         XCTAssertEqual(engine.state.food, 99.9, accuracy: 1e-8)
         XCTAssertEqual(engine.state.drink, 99.9, accuracy: 1e-8)
-        XCTAssertEqual(engine.state.strength, 100)
+        XCTAssertEqual(engine.state.strength,100.1,accuracy:1e-8)
         XCTAssertEqual(engine.state.experience, 0.05)
         XCTAssertEqual(engine.state.feeling, 60)
     }
     func testThresholdsFromCalMode() {
         var state = PetState(); state.health = 30; XCTAssertEqual(state.mood, .ill)
         state.health = 60; XCTAssertEqual(state.mood, .poor)
-        state.health = 61; state.feeling = 90; XCTAssertEqual(state.mood, .happy)
+        state.health = 61; state.feeling = state.feelingMax*0.90; XCTAssertEqual(state.mood, .happy)
         state.feeling = 45; XCTAssertEqual(state.mood, .poor)
         state.feeling = 80; state.affection = 80; state.health = 18; XCTAssertEqual(state.mood, .ill)
-        state.health = 37; XCTAssertEqual(state.mood, .happy)
+        state.health = 49; XCTAssertEqual(state.mood, .happy)
     }
     func testFeedingAndDeferredRelease() {
         var state = PetState(); state.food = 50; state.strength = 50
@@ -89,7 +98,7 @@ final class PetCoreTests: XCTestCase {
         XCTAssertThrowsError(try store.load()); XCTAssertThrowsError(try store.save(PetState()))
         XCTAssertEqual(try Data(contentsOf: store.primary), future)
     }
-    func testFutureBackupAndLevelDecreaseRemainSafe() throws {
+    func testFutureBackupAndNegativeExperiencePreservesDesktopLevel() throws {
         let store = try tempStore(); try store.save(PetState())
         let future = Data("{\"version\":99}".utf8); try future.write(to: store.backup)
         XCTAssertThrowsError(try store.save(PetState()))
@@ -97,8 +106,10 @@ final class PetCoreTests: XCTestCase {
         var state = PetState(); state.experience = 100; state.affection = 109; state.feeling = 20; state.drink = 0
         let clock = FakeClock(); let engine = PetEngine(state: state, clock: clock, random: FixedRandom())
         clock.now = 15; engine.tick()
-        XCTAssertEqual(engine.state.level, 1)
-        XCTAssertGreaterThan(engine.state.affection, engine.state.affectionMax)
+        XCTAssertEqual(engine.state.level,2)
+        XCTAssertLessThan(engine.state.experience,0)
+        XCTAssertEqual(engine.state.affectionMax,110)
+        XCTAssertEqual(engine.state.affection,108.95,accuracy:1e-8)
         try engine.state.validate()
         let anotherStore = try tempStore(); try anotherStore.save(engine.state)
         XCTAssertEqual(try anotherStore.load(), engine.state)

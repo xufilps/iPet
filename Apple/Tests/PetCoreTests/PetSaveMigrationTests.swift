@@ -17,7 +17,7 @@ final class PetSaveMigrationTests: XCTestCase {
         let copy=try XCTUnwrap(store.migrationBackupURL);XCTAssertEqual(try Data(contentsOf:copy),data)
         XCTAssertEqual(try store.load()?.money,123)
         let header=try JSONSerialization.jsonObject(with:Data(contentsOf:store.primary)) as! [String:Any]
-        XCTAssertEqual(header["version"] as? Int,7)
+        XCTAssertEqual(header["version"] as? Int,8)
         try store.save(state);XCTAssertEqual(try Data(contentsOf:copy),data)
     }
     func testFutureBackupAndCatalogNeverOverwrittenDuringMigration() throws {

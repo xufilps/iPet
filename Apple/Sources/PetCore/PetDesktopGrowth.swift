@@ -2,8 +2,10 @@
 import Foundation
 
 /// GameSave_VPet desktop progression, distinct from the older Core/GameSave cumulative model.
-/// Not yet wired into PetState; runtime/persistence migration must preserve existing saves first.
+/// PetState uses this model; persistence upgrades older cumulative saves before adoption.
 public struct PetDesktopGrowth:Codable,Equatable,Sendable {
+    public static let initial=Self(initial:())
+    private init(initial:Void) { level=1;prestige=0;experience=0;affectionMax=100 }
     public private(set) var level:Int
     public private(set) var prestige:Int
     public private(set) var experience:Double
@@ -15,6 +17,14 @@ public struct PetDesktopGrowth:Codable,Equatable,Sendable {
     public var nextLevelExperience:Double { Double(200*level-100) }
     public var strengthMax:Double { 100+Double(Int(pow(Double(level)*Double(1+prestige),0.75)*4)) }
     public var feelingMax:Double { 100+Double(Int(pow(Double(level)*Double(1+prestige),0.75)*2)) }
+    /// Prestige changes level without touching raw attributes. A previous terminal cap can remain until mutation.
+    public var retainedStrengthCeiling:Double { retainedCeiling(factor:4,current:strengthMax) }
+    public var retainedFeelingCeiling:Double { retainedCeiling(factor:2,current:feelingMax) }
+    private func retainedCeiling(factor:Double,current:Double) -> Double {
+        guard prestige>0 else { return current }
+        let previousTerminal=1000+100*(prestige-1)
+        return max(current,100+Double(Int(pow(Double(previousTerminal)*Double(prestige),0.75)*factor)))
+    }
     public func validate() throws {
         guard (0...10000).contains(prestige),(1...(1000+100*prestige)).contains(level),
               experience.isFinite,abs(experience)<=1e12,experience<nextLevelExperience,

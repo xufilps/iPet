@@ -23,7 +23,7 @@ final class PetDialogueTests: XCTestCase {
         let catalog=try PetDialogueCatalog.load(from:root.appendingPathComponent("dialogue.json"))
         var entry=try XCTUnwrap(catalog.entries.first { $0.kind == "food" });entry.lowMode="H";entry.severity="L";entry.like=0
         var state=PetState();state.food=69.9
-        XCTAssertTrue(entry.matchesLow(state:state,kind:"food"));state.food=70
+        XCTAssertTrue(entry.matchesLow(state:state,kind:"food"));state.food=state.strengthMax*0.7
         XCTAssertFalse(entry.matchesLow(state:state,kind:"food"))
         entry.lowMode="L";state.health=30;state.food=50;state.affection=0
         XCTAssertFalse(entry.matchesLow(state:state,kind:"food"));state.affection=40
@@ -58,7 +58,7 @@ final class PetDialogueTests: XCTestCase {
         var asleep=state;asleep.resting=true;asleep.strength=80
         let engine=PetEngine(state:asleep)
         XCTAssertTrue(engine.applyDialogue(PetDialogueEffects(money:-1,strength:10,feeling:2,experience:1)))
-        XCTAssertTrue(engine.state.resting);XCTAssertEqual(engine.state.money,999)
+        XCTAssertTrue(engine.state.resting);XCTAssertEqual(engine.state.money,99)
         XCTAssertEqual(engine.state.strength,85);XCTAssertEqual(engine.state.storedStrength,5)
         XCTAssertEqual(engine.state.feeling,62);XCTAssertEqual(engine.state.experience,1)
     }

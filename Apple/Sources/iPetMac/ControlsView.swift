@@ -33,9 +33,12 @@ struct ControlsView: View {
     }
     private var status: some View {
         VStack(alignment:.leading,spacing:16) {
-            Text("等级 \(model.state.level) · 经验 \(model.state.experience.formatted(.number.precision(.fractionLength(2)))) · 好感 \(model.state.affection.formatted(.number.precision(.fractionLength(1))))")
-            metric("体力",model.state.strength); metric("饱腹",model.state.food)
-            metric("饮水",model.state.drink); metric("心情",model.state.feeling); metric("健康",model.state.health)
+            Text("等级 \(model.state.level) · 突破 \(model.state.growth?.prestige ?? 0) · 本级经验 \(model.state.experience.formatted(.number.precision(.fractionLength(2)))) / \((model.state.growth?.nextLevelExperience ?? 100).formatted()) · 好感 \(model.state.affection.formatted(.number.precision(.fractionLength(1)))) / \(model.state.affectionMax.formatted())")
+            metric("体力",model.state.strength,total:model.state.strengthMax); metric("饱腹",model.state.food,total:model.state.strengthMax)
+            metric("饮水",model.state.drink,total:model.state.strengthMax); metric("心情",model.state.feeling,total:model.state.feelingMax); metric("健康",model.state.health)
+            if model.state.strength>model.state.strengthMax || model.state.food>model.state.strengthMax || model.state.drink>model.state.strengthMax || model.state.feeling>model.state.feelingMax {
+                Text("突破后已有属性暂时保留，下一次该属性变化时按当前上限调整。").font(.caption).foregroundStyle(.secondary)
+            }
             HStack {
                 Button(model.state.resting ? "起床" : "休息") { model.command(.toggleRest) }
                 Button("选话题") { model.showConversation() }
@@ -161,7 +164,7 @@ struct ControlsView: View {
         }.padding(16)
         }
     }
-    private func metric(_ title:String,_ value:Double) -> some View {
-        HStack { Text(title).frame(width:38,alignment:.leading); ProgressView(value:value,total:100); Text(value.formatted(.number.precision(.fractionLength(1)))).monospacedDigit().frame(width:44,alignment:.trailing) }
+    private func metric(_ title:String,_ value:Double,total:Double=100) -> some View {
+        HStack { Text(title).frame(width:38,alignment:.leading); ProgressView(value:min(value,total),total:total); Text(value.formatted(.number.precision(.fractionLength(1)))+" / "+total.formatted()).monospacedDigit().frame(minWidth:90,alignment:.trailing) }
     }
 }

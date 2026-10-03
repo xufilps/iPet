@@ -14,12 +14,23 @@ public struct PetState: Codable, Equatable, Sendable {
     public var feeling = 60.0
     public var health = 100.0
     public var affection = 0.0
-    public var experience = 0.0
+    public var experience = 0.0 {
+        didSet {
+            guard var next=growth else { return } // Missing only while decoding an older JSON schema.
+            do {
+                try next.setExperience(experience);growth=next;experience=next.experience
+            } catch {
+                // Keep the rejected scalar so validation fails, allowing the owner's transaction to roll back.
+                // A property assignment inside its own observer does not recursively invoke the observer.
+            }
+        }
+    }
+    public var growth:PetDesktopGrowth? = .initial
     public var storedStrength = 0.0
     public var storedFood = 0.0
     public var storedDrink = 0.0
     public var resting = false
-    public var money = 1000.0
+    public var money = 100.0
     public var inventory: [String: Int] = [:]
     public var itemCooldowns: [String: Date] = [:]
     public var catalogVersion = 1
@@ -28,9 +39,12 @@ public struct PetState: Codable, Equatable, Sendable {
     public var schedule:PetSchedule?
     public var workPackage,studyPackage:PetSignedPackage?
     public init() {}
-    public var level: Int { Int(sqrt(max(0, min(experience, 1e12))) / 10) + 1 }
-    public var affectionMax: Double { Double(90 + level * 10) }
+    public var level: Int { growth?.level ?? (Int(sqrt(max(0, min(experience, 1e12))) / 10) + 1) }
+    public var strengthMax:Double { growth?.strengthMax ?? 100 }
+    public var feelingMax:Double { growth?.feelingMax ?? 100 }
+    public var affectionMax: Double { growth?.affectionMax ?? Double(90 + level * 10) }
     public var mood: PetMood {
+        if let growth { return growth.mood(health:health,feeling:feeling,affection:affection) }
         let threshold = 60.0 - (feeling >= 80 ? 12 : 0) - (affection >= 80 ? 12 : affection >= 40 ? 6 : 0)
         if health <= threshold { return health <= threshold / 2 ? .ill : .poor }
         let happy = 0.90 - (affection >= 80 ? 0.20 : affection >= 40 ? 0.10 : 0)
@@ -38,15 +52,18 @@ public struct PetState: Codable, Equatable, Sendable {
         return feeling / 100 <= happy / 2 ? .poor : .normal
     }
     public func validate() throws {
+        try growth?.validate()
+        if let growth, growth.experience != experience { throw PetSaveError.invalidState }
         try progress?.validate()
         try schedule?.validate(activity:activity)
         guard activity?.scheduleEntryID==nil || schedule?.phase == .activity else { throw PetSaveError.invalidState }
         try workPackage?.validate();try studyPackage?.validate()
         guard workPackage == nil || workPackage?.kind == .work,studyPackage == nil || studyPackage?.kind == .study else { throw PetSaveError.invalidState }
-        let bounded = [strength, food, drink, feeling, health]
+        let retainedStrength=growth?.retainedStrengthCeiling ?? 100,retainedFeeling=growth?.retainedFeelingCeiling ?? 100
+        let bounded = [(strength,retainedStrength),(food,retainedStrength),(drink,retainedStrength),(feeling,retainedFeeling),(health,100.0)]
         guard !name.isEmpty, name.count <= 100,
-              bounded.allSatisfy({ $0.isFinite && (0...100).contains($0) }),
-              affection.isFinite, (0...1_000_100).contains(affection),
+              bounded.allSatisfy({ $0.0.isFinite && (0...$0.1).contains($0.0) }),
+              affection.isFinite, (0...(growth == nil ? 1_000_100:1e12)).contains(affection),
               experience.isFinite, abs(experience) <= 1e12,
               [storedStrength, storedFood, storedDrink].allSatisfy({ $0.isFinite && abs($0) <= 10000 }),
               money.isFinite, abs(money) <= 1e12, catalogVersion == 1,
@@ -57,20 +74,30 @@ public struct PetState: Codable, Equatable, Sendable {
             guard (1...400).contains(a.effectiveMultiplier), !a.activityID.isEmpty, a.activityID.count <= 300, a.elapsedSeconds.isFinite, (0...1e12).contains(a.elapsedSeconds), a.earned.isFinite, (0...1e12).contains(a.earned), !resting else { throw PetSaveError.invalidState }
         }
     }
-    mutating func changeStrength(_ delta: Double) { strength = Self.clamp(strength + delta) }
+    /// Older iPet documents stored cumulative experience and fixed100 attributes. Preserve their bytes separately.
+    mutating func migrateDesktopGrowth() throws {
+        guard growth == nil else { throw PetSaveError.invalidDocument }
+        try validate()
+        let historicalMax=affectionMax
+        var next=PetDesktopGrowth.initial;try next.setExperience(experience)
+        next=try PetDesktopGrowth(level:next.level,prestige:next.prestige,experience:next.experience,affectionMax:max(next.affectionMax,historicalMax,affection))
+        growth=next;experience=next.experience
+        try validate()
+    }
+    mutating func changeStrength(_ delta: Double) { strength = min(strengthMax,max(0,strength+delta)) }
     mutating func changeHealth(_ delta: Double) { health = Self.clamp(health + delta) }
     mutating func changeFood(_ delta: Double) {
-        let value = min(100, food + delta)
+        let value = min(strengthMax, food + delta)
         if value <= 0 { changeHealth(value) }
         food = max(0, value)
     }
     mutating func changeDrink(_ delta: Double) {
-        let value = min(100, drink + delta)
+        let value = min(strengthMax, drink + delta)
         if value <= 0 { changeHealth(value) }
         drink = max(0, value)
     }
     mutating func changeFeeling(_ delta: Double) {
-        let value = min(100, feeling + delta)
+        let value = min(feelingMax, feeling + delta)
         if value <= 0 { changeHealth(value / 2); changeAffection(value / 2) }
         feeling = max(0, value)
     }
